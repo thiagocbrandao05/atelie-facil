@@ -1,0 +1,92 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+@config "../tailwind.config.ts";
+
+@layer base {
+  :root {
+    /* Artisan & Professional Palette */
+    --background: 60 20% 99%;
+    /* Warm off-white */
+    --foreground: 60 5% 10%;
+    /* Deep charcoal with a hint of warm */
+
+    --card: 0 0% 100%;
+    --card-foreground: 60 5% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 60 5% 10%;
+
+    /* Sage Green Primary - Organic and Trustworthy */
+    --primary: 142 15% 33%;
+    /* #455448 */
+    --primary-foreground: 60 20% 98%;
+
+    /* Sand/Beige Secondary */
+    --secondary: 40 20% 94%;
+    --secondary-foreground: 142 15% 20%;
+
+    /* Muted colors */
+    --muted: 40 10% 96%;
+    --muted-foreground: 60 5% 45%;
+
+    /* Accent - Terracotta or Dusty Rose for highlights */
+    --accent: 19 56% 40%;
+    /* Terracotta */
+    --accent-foreground: 60 20% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 60 10% 90%;
+    --input: 60 10% 90%;
+    --ring: 142 15% 33%;
+
+    --radius: 1rem;
+    /* Softer rounded corners */
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 243 75% 59%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 270 95% 75%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 243 75% 59%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background-color: #FCFCFC !important;
+  }
+
+  html {
+    background-color: #FCFCFC !important;
+  }
+}

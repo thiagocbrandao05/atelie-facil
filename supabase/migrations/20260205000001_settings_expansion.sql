@@ -1,0 +1,20 @@
+-- Add missing columns to Settings table for advanced pricing and feature set
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "email" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "instagram" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "facebook" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "msgApproved" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "msgFinished" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "logoUrl" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "addressStreet" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "addressNumber" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "addressComplement" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "addressNeighborhood" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "addressCity" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "addressState" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "addressZip" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "quotationValidityDays" INTEGER DEFAULT 15;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "defaultQuotationNotes" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "monthlyFixedCosts" JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "desirableSalary" DECIMAL(65,30) DEFAULT 2000.00;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "workingHoursPerMonth" INTEGER DEFAULT 160;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "defaultProfitMargin" DECIMAL(65,30) DEFAULT 50.00;
