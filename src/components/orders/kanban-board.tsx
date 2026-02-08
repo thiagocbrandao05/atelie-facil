@@ -13,11 +13,11 @@ type KanbanBoardProps = {
 }
 
 const STATUS_CONFIG = {
-    QUOTATION: { label: 'Orçamento', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-    PENDING: { label: 'Aguardando', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-    PRODUCING: { label: 'Em Produção', color: 'bg-primary/20 text-primary border-primary/30' },
-    READY: { label: 'Pronto', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-    DELIVERED: { label: 'Entregue', color: 'bg-slate-100 text-slate-800 border-slate-200' }
+    QUOTATION: { label: 'Orçamento', color: 'bg-warning/10 text-warning border-warning/30' },
+    PENDING: { label: 'Aguardando', color: 'bg-info/10 text-info border-info/30' },
+    PRODUCING: { label: 'Em Produção', color: 'bg-primary/10 text-primary border-primary/30' },
+    READY: { label: 'Pronto', color: 'bg-success/10 text-success border-success/30' },
+    DELIVERED: { label: 'Entregue', color: 'bg-muted/40 text-muted-foreground border-border/60' }
 }
 
 export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
@@ -55,8 +55,8 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
         <DragDropContext onDragEnd={onDragEnd}>
             <div className="flex gap-6 overflow-x-auto pb-6 min-h-[calc(100vh-300px)]">
                 {Object.entries(STATUS_CONFIG).map(([statusKey, config]) => (
-                    <div key={statusKey} className="flex flex-col gap-4 min-w-[280px] w-full max-w-[320px]">
-                        <div className={`p-3 rounded-xl border-l-4 shadow-sm flex items-center justify-between bg-white ${config.color}`}>
+                        <div key={statusKey} className="flex flex-col gap-4 min-w-[280px] w-full max-w-[320px]">
+                            <div className={`p-3 rounded-xl border-l-4 shadow-sm flex items-center justify-between bg-card ${config.color}`}>
                             <h3 className="font-semibold text-sm tracking-wide uppercase">{config.label}</h3>
                             <Badge variant="outline" className="bg-white/50 border-none font-bold">
                                 {getOrdersByStatus(statusKey).length}
@@ -115,5 +115,4 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
         </DragDropContext>
     )
 }
-
 

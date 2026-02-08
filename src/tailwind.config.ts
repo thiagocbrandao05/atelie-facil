@@ -23,6 +23,8 @@ const config = {
                 primary: {
                     DEFAULT: "hsl(var(--primary))",
                     foreground: "hsl(var(--primary-foreground))",
+                    hover: "hsl(var(--primary-hover))",
+                    soft: "hsl(var(--primary-soft))",
                 },
                 secondary: {
                     DEFAULT: "hsl(var(--secondary))",
@@ -39,6 +41,7 @@ const config = {
                 accent: {
                     DEFAULT: "hsl(var(--accent))",
                     foreground: "hsl(var(--accent-foreground))",
+                    soft: "hsl(var(--accent-soft))",
                 },
                 popover: {
                     DEFAULT: "hsl(var(--popover))",
@@ -48,6 +51,10 @@ const config = {
                     DEFAULT: "hsl(var(--card))",
                     foreground: "hsl(var(--card-foreground))",
                 },
+                success: "hsl(var(--success))",
+                warning: "hsl(var(--warning))",
+                danger: "hsl(var(--danger))",
+                info: "hsl(var(--info))",
             },
             borderRadius: {
                 lg: "var(--radius)",

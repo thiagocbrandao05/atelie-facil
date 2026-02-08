@@ -23,13 +23,13 @@ export function LoginForm() {
                     name="email"
                     placeholder="seu@email.com"
                     required
-                    className="bg-white/50 border-gray-200 focus:border-purple-500 focus:ring-purple-500/20 transition-all"
+                    className="bg-card/80 border-border focus:border-primary focus:ring-primary/20 transition-all"
                 />
             </div>
             <div className="space-y-2">
                 <div className="flex justify-between items-center">
                     <Label htmlFor="password">Senha</Label>
-                    <Link href="#" className="text-xs text-purple-600 hover:underline">
+                    <Link href="#" className="text-xs text-primary hover:underline">
                         Esqueceu a senha?
                     </Link>
                 </div>
@@ -40,7 +40,7 @@ export function LoginForm() {
                     placeholder="••••••"
                     required
                     minLength={6}
-                    className="bg-white/50 border-gray-200 focus:border-purple-500 focus:ring-purple-500/20 transition-all"
+                    className="bg-card/80 border-border focus:border-primary focus:ring-primary/20 transition-all"
                 />
             </div>
 
@@ -49,7 +49,7 @@ export function LoginForm() {
             </div>
 
             <Button
-                className="w-full h-11 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-200 transition-all hover:scale-[1.02]"
+                className="w-full h-11 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]"
                 aria-disabled={isPending}
             >
                 {isPending ? 'Entrando...' : 'Entrar'}
@@ -57,5 +57,4 @@ export function LoginForm() {
         </form>
     )
 }
-
 

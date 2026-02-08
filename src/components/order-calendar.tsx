@@ -39,10 +39,10 @@ interface OrderCalendarProps {
 }
 
 const statusColors: Record<string, string> = {
-    'PENDING': 'bg-amber-50 text-amber-700 border-amber-200/50 hover:bg-amber-100',
-    'PRODUCTION': 'bg-blue-50 text-blue-700 border-blue-200/50 hover:bg-blue-100',
-    'READY': 'bg-emerald-50 text-emerald-700 border-emerald-200/50 hover:bg-emerald-100',
-    'DELIVERED': 'bg-slate-50 text-slate-600 border-slate-200/50 hover:bg-slate-100',
+    'PENDING': 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/20',
+    'PRODUCTION': 'bg-info/10 text-info border-info/20 hover:bg-info/20',
+    'READY': 'bg-success/10 text-success border-success/20 hover:bg-success/20',
+    'DELIVERED': 'bg-muted/40 text-muted-foreground border-border/50 hover:bg-muted/60',
 };
 
 const statusLabels: Record<string, string> = {
@@ -51,6 +51,13 @@ const statusLabels: Record<string, string> = {
     'READY': 'Pronto',
     'DELIVERED': 'Entregue',
 };
+
+const statusDotColors: Record<string, string> = {
+    'PENDING': 'bg-warning',
+    'PRODUCTION': 'bg-info',
+    'READY': 'bg-success',
+    'DELIVERED': 'bg-muted-foreground',
+}
 
 export function OrderCalendar({ initialOrders }: OrderCalendarProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -150,7 +157,7 @@ export function OrderCalendar({ initialOrders }: OrderCalendarProps) {
                                                     )}
                                                 >
                                                     <span className="font-medium flex items-center gap-1">
-                                                        <span className={cn("w-1.5 h-1.5 rounded-full", statusColors[order.status]?.includes('amber') ? 'bg-amber-400' : 'bg-current opacity-50')} />
+                                                        <span className={cn("w-1.5 h-1.5 rounded-full", statusDotColors[order.status] || 'bg-muted-foreground/60')} />
                                                         {order.customer?.name || '---'}
                                                     </span>
                                                 </div>
@@ -190,7 +197,7 @@ export function OrderCalendar({ initialOrders }: OrderCalendarProps) {
             <div className="p-4 bg-secondary/30 flex flex-wrap gap-6 border-t border-border/50">
                 {Object.entries(statusLabels).map(([status, label]) => (
                     <div key={status} className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                        <div className={cn("w-2.5 h-2.5 rounded-full shadow-sm", statusColors[status].split(' ')[0].replace('bg-', 'bg-').replace('-50', '-400'))} />
+                        <div className={cn("w-2.5 h-2.5 rounded-full shadow-sm", statusDotColors[status] || 'bg-muted-foreground/60')} />
                         {label}
                     </div>
                 ))}
@@ -198,5 +205,3 @@ export function OrderCalendar({ initialOrders }: OrderCalendarProps) {
         </div>
     );
 }
-
-

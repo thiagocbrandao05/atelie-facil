@@ -91,28 +91,28 @@ function NotificationContainer() {
 
 const NOTIFICATION_STYLES = {
     success: {
-        bg: 'bg-green-50 dark:bg-green-900/20',
-        border: 'border-green-200 dark:border-green-800',
+        bg: 'bg-success/10',
+        border: 'border-success/20',
         icon: CheckCircle,
-        iconColor: 'text-green-600 dark:text-green-400'
+        iconColor: 'text-success'
     },
     error: {
-        bg: 'bg-red-50 dark:bg-red-900/20',
-        border: 'border-red-200 dark:border-red-800',
+        bg: 'bg-danger/10',
+        border: 'border-danger/20',
         icon: AlertCircle,
-        iconColor: 'text-red-600 dark:text-red-400'
+        iconColor: 'text-danger'
     },
     warning: {
-        bg: 'bg-yellow-50 dark:bg-yellow-900/20',
-        border: 'border-yellow-200 dark:border-yellow-800',
+        bg: 'bg-warning/10',
+        border: 'border-warning/20',
         icon: AlertTriangle,
-        iconColor: 'text-yellow-600 dark:text-yellow-400'
+        iconColor: 'text-warning'
     },
     info: {
-        bg: 'bg-blue-50 dark:bg-blue-900/20',
-        border: 'border-blue-200 dark:border-blue-800',
+        bg: 'bg-info/10',
+        border: 'border-info/20',
         icon: Info,
-        iconColor: 'text-blue-600 dark:text-blue-400'
+        iconColor: 'text-info'
     }
 }
 
@@ -160,5 +160,4 @@ export function useToast() {
             addNotification({ type: 'info', title, message })
     }
 }
-
 

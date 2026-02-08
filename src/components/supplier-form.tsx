@@ -70,7 +70,7 @@ export function SupplierForm({ supplier, trigger }: SupplierFormProps) {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {trigger || (
-                    <Button className="bg-purple-600 hover:bg-purple-700">
+                    <Button>
                         <Plus className="mr-2 h-4 w-4" /> Novo Fornecedor
                     </Button>
                 )}
@@ -118,7 +118,7 @@ export function SupplierForm({ supplier, trigger }: SupplierFormProps) {
                     </div>
 
                     <div className="flex justify-end pt-4">
-                        <Button type="submit" disabled={isPending} className="bg-purple-600 hover:bg-purple-700">
+                        <Button type="submit" disabled={isPending}>
                             {isPending ? 'Salvando...' : 'Salvar'}
                         </Button>
                     </div>
@@ -127,5 +127,4 @@ export function SupplierForm({ supplier, trigger }: SupplierFormProps) {
         </Dialog>
     )
 }
-
 

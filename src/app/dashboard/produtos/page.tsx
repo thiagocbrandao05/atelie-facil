@@ -82,7 +82,7 @@ export default async function ProdutosPage() {
                                         <span className="font-semibold text-foreground">{fixedCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                                     </div>
                                     <div className="flex flex-col items-start md:items-end justify-center">
-                                        <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 font-bold px-3">
+                                        <Badge variant="outline" className="text-success border-success/30 bg-success/10 font-bold px-3">
                                             Lucro: +{marginValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </Badge>
                                     </div>
@@ -108,5 +108,4 @@ export default async function ProdutosPage() {
         </div>
     )
 }
-
 

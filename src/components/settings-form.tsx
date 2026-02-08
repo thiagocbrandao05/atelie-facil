@@ -17,6 +17,7 @@ import dynamic from 'next/dynamic'
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "sonner"
+import { DEFAULT_THEME, THEME_OPTIONS, resolveThemeKey } from "@/lib/theme-tokens"
 
 const BackupManager = dynamic(() => import('@/components/backup-manager').then(mod => mod.BackupManager), {
     ssr: false,
@@ -491,23 +492,53 @@ export function SettingsForm({ settings }: { settings: any }) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid gap-4">
-                                <Label>Cor Primária</Label>
-                                <div className="flex gap-4">
-                                    {['indigo', 'rose', 'emerald', 'slate'].map((color) => (
-                                        <label key={color} className="cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="primaryColor"
-                                                value={color}
-                                                defaultChecked={settings.primaryColor === color}
-                                                className="sr-only peer"
-                                            />
-                                            <div className="w-16 h-16 rounded-xl border-2 peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-offset-2 flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-all">
-                                                <div className={`w-8 h-8 rounded-full bg-${color}-500`} style={{ backgroundColor: color === 'indigo' ? '#4f46e5' : color === 'rose' ? '#e11d48' : color === 'emerald' ? '#10b981' : '#64748b' }} />
-                                            </div>
-                                            <span className="block text-center text-xs mt-1 capitalize">{color}</span>
-                                        </label>
-                                    ))}
+                                <Label>Tema do sistema</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {THEME_OPTIONS.map((theme) => {
+                                        const isSelected = resolveThemeKey(settings.primaryColor) === theme.key
+                                        return (
+                                            <label
+                                                key={theme.key}
+                                                className="cursor-pointer"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="primaryColor"
+                                                    value={theme.key}
+                                                    defaultChecked={isSelected}
+                                                    className="sr-only peer"
+                                                />
+                                                <div className="rounded-2xl border bg-background p-4 transition-all peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 hover:border-primary/40">
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-foreground">{theme.name}</p>
+                                                            <p className="text-xs text-muted-foreground mt-1">{theme.description}</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            {Object.entries(theme.colors).map(([key, color]) => (
+                                                                <span
+                                                                    key={key}
+                                                                    className="h-4 w-4 rounded-full border border-border"
+                                                                    style={{ backgroundColor: color }}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 p-3">
+                                                        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                                            <span>Preview</span>
+                                                            <span className="font-medium text-foreground">Ateliê Fácil</span>
+                                                        </div>
+                                                        <div className="mt-3 grid grid-cols-3 gap-2">
+                                                            <div className="h-8 rounded-lg" style={{ backgroundColor: theme.colors.primary }} />
+                                                            <div className="h-8 rounded-lg" style={{ backgroundColor: theme.colors.accent }} />
+                                                            <div className="h-8 rounded-lg" style={{ backgroundColor: theme.colors.border }} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         </CardContent>
@@ -534,5 +565,3 @@ export function SettingsForm({ settings }: { settings: any }) {
         </form>
     )
 }
-
-

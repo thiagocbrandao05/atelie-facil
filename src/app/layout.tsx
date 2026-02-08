@@ -43,6 +43,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { NotificationProvider } from "@/components/notification-provider";
 import { ThemeColorManager } from "@/components/theme-color-manager";
 import { getSettings } from "@/features/settings/actions";
+import { resolveThemeKey } from "@/lib/theme-tokens";
 
 export default async function RootLayout({
   children,
@@ -52,10 +53,13 @@ export default async function RootLayout({
   const settings = await getSettings();
 
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html
+      lang="pt-BR"
+      data-theme={resolveThemeKey(settings.primaryColor)}
+      suppressHydrationWarning
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.className} antialiased min-h-screen text-foreground`}
-        style={{ backgroundColor: '#FCFCFC' }}
       >
         <ThemeProvider
           attribute="class"
@@ -65,7 +69,7 @@ export default async function RootLayout({
         >
           <ThemeColorManager color={settings.primaryColor} />
           <NotificationProvider>
-            <div style={{ backgroundColor: '#FCFCFC', minHeight: '100vh' }}>
+            <div className="min-h-screen bg-background">
               {children}
             </div>
             <Toaster richColors position="top-right" />
@@ -75,5 +79,3 @@ export default async function RootLayout({
     </html>
   );
 }
-
-

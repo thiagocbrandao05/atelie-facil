@@ -234,8 +234,8 @@ export function OrderForm({ products, customers, onSuccess }: { products: Produc
                                             {((item.price - (item.discount || 0)) * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </p>
                                         {item.discount ? (
-                                            <div className="inline-flex items-center bg-red-50 px-2 py-0.5 rounded border border-red-100">
-                                                <span className="text-[10px] text-red-600 font-extrabold uppercase tracking-tight">
+                                            <div className="inline-flex items-center bg-danger/10 px-2 py-0.5 rounded border border-danger/20">
+                                                <span className="text-[10px] text-danger font-extrabold uppercase tracking-tight">
                                                     - {item.discount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} desc.
                                                 </span>
                                             </div>
@@ -321,6 +321,5 @@ export function OrderForm({ products, customers, onSuccess }: { products: Produc
         </form>
     )
 }
-
 
 

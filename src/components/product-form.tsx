@@ -391,7 +391,7 @@ export function ProductForm({ availableMaterials, product, settings }: { availab
                                             })()}</span>
                                         </div>
 
-                                        <div className="flex justify-between items-end text-green-600 bg-green-500/10 p-3 rounded-lg border border-green-500/20">
+                                        <div className="flex justify-between items-end text-success bg-success/10 p-3 rounded-lg border border-success/20">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] uppercase font-black tracking-widest">Lucro Estimado</span>
                                                 <span className="text-[10px] opacity-80">({profitMargin || 0}% de margem)</span>
@@ -427,7 +427,7 @@ export function ProductForm({ availableMaterials, product, settings }: { availab
                                         </p>
                                     )}
 
-                                    <Button type="submit" size="lg" className="w-full h-14 text-lg font-black uppercase tracking-widest bg-foreground hover:bg-foreground/90 text-background" disabled={isPending}>
+                                    <Button type="submit" size="lg" className="w-full h-14 text-lg font-semibold uppercase tracking-widest" disabled={isPending}>
                                         {isPending ? 'Salvando...' : 'Salvar Produto'}
                                     </Button>
                                 </div>
@@ -439,6 +439,5 @@ export function ProductForm({ availableMaterials, product, settings }: { availab
         </Dialog>
     )
 }
-
 
 

@@ -12,28 +12,28 @@ export function StockAlertBanner({ lowStockItems }: { lowStockItems: any[] }) {
 
     return (
         <div className="fixed bottom-4 right-4 z-50 w-full max-w-sm animate-in slide-in-from-bottom-5">
-            <Card className="bg-yellow-50 dark:bg-yellow-900 border-yellow-200 dark:border-yellow-700 shadow-lg p-4">
+            <Card className="bg-warning/10 border-warning/20 shadow-lg p-4">
                 <div className="flex items-start gap-4">
-                    <div className="p-2 bg-yellow-100 dark:bg-yellow-800 rounded-full">
-                        <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                    <div className="p-2 bg-warning/20 rounded-full">
+                        <AlertTriangle className="h-5 w-5 text-warning" />
                     </div>
                     <div className="flex-1">
-                        <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                        <h4 className="font-semibold text-warning mb-1">
                             Atenção ao Estoque!
                         </h4>
-                        <p className="text-sm text-yellow-700 dark:text-yellow-200 mb-3">
+                        <p className="text-sm text-warning/80 mb-3">
                             {lowStockItems.length} materiais estão com estoque baixo.
                         </p>
                         <Link
                             href="/dashboard/relatorios"
-                            className="text-sm font-medium text-yellow-800 dark:text-yellow-300 hover:underline"
+                            className="text-sm font-medium text-warning hover:underline"
                         >
                             Ver detalhes →
                         </Link>
                     </div>
                     <button
                         onClick={() => setIsVisible(false)}
-                        className="text-yellow-500 hover:text-yellow-700 dark:hover:text-yellow-200"
+                        className="text-warning/70 hover:text-warning"
                     >
                         <X size={18} />
                     </button>
@@ -42,5 +42,4 @@ export function StockAlertBanner({ lowStockItems }: { lowStockItems: any[] }) {
         </div>
     )
 }
-
 

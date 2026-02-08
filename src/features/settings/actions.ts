@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { revalidatePath, unstable_cache } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
+import { DEFAULT_THEME } from '@/lib/theme-tokens'
 
 const ProfileSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -127,7 +128,7 @@ export async function updateSettings(prevState: any, formData: FormData) {
                 msgReady: data.msgReady || null,
                 msgApproved: data.msgApproved || null,
                 msgFinished: data.msgFinished || null,
-                primaryColor: data.primaryColor || 'indigo',
+                primaryColor: data.primaryColor || DEFAULT_THEME,
                 logoUrl: data.logoUrl || null,
                 addressStreet: data.addressStreet || null,
                 addressNumber: data.addressNumber || null,
@@ -162,7 +163,7 @@ export async function getSettings() {
         tenantId: user?.tenantId || 'temp',
         storeName: 'Ateliê Fácil',
         hourlyRate: 20,
-        primaryColor: 'indigo',
+        primaryColor: DEFAULT_THEME,
         phone: null,
         email: null,
         instagram: null,
@@ -205,5 +206,4 @@ export async function getSettings() {
         hourlyRate: Number((settings as any).hourlyRate)
     }
 }
-
 

@@ -41,14 +41,14 @@ export function CustomerHistoryDialog({ customer }: { customer: any }) {
 
     const getStatusLabel = (status: string) => {
         const statuses: Record<string, { label: string, color: string }> = {
-            'PENDING': { label: 'Pendente', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
-            'PRODUCING': { label: 'Em Produção', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-            'COMPLETED': { label: 'Concluído', color: 'bg-green-500/10 text-green-600 border-green-500/20' },
-            'DELIVERED': { label: 'Entregue', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
-            'CANCELLED': { label: 'Cancelado', color: 'bg-red-500/10 text-red-600 border-red-500/20' },
-            'QUOTATION': { label: 'Orçamento', color: 'bg-slate-500/10 text-slate-600 border-slate-500/20' }
+            'PENDING': { label: 'Pendente', color: 'bg-warning/10 text-warning border-warning/20' },
+            'PRODUCING': { label: 'Em Produção', color: 'bg-info/10 text-info border-info/20' },
+            'COMPLETED': { label: 'Concluído', color: 'bg-success/10 text-success border-success/20' },
+            'DELIVERED': { label: 'Entregue', color: 'bg-primary/10 text-primary border-primary/20' },
+            'CANCELLED': { label: 'Cancelado', color: 'bg-danger/10 text-danger border-danger/20' },
+            'QUOTATION': { label: 'Orçamento', color: 'bg-muted/40 text-muted-foreground border-border/40' }
         }
-        return statuses[status] || { label: status, color: 'bg-slate-500/10 text-slate-600 border-slate-500/20' }
+        return statuses[status] || { label: status, color: 'bg-muted/40 text-muted-foreground border-border/40' }
     }
 
     return (
