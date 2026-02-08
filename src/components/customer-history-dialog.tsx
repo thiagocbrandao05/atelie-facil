@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { History, Package, Calendar, Tag, ChevronRight } from 'lucide-react'
 import {
     Dialog,
@@ -21,13 +21,7 @@ export function CustomerHistoryDialog({ customer }: { customer: any }) {
     const [orders, setOrders] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
 
-    useEffect(() => {
-        if (open) {
-            loadOrders()
-        }
-    }, [open])
-
-    async function loadOrders() {
+    const loadOrders = useCallback(async () => {
         setIsLoading(true)
         try {
             const data = await getCustomerOrders(customer.id)
@@ -37,7 +31,13 @@ export function CustomerHistoryDialog({ customer }: { customer: any }) {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [customer.id])
+
+    useEffect(() => {
+        if (open) {
+            loadOrders()
+        }
+    }, [open, loadOrders])
 
     const getStatusLabel = (status: string) => {
         const statuses: Record<string, { label: string, color: string }> = {

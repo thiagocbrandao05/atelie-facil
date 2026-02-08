@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,16 +13,16 @@ export function MeasurementsSection({ customerId }: { customerId: string }) {
     const [measurements, setMeasurements] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    const fetchMeasurements = async () => {
+    const fetchMeasurements = useCallback(async () => {
         setIsLoading(true)
         const data = await getMeasurements(customerId)
         setMeasurements(data)
         setIsLoading(false)
-    }
+    }, [customerId])
 
     useEffect(() => {
         fetchMeasurements()
-    }, [customerId])
+    }, [fetchMeasurements])
 
     const handleAdd = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()

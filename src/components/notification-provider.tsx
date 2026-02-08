@@ -31,6 +31,10 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: ReactNode }) {
     const [notifications, setNotifications] = useState<Notification[]>([])
 
+    const removeNotification = useCallback((id: string) => {
+        setNotifications(prev => prev.filter(n => n.id !== id))
+    }, [])
+
     const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
         const id = Math.random().toString(36).substring(7)
         const newNotification: Notification = {
@@ -47,11 +51,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
                 removeNotification(id)
             }, notification.duration || 5000)
         }
-    }, [])
-
-    const removeNotification = useCallback((id: string) => {
-        setNotifications(prev => prev.filter(n => n.id !== id))
-    }, [])
+    }, [removeNotification])
 
     const clearAll = useCallback(() => {
         setNotifications([])
@@ -135,6 +135,7 @@ function NotificationItem({ notification, onClose }: { notification: Notificatio
             </div>
             <button
                 onClick={onClose}
+                aria-label="Fechar notificação"
                 className="text-muted-foreground hover:text-foreground transition-colors"
             >
                 <X className="h-4 w-4" />
@@ -160,4 +161,3 @@ export function useToast() {
             addNotification({ type: 'info', title, message })
     }
 }
-

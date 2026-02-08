@@ -65,7 +65,7 @@ export async function importStockAction(data: any[]) {
         const validatedData = data.map(item => StockBalanceSchema.parse(item))
 
         let successCount = 0
-        let errors = []
+        const errors: string[] = []
 
         for (const item of validatedData) {
             // Find material by name

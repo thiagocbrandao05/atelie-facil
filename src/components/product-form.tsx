@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -38,9 +38,7 @@ export function ProductForm({ availableMaterials, product, settings }: { availab
     const hourlyRate = Number(settings?.hourlyRate || 20)
     const monthlyFixedCosts = settings?.monthlyFixedCosts || []
     const workingHoursPerMonth = Number(settings?.workingHoursPerMonth || 160)
-    const action = useMemo(() =>
-        product ? updateProduct.bind(null, product.id) : createProduct,
-        [product?.id])
+    const action = product ? updateProduct.bind(null, product.id) : createProduct
 
     const { open, setOpen, state, formAction, isPending } = useFormHandler(action)
 
@@ -439,5 +437,4 @@ export function ProductForm({ availableMaterials, product, settings }: { availab
         </Dialog>
     )
 }
-
 

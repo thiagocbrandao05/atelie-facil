@@ -73,28 +73,3 @@ export async function logWarning(message: string, context?: Record<string, any>)
     return logEntry
 }
 
-export async function logAudit(
-    action: string,
-    entity: string,
-    entityId: string,
-    changes?: any
-) {
-    const user = await getCurrentUser()
-
-    const auditEntry = {
-        timestamp: new Date().toISOString(),
-        userId: user?.id,
-        userEmail: user?.email,
-        action,
-        entity,
-        entityId,
-        changes
-    }
-
-    // TODO: Salvar no banco de dados quando AuditLog model estiver criado
-    console.log('📝 Audit:', auditEntry)
-
-    return auditEntry
-}
-
-

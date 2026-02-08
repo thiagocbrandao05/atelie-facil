@@ -156,7 +156,7 @@ export function BulkImport() {
             const fields = FIELDS_MAP[type].map(f => f.label)
 
             // Generate some sample data for each type to make it more useful
-            let sampleData = [fields]
+            const sampleData = [fields]
             if (type === "materials") {
                 sampleData.push(["Papelão Cinza 2mm", "un", "15.00", "5"])
                 sampleData.push(["Tecido Tricoline", "m", "28.00", "2"])
