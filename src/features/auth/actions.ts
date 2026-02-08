@@ -6,7 +6,6 @@ import { redirect } from 'next/navigation'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limiter'
 import { getClientIP } from '@/lib/security'
 import { logError, logWarning, logInfo } from '@/lib/logger'
-import bcrypt from 'bcryptjs'
 
 export async function authenticate(
   prevState: string | undefined,
@@ -146,5 +145,4 @@ export async function register(
 
   redirect('/dashboard')
 }
-
 

@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from 'zod'
-import { revalidatePath, unstable_cache } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
 import { DEFAULT_THEME } from '@/lib/theme-tokens'
@@ -206,4 +206,3 @@ export async function getSettings() {
         hourlyRate: Number((settings as any).hourlyRate)
     }
 }
-

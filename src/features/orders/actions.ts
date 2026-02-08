@@ -6,9 +6,8 @@ import { revalidatePath } from "next/cache"
 import { OrderSchema, type OrderInput } from "@/lib/schemas"
 import { calculateOrderTotal } from "@/lib/logic"
 import { checkStockAvailability, deductStockForOrder } from "../../lib/inventory"
-import { validateCSRF, getClientIP } from "@/lib/security"
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limiter"
-import { logError, logAudit } from "@/lib/logger"
+import { logError } from "@/lib/logger"
 import { getCurrentUser } from "@/lib/auth"
 
 /**
@@ -222,5 +221,3 @@ export async function getOrdersStats() {
 
     return { activeOrders: count || 0 }
 }
-
-
