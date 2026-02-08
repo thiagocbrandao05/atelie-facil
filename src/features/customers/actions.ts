@@ -6,6 +6,15 @@ import { CustomerSchema } from "@/lib/schemas"
 import type { ActionResponse } from "@/lib/types"
 import { getCurrentUser } from "@/lib/auth"
 import { logAction } from "@/lib/audit"
+import { validateCSRF } from "@/lib/security"
+
+async function assertCSRFValid() {
+    const csrf = await validateCSRF()
+    if (!csrf.valid) {
+        return { success: false, message: csrf.error || 'CSRF inválido.' }
+    }
+    return null
+}
 
 export async function getCustomers() {
     const user = await getCurrentUser()
@@ -22,6 +31,9 @@ export async function getCustomers() {
 }
 
 export async function createCustomer(prevState: ActionResponse, formData: FormData): Promise<ActionResponse> {
+    const csrfError = await assertCSRFValid()
+    if (csrfError) return csrfError
+
     const user = await getCurrentUser()
     if (!user) return { success: false, message: 'Não autorizado' }
 
@@ -74,6 +86,9 @@ export async function createCustomer(prevState: ActionResponse, formData: FormDa
 }
 
 export async function deleteCustomer(id: string): Promise<ActionResponse> {
+    const csrfError = await assertCSRFValid()
+    if (csrfError) return csrfError
+
     const user = await getCurrentUser()
     if (!user) return { success: false, message: 'Não autorizado' }
 
@@ -106,6 +121,9 @@ export async function deleteCustomer(id: string): Promise<ActionResponse> {
 }
 
 export async function updateCustomer(id: string, prevState: ActionResponse, formData: FormData): Promise<ActionResponse> {
+    const csrfError = await assertCSRFValid()
+    if (csrfError) return csrfError
+
     const user = await getCurrentUser()
     if (!user) return { success: false, message: 'Não autorizado' }
 

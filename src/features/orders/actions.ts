@@ -9,6 +9,15 @@ import { checkStockAvailability, deductStockForOrder } from "../../lib/inventory
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limiter"
 import { logError } from "@/lib/logger"
 import { getCurrentUser } from "@/lib/auth"
+import { validateCSRF } from "@/lib/security"
+
+async function assertCSRFValid() {
+    const csrf = await validateCSRF()
+    if (!csrf.valid) {
+        return { success: false, message: csrf.error || 'CSRF inválido.' }
+    }
+    return null
+}
 
 /**
  * Get orders with pagination support
@@ -91,6 +100,9 @@ export async function getOrders() {
 }
 
 export async function createOrder(data: OrderInput): Promise<ActionResponse> {
+    const csrfError = await assertCSRFValid()
+    if (csrfError) return csrfError
+
     const user = await getCurrentUser()
     if (!user) return { success: false, message: 'Não autorizado. Faça login novamente.' }
 
@@ -134,6 +146,9 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
 }
 
 export async function updateOrderStatus(id: string, newStatus: string): Promise<ActionResponse> {
+    const csrfError = await assertCSRFValid()
+    if (csrfError) return csrfError
+
     const user = await getCurrentUser()
     if (!user) return { success: false, message: 'Não autorizado.' }
     const supabase = await createClient()
@@ -179,6 +194,9 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
 }
 
 export async function deleteOrder(id: string): Promise<ActionResponse> {
+    const csrfError = await assertCSRFValid()
+    if (csrfError) return csrfError
+
     const user = await getCurrentUser()
     if (!user) return { success: false, message: 'Não autorizado.' }
     const supabase = await createClient()

@@ -31,13 +31,11 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    if (
-        !user &&
-        !request.nextUrl.pathname.startsWith('/login') &&
-        !request.nextUrl.pathname.startsWith('/auth') &&
-        !request.nextUrl.pathname.startsWith('/') && // Landing page
-        !request.nextUrl.pathname.match(/\.(svg|png|jpg|jpeg|ico|css|js)$/)
-    ) {
+    const { pathname } = request.nextUrl
+    const publicRoutes = ['/', '/login', '/register', '/about', '/offline', '/pedidos']
+    const isPublicRoute = publicRoutes.includes(pathname) || publicRoutes.some(route => route !== '/' && pathname.startsWith(route))
+
+    if (!user && !isPublicRoute) {
         // no user, potentially respond by redirecting the user to the login page
         const url = request.nextUrl.clone()
         url.pathname = '/login'
@@ -56,5 +54,4 @@ export async function updateSession(request: NextRequest) {
     //    return myNewResponse
     return supabaseResponse
 }
-
 

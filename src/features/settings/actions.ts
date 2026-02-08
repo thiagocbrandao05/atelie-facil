@@ -5,6 +5,15 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
 import { DEFAULT_THEME } from '@/lib/theme-tokens'
+import { validateCSRF } from '@/lib/security'
+
+async function assertCSRFValid() {
+    const csrf = await validateCSRF()
+    if (!csrf.valid) {
+        return { success: false, message: csrf.error || 'CSRF inválido.' }
+    }
+    return null
+}
 
 const ProfileSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -41,6 +50,9 @@ const SettingsSchema = z.object({
 })
 
 export async function updateProfile(prevState: any, formData: FormData) {
+    const csrfError = await assertCSRFValid()
+    if (csrfError) return csrfError
+
     try {
         const user = await getCurrentUser()
         if (!user) return { success: false, message: 'Não autorizado' }
@@ -69,6 +81,9 @@ export async function updateProfile(prevState: any, formData: FormData) {
 }
 
 export async function updateSettings(prevState: any, formData: FormData) {
+    const csrfError = await assertCSRFValid()
+    if (csrfError) return csrfError
+
     const user = await getCurrentUser()
     if (!user) return { success: false, message: 'Não autorizado.' }
 
