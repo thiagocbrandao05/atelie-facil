@@ -63,7 +63,7 @@ export function WhatsAppButton({ phone, customerName, orderStatus, orderId, temp
         <Button
             variant="ghost"
             size="sm"
-            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 h-8 gap-2"
+            className="text-success hover:text-success/80 hover:bg-success/10 h-8 gap-2"
             onClick={openWhatsApp}
         >
             <MessageCircle size={14} />
@@ -71,5 +71,4 @@ export function WhatsAppButton({ phone, customerName, orderStatus, orderId, temp
         </Button>
     )
 }
-
 

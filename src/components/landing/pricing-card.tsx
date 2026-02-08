@@ -30,12 +30,12 @@ export function PricingCard({
             className={cn(
                 "relative flex flex-col p-8 rounded-[2.5rem] transition-all duration-500 hover:scale-[1.02]",
                 highlight
-                    ? "bg-[#455448] text-white shadow-2xl shadow-[#455448]/20 z-10"
-                    : "bg-white border border-[#455448]/10 text-[#455448] shadow-xl shadow-black/5"
+                    ? "bg-primary text-primary-foreground shadow-2xl shadow-primary/20 z-10"
+                    : "bg-card border border-border/60 text-foreground shadow-xl shadow-black/5"
             )}
         >
             {highlight && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#9C4A2F] text-white text-xs font-black uppercase tracking-widest shadow-lg">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-accent text-accent-foreground text-xs font-black uppercase tracking-widest shadow-lg">
                     Recomendado
                 </div>
             )}
@@ -43,13 +43,13 @@ export function PricingCard({
             <div className="mb-8">
                 <h3 className={cn(
                     "text-xl font-black mb-2 uppercase tracking-tight",
-                    highlight ? "text-white" : "text-[#455448]"
+                    highlight ? "text-primary-foreground" : "text-foreground"
                 )}>
                     {name}
                 </h3>
                 <p className={cn(
                     "text-sm font-medium opacity-70",
-                    highlight ? "text-white/80" : "text-[#455448]/80"
+                    highlight ? "text-primary-foreground/80" : "text-muted-foreground"
                 )}>
                     {description}
                 </p>
@@ -65,11 +65,11 @@ export function PricingCard({
                     <li key={i} className="flex items-center gap-3 text-sm font-medium">
                         <div className={cn(
                             "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center",
-                            highlight ? "bg-white/20" : "bg-[#455448]/10"
+                            highlight ? "bg-white/20" : "bg-primary/10"
                         )}>
-                            <Check className={cn("w-3 h-3", highlight ? "text-white" : "text-[#455448]")} />
+                            <Check className={cn("w-3 h-3", highlight ? "text-white" : "text-primary")} />
                         </div>
-                        <span className={highlight ? "text-white/90" : "text-[#455448]/90"}>
+                        <span className={highlight ? "text-primary-foreground/90" : "text-foreground/90"}>
                             {feature}
                         </span>
                     </li>
@@ -81,8 +81,8 @@ export function PricingCard({
                 className={cn(
                     "w-full py-4 rounded-2xl text-center font-black transition-all active:scale-[0.98]",
                     highlight
-                        ? "bg-white text-[#455448] hover:bg-[#F5F4F0] shadow-lg shadow-black/10"
-                        : "bg-[#455448] text-white hover:bg-[#455448]/90 shadow-lg shadow-[#455448]/10"
+                        ? "bg-background text-foreground hover:bg-muted shadow-lg shadow-black/10"
+                        : "bg-primary text-primary-foreground hover:bg-primary-hover shadow-lg shadow-primary/10"
                 )}
             >
                 {cta}

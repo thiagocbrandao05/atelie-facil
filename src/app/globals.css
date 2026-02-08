@@ -4,75 +4,153 @@
 
 @layer base {
   :root {
-    /* Artisan & Professional Palette */
-    --background: 60 20% 99%;
-    /* Warm off-white */
-    --foreground: 60 5% 10%;
-    /* Deep charcoal with a hint of warm */
+    --background: 20 43% 99%;
+    --foreground: 0 0% 17%;
 
     --card: 0 0% 100%;
-    --card-foreground: 60 5% 10%;
+    --card-foreground: 0 0% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 60 5% 10%;
+    --popover-foreground: 0 0% 17%;
 
-    /* Sage Green Primary - Organic and Trustworthy */
-    --primary: 142 15% 33%;
-    /* #455448 */
-    --primary-foreground: 60 20% 98%;
+    --primary: 254 57% 65%;
+    --primary-hover: 252 44% 56%;
+    --primary-soft: 256 70% 95%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Sand/Beige Secondary */
-    --secondary: 40 20% 94%;
-    --secondary-foreground: 142 15% 20%;
+    --secondary: 256 70% 95%;
+    --secondary-foreground: 252 44% 32%;
 
-    /* Muted colors */
-    --muted: 40 10% 96%;
-    --muted-foreground: 60 5% 45%;
+    --muted: 30 24% 96%;
+    --muted-foreground: 0 0% 43%;
 
-    /* Accent - Terracotta or Dusty Rose for highlights */
-    --accent: 19 56% 40%;
-    /* Terracotta */
-    --accent-foreground: 60 20% 98%;
+    --accent: 34 76% 60%;
+    --accent-soft: 41 100% 94%;
+    --accent-foreground: 0 0% 17%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 61%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 60 10% 90%;
-    --input: 60 10% 90%;
-    --ring: 142 15% 33%;
+    --border: 28 21% 88%;
+    --input: 28 21% 88%;
+    --ring: 254 57% 65%;
+
+    --success: 142 71% 45%;
+    --warning: 31 81% 50%;
+    --danger: 0 72% 61%;
+    --info: 207 94% 60%;
 
     --radius: 1rem;
-    /* Softer rounded corners */
   }
 
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+  :root[data-theme="lavanda-atelie"] {
+    --background: 20 43% 99%;
+    --foreground: 0 0% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 17%;
+    --primary: 254 57% 65%;
+    --primary-hover: 252 44% 56%;
+    --primary-soft: 256 70% 95%;
+    --secondary: 256 70% 95%;
+    --secondary-foreground: 252 44% 32%;
+    --muted: 30 24% 96%;
+    --muted-foreground: 0 0% 43%;
+    --accent: 34 76% 60%;
+    --accent-soft: 41 100% 94%;
+    --accent-foreground: 0 0% 17%;
+    --border: 28 21% 88%;
+    --input: 28 21% 88%;
+    --ring: 254 57% 65%;
+  }
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+  :root[data-theme="cha-de-hortela"] {
+    --background: 158 60% 98%;
+    --foreground: 0 0% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 17%;
+    --primary: 173 69% 36%;
+    --primary-hover: 173 63% 30%;
+    --primary-soft: 173 55% 93%;
+    --secondary: 173 55% 93%;
+    --secondary-foreground: 173 45% 25%;
+    --muted: 170 45% 96%;
+    --muted-foreground: 0 0% 43%;
+    --accent: 37 91% 55%;
+    --accent-soft: 41 100% 94%;
+    --accent-foreground: 0 0% 17%;
+    --border: 170 35% 89%;
+    --input: 170 35% 89%;
+    --ring: 173 69% 36%;
+  }
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+  :root[data-theme="algodao-doce"] {
+    --background: 340 100% 98%;
+    --foreground: 0 0% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 17%;
+    --primary: 340 54% 75%;
+    --primary-hover: 340 42% 65%;
+    --primary-soft: 340 60% 93%;
+    --secondary: 340 60% 93%;
+    --secondary-foreground: 340 45% 35%;
+    --muted: 340 45% 96%;
+    --muted-foreground: 0 0% 43%;
+    --accent: 340 100% 87%;
+    --accent-soft: 340 100% 95%;
+    --accent-foreground: 0 0% 17%;
+    --border: 340 32% 90%;
+    --input: 340 32% 90%;
+    --ring: 340 54% 75%;
+  }
 
-    --primary: 243 75% 59%;
-    --primary-foreground: 210 40% 98%;
+  :root[data-theme="terra-cotta"] {
+    --background: 33 100% 97%;
+    --foreground: 0 0% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 17%;
+    --primary: 28 47% 54%;
+    --primary-hover: 28 40% 46%;
+    --primary-soft: 28 55% 93%;
+    --secondary: 28 55% 93%;
+    --secondary-foreground: 28 40% 32%;
+    --muted: 30 35% 95%;
+    --muted-foreground: 0 0% 43%;
+    --accent: 33 78% 75%;
+    --accent-soft: 33 100% 93%;
+    --accent-foreground: 0 0% 17%;
+    --border: 28 30% 85%;
+    --input: 28 30% 85%;
+    --ring: 28 47% 54%;
+  }
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 270 95% 75%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 243 75% 59%;
+  :root[data-theme="noite-criativa"] {
+    --background: 223 100% 98%;
+    --foreground: 0 0% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 17%;
+    --primary: 220 50% 43%;
+    --primary-hover: 220 50% 36%;
+    --primary-soft: 220 55% 93%;
+    --secondary: 220 55% 93%;
+    --secondary-foreground: 220 40% 28%;
+    --muted: 220 40% 96%;
+    --muted-foreground: 0 0% 43%;
+    --accent: 203 96% 71%;
+    --accent-soft: 203 90% 93%;
+    --accent-foreground: 0 0% 17%;
+    --border: 220 40% 88%;
+    --input: 220 40% 88%;
+    --ring: 220 50% 43%;
   }
 }
 
@@ -83,10 +161,9 @@
 
   body {
     @apply bg-background text-foreground;
-    background-color: #FCFCFC !important;
   }
 
   html {
-    background-color: #FCFCFC !important;
+    background-color: hsl(var(--background));
   }
 }

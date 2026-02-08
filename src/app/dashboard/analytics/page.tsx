@@ -33,8 +33,8 @@ export default async function AnalyticsPage() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                                    <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                                <div className="p-2 bg-info/10 rounded-lg">
+                                    <TrendingUp className="h-6 w-6 text-info" />
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">Total de Pedidos (30d)</p>
@@ -47,8 +47,8 @@ export default async function AnalyticsPage() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                                    <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
+                                <div className="p-2 bg-success/10 rounded-lg">
+                                    <DollarSign className="h-6 w-6 text-success" />
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">Receita (30d)</p>
@@ -63,8 +63,8 @@ export default async function AnalyticsPage() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                                    <Activity className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Activity className="h-6 w-6 text-primary" />
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">Status dos Pedidos</p>
@@ -91,7 +91,7 @@ export default async function AnalyticsPage() {
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Alertas de Estoque Baixo</p>
-                                <p className="text-3xl font-bold text-orange-600">{inventoryMetrics.lowStockCount}</p>
+                                <p className="text-3xl font-bold text-warning">{inventoryMetrics.lowStockCount}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Valor Total do Estoque</p>
@@ -162,5 +162,4 @@ export default async function AnalyticsPage() {
         </div>
     )
 }
-
 

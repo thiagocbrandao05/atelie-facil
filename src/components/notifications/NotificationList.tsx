@@ -22,18 +22,18 @@ const typeIcons = {
 }
 
 const typeColors = {
-    STOCK_ALERT: 'text-orange-600 dark:text-orange-400',
-    ORDER_DEADLINE: 'text-red-600 dark:text-red-400',
-    ORDER_READY: 'text-green-600 dark:text-green-400',
-    SYSTEM: 'text-blue-600 dark:text-blue-400',
-    INFO: 'text-gray-600 dark:text-gray-400',
+    STOCK_ALERT: 'text-warning',
+    ORDER_DEADLINE: 'text-danger',
+    ORDER_READY: 'text-success',
+    SYSTEM: 'text-info',
+    INFO: 'text-muted-foreground',
 }
 
 const priorityColors = {
-    LOW: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
-    NORMAL: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-    HIGH: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-    URGENT: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    LOW: 'bg-muted/40 text-muted-foreground',
+    NORMAL: 'bg-info/10 text-info',
+    HIGH: 'bg-warning/10 text-warning',
+    URGENT: 'bg-danger/10 text-danger',
 }
 
 export function NotificationList({ notifications }: NotificationListProps) {
@@ -80,11 +80,11 @@ export function NotificationList({ notifications }: NotificationListProps) {
                             key={notification.id}
                             className={`p-4 rounded-lg border transition-colors ${notification.read
                                 ? 'bg-background'
-                                : 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800'
+                                : 'bg-info/5 border-info/20'
                                 }`}
                         >
                             <div className="flex items-start gap-4">
-                                <div className={`p-2 rounded-lg ${notification.read ? 'bg-muted' : 'bg-blue-100 dark:bg-blue-900'}`}>
+                                <div className={`p-2 rounded-lg ${notification.read ? 'bg-muted' : 'bg-info/10'}`}>
                                     <Icon className={`h-5 w-5 ${iconColor}`} />
                                 </div>
 
@@ -128,5 +128,4 @@ export function NotificationList({ notifications }: NotificationListProps) {
         </div>
     )
 }
-
 

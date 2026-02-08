@@ -30,13 +30,13 @@ export function RevenueChart({ data }: { data: any[] }) {
                         <BarChart data={data}>
                             <XAxis
                                 dataKey="name"
-                                stroke="#888888"
+                                stroke="hsl(var(--muted-foreground))"
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
                             />
                             <YAxis
-                                stroke="#888888"
+                                stroke="hsl(var(--muted-foreground))"
                                 fontSize={12}
                                 tickLine={false}
                                 axisLine={false}
@@ -47,7 +47,7 @@ export function RevenueChart({ data }: { data: any[] }) {
                                 contentStyle={{ borderRadius: '8px' }}
                                 formatter={(value: any) => [`R$ ${Number(value).toFixed(2)}`, 'Receita']}
                             />
-                            <Bar dataKey="value" fill="#adfa1d" radius={[4, 4, 0, 0]} className="fill-primary" />
+                            <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -55,5 +55,4 @@ export function RevenueChart({ data }: { data: any[] }) {
         </Card>
     )
 }
-
 

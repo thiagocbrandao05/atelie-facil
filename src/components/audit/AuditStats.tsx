@@ -17,8 +17,8 @@ export function AuditStats({ stats }: AuditStatsProps) {
             <Card>
                 <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                            <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        <div className="p-2 bg-info/10 rounded-lg">
+                            <FileText className="h-6 w-6 text-info" />
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Total de Registros</p>
@@ -31,8 +31,8 @@ export function AuditStats({ stats }: AuditStatsProps) {
             <Card>
                 <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                        <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                            <Activity className="h-6 w-6 text-green-600 dark:text-green-400" />
+                        <div className="p-2 bg-success/10 rounded-lg">
+                            <Activity className="h-6 w-6 text-success" />
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Últimas 24h</p>
@@ -45,8 +45,8 @@ export function AuditStats({ stats }: AuditStatsProps) {
             <Card>
                 <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
-                        <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                            <Shield className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <Shield className="h-6 w-6 text-primary" />
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Tipos de Ação</p>
@@ -58,5 +58,4 @@ export function AuditStats({ stats }: AuditStatsProps) {
         </div>
     )
 }
-
 
