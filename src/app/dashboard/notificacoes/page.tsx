@@ -31,9 +31,9 @@ export default async function NotificacoesPage() {
                     </p>
                 </div>
                 {unreadCount > 0 && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                        <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        <span className="font-semibold text-blue-600 dark:text-blue-400">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-info/10 rounded-lg">
+                        <Bell className="h-5 w-5 text-info" />
+                        <span className="font-semibold text-info">
                             {unreadCount} não lida{unreadCount !== 1 ? 's' : ''}
                         </span>
                     </div>
@@ -56,5 +56,4 @@ export default async function NotificacoesPage() {
         </div>
     )
 }
-
 

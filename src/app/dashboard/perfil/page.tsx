@@ -28,7 +28,7 @@ export default async function ProfilePage() {
                 {/* User Card */}
                 <Card className="h-fit">
                     <CardHeader className="text-center pb-2">
-                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-purple-600 rounded-full mx-auto flex items-center justify-center text-4xl text-white font-bold shadow-lg mb-4">
+                        <div className="w-24 h-24 bg-primary rounded-full mx-auto flex items-center justify-center text-4xl text-primary-foreground font-bold shadow-lg mb-4">
                             {user.name?.[0]?.toUpperCase() || "U"}
                         </div>
                         <CardTitle>{user.name || "Usuário"}</CardTitle>
@@ -63,5 +63,4 @@ export default async function ProfilePage() {
         </div>
     );
 }
-
 

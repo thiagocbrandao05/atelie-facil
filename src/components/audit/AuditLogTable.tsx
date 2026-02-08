@@ -21,20 +21,20 @@ interface AuditLogTableProps {
 }
 
 const actionColors: Record<string, string> = {
-    CREATE: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-    UPDATE: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-    DELETE: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-    LOGIN: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-    LOGOUT: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
-    LOGIN_FAILED: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-    EXPORT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300',
-    BACKUP: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
+    CREATE: 'bg-success/10 text-success',
+    UPDATE: 'bg-info/10 text-info',
+    DELETE: 'bg-danger/10 text-danger',
+    LOGIN: 'bg-primary/10 text-primary',
+    LOGOUT: 'bg-muted/40 text-muted-foreground',
+    LOGIN_FAILED: 'bg-warning/10 text-warning',
+    EXPORT: 'bg-accent-soft text-accent-foreground',
+    BACKUP: 'bg-secondary text-secondary-foreground',
 }
 
 const statusColors: Record<string, string> = {
-    SUCCESS: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-    FAILED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-    PARTIAL: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    SUCCESS: 'bg-success/10 text-success',
+    FAILED: 'bg-danger/10 text-danger',
+    PARTIAL: 'bg-warning/10 text-warning',
 }
 
 export function AuditLogTable({ data }: AuditLogTableProps) {
@@ -127,5 +127,4 @@ export function AuditLogTable({ data }: AuditLogTableProps) {
         </div>
     )
 }
-
 

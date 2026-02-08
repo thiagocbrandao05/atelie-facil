@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { History, Package, Calendar, Tag, ChevronRight } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { History, Package, Calendar } from 'lucide-react'
 import {
     Dialog,
     DialogContent,
@@ -15,19 +15,14 @@ import { getCustomerOrders } from '@/features/customers/actions'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { getStatusBadgeClasses, getStatusLabel } from '@/lib/order-status'
 
 export function CustomerHistoryDialog({ customer }: { customer: any }) {
     const [open, setOpen] = useState(false)
     const [orders, setOrders] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
 
-    useEffect(() => {
-        if (open) {
-            loadOrders()
-        }
-    }, [open])
-
-    async function loadOrders() {
+    const loadOrders = useCallback(async () => {
         setIsLoading(true)
         try {
             const data = await getCustomerOrders(customer.id)
@@ -37,19 +32,13 @@ export function CustomerHistoryDialog({ customer }: { customer: any }) {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [customer.id])
 
-    const getStatusLabel = (status: string) => {
-        const statuses: Record<string, { label: string, color: string }> = {
-            'PENDING': { label: 'Pendente', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
-            'PRODUCING': { label: 'Em Produção', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-            'COMPLETED': { label: 'Concluído', color: 'bg-green-500/10 text-green-600 border-green-500/20' },
-            'DELIVERED': { label: 'Entregue', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
-            'CANCELLED': { label: 'Cancelado', color: 'bg-red-500/10 text-red-600 border-red-500/20' },
-            'QUOTATION': { label: 'Orçamento', color: 'bg-slate-500/10 text-slate-600 border-slate-500/20' }
+    useEffect(() => {
+        if (open) {
+            loadOrders()
         }
-        return statuses[status] || { label: status, color: 'bg-slate-500/10 text-slate-600 border-slate-500/20' }
-    }
+    }, [open, loadOrders])
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -95,8 +84,8 @@ export function CustomerHistoryDialog({ customer }: { customer: any }) {
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-2">
-                                                    <Badge variant="outline" className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${getStatusLabel(order.status).color}`}>
-                                                        {getStatusLabel(order.status).label}
+                                                    <Badge variant="outline" className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${getStatusBadgeClasses(order.status)}`}>
+                                                        {getStatusLabel(order.status)}
                                                     </Badge>
                                                     <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
                                                         <Calendar className="h-3 w-3" />

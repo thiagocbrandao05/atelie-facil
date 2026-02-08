@@ -1,24 +1,18 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { updateOrderStatus } from '@/features/orders/actions'
 import { toast } from 'sonner'
-import { Order } from '@/lib/types'
+import { getStatusBadgeClasses, getStatusLabel } from '@/lib/order-status'
 
 type KanbanBoardProps = {
     initialOrders: any[]
 }
 
-const STATUS_CONFIG = {
-    QUOTATION: { label: 'Orçamento', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-    PENDING: { label: 'Aguardando', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-    PRODUCING: { label: 'Em Produção', color: 'bg-primary/20 text-primary border-primary/30' },
-    READY: { label: 'Pronto', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-    DELIVERED: { label: 'Entregue', color: 'bg-slate-100 text-slate-800 border-slate-200' }
-}
+const STATUS_KEYS = ["QUOTATION", "PENDING", "PRODUCING", "READY", "DELIVERED"] as const
 
 export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
     const [orders, setOrders] = useState(initialOrders)
@@ -48,18 +42,24 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
         }
     }
 
-    const getOrdersByStatus = (status: string) =>
-        orders.filter(order => order.status === status)
+    const ordersByStatus = useMemo(() => {
+        return orders.reduce<Record<string, typeof orders>>((acc, order) => {
+            const key = order.status
+            if (!acc[key]) acc[key] = []
+            acc[key].push(order)
+            return acc
+        }, {})
+    }, [orders])
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
             <div className="flex gap-6 overflow-x-auto pb-6 min-h-[calc(100vh-300px)]">
-                {Object.entries(STATUS_CONFIG).map(([statusKey, config]) => (
-                    <div key={statusKey} className="flex flex-col gap-4 min-w-[280px] w-full max-w-[320px]">
-                        <div className={`p-3 rounded-xl border-l-4 shadow-sm flex items-center justify-between bg-white ${config.color}`}>
-                            <h3 className="font-semibold text-sm tracking-wide uppercase">{config.label}</h3>
+                {STATUS_KEYS.map((statusKey) => (
+                        <div key={statusKey} className="flex flex-col gap-4 min-w-[280px] w-full max-w-[320px]">
+                            <div className={`p-3 rounded-xl border-l-4 shadow-sm flex items-center justify-between bg-card ${getStatusBadgeClasses(statusKey)}`}>
+                            <h3 className="font-semibold text-sm tracking-wide uppercase">{getStatusLabel(statusKey)}</h3>
                             <Badge variant="outline" className="bg-white/50 border-none font-bold">
-                                {getOrdersByStatus(statusKey).length}
+                                {(ordersByStatus[statusKey] ?? []).length}
                             </Badge>
                         </div>
                         <Droppable droppableId={statusKey}>
@@ -69,7 +69,7 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
                                     ref={provided.innerRef}
                                     className={`p-2 rounded-2xl flex-1 flex flex-col gap-3 transition-colors ${snapshot.isDraggingOver ? 'bg-secondary/40' : 'bg-muted/10'}`}
                                 >
-                                    {getOrdersByStatus(statusKey).map((order, index) => (
+                                    {(ordersByStatus[statusKey] ?? []).map((order, index) => (
                                         <Draggable key={order.id} draggableId={order.id} index={index}>
                                             {(providedSnapshot, snapshot) => (
                                                 <Card
@@ -115,5 +115,3 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
         </DragDropContext>
     )
 }
-
-

@@ -134,7 +134,45 @@ export function ProductForm({ availableMaterials, product, settings }: { availab
         }
     }).filter(pm => pm.material)
 
-    const totalCost = calculateMaterialCost(previewMaterials)
+    const totalCost = useMemo(
+        () => calculateMaterialCost(previewMaterials),
+        [previewMaterials]
+    )
+
+    const totalMonthlyFixed = useMemo(
+        () => monthlyFixedCosts.reduce((acc: number, item: any) => acc + (Number(item.value) || 0), 0),
+        [monthlyFixedCosts]
+    )
+
+    const fixedCostPerHour = useMemo(
+        () => (workingHoursPerMonth > 0 ? totalMonthlyFixed / workingHoursPerMonth : 0),
+        [totalMonthlyFixed, workingHoursPerMonth]
+    )
+
+    const laborCost = useMemo(
+        () => (Number(laborTime || 0) / 60) * hourlyRate,
+        [laborTime, hourlyRate]
+    )
+
+    const fixedCost = useMemo(
+        () => (Number(laborTime || 0) / 60) * fixedCostPerHour,
+        [laborTime, fixedCostPerHour]
+    )
+
+    const baseCost = useMemo(
+        () => totalCost + laborCost + fixedCost,
+        [totalCost, laborCost, fixedCost]
+    )
+
+    const profitValue = useMemo(
+        () => baseCost * (Number(profitMargin || 0) / 100),
+        [baseCost, profitMargin]
+    )
+
+    const suggestedPrice = useMemo(
+        () => baseCost * (1 + (Number(profitMargin || 0) / 100)),
+        [baseCost, profitMargin]
+    )
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -369,40 +407,25 @@ export function ProductForm({ availableMaterials, product, settings }: { availab
                                                 <span className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Mão de Obra</span>
                                                 <span className="text-[10px] text-muted-foreground">{laborTime || 0} min x R$ {(hourlyRate / 60).toFixed(2)}/min</span>
                                             </div>
-                                            <span className="font-semibold text-sm">R$ {((Number(laborTime || 0) / 60) * hourlyRate).toFixed(2)}</span>
+                                            <span className="font-semibold text-sm">R$ {laborCost.toFixed(2)}</span>
                                         </div>
 
                                         <div className="flex justify-between items-end border-b pb-2">
                                             <span className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Custos Fixos</span>
-                                            <span className="font-semibold text-sm">R$ {(() => {
-                                                const totalMonthlyFixed = monthlyFixedCosts.reduce((acc: number, item: any) => acc + (Number(item.value) || 0), 0)
-                                                const fixedCostPerHour = workingHoursPerMonth > 0 ? totalMonthlyFixed / workingHoursPerMonth : 0
-                                                return ((Number(laborTime || 0) / 60) * fixedCostPerHour).toFixed(2)
-                                            })()}</span>
+                                            <span className="font-semibold text-sm">R$ {fixedCost.toFixed(2)}</span>
                                         </div>
 
                                         <div className="flex justify-between items-baseline pt-2">
                                             <span className="text-sm font-black uppercase text-foreground">Custo Total (Base)</span>
-                                            <span className="font-black text-lg">R$ {(() => {
-                                                const totalMonthlyFixed = monthlyFixedCosts.reduce((acc: number, item: any) => acc + (Number(item.value) || 0), 0)
-                                                const fixedCostPerHour = workingHoursPerMonth > 0 ? totalMonthlyFixed / workingHoursPerMonth : 0
-                                                const fixedCost = (Number(laborTime || 0) / 60) * fixedCostPerHour
-                                                return (totalCost + ((Number(laborTime || 0) / 60) * hourlyRate) + fixedCost).toFixed(2)
-                                            })()}</span>
+                                            <span className="font-black text-lg">R$ {baseCost.toFixed(2)}</span>
                                         </div>
 
-                                        <div className="flex justify-between items-end text-green-600 bg-green-500/10 p-3 rounded-lg border border-green-500/20">
+                                        <div className="flex justify-between items-end text-success bg-success/10 p-3 rounded-lg border border-success/20">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] uppercase font-black tracking-widest">Lucro Estimado</span>
                                                 <span className="text-[10px] opacity-80">({profitMargin || 0}% de margem)</span>
                                             </div>
-                                            <span className="font-black text-md">+ R$ {(() => {
-                                                const totalMonthlyFixed = monthlyFixedCosts.reduce((acc: number, item: any) => acc + (Number(item.value) || 0), 0)
-                                                const fixedCostPerHour = workingHoursPerMonth > 0 ? totalMonthlyFixed / workingHoursPerMonth : 0
-                                                const fixedCost = (Number(laborTime || 0) / 60) * fixedCostPerHour
-                                                const baseCost = totalCost + ((Number(laborTime || 0) / 60) * hourlyRate) + fixedCost
-                                                return (baseCost * (Number(profitMargin || 0) / 100)).toFixed(2)
-                                            })()}</span>
+                                            <span className="font-black text-md">+ R$ {profitValue.toFixed(2)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -411,13 +434,7 @@ export function ProductForm({ availableMaterials, product, settings }: { availab
                                     <div className="bg-primary text-primary-foreground p-5 rounded-2xl flex flex-col shadow-xl shadow-primary/20 transform transition-all hover:scale-[1.02]">
                                         <span className="font-black text-xs uppercase tracking-[0.2em] opacity-80 mb-1 text-center">Preço Sugerido</span>
                                         <span className="text-4xl font-black text-center tabular-nums">
-                                            R$ {(() => {
-                                                const totalMonthlyFixed = monthlyFixedCosts.reduce((acc: number, item: any) => acc + (Number(item.value) || 0), 0)
-                                                const fixedCostPerHour = workingHoursPerMonth > 0 ? totalMonthlyFixed / workingHoursPerMonth : 0
-                                                const fixedCost = (Number(laborTime || 0) / 60) * fixedCostPerHour
-                                                const baseCost = totalCost + ((Number(laborTime || 0) / 60) * hourlyRate) + fixedCost
-                                                return (baseCost * (1 + (Number(profitMargin || 0) / 100))).toFixed(2)
-                                            })()}
+                                            R$ {suggestedPrice.toFixed(2)}
                                         </span>
                                     </div>
 
@@ -427,7 +444,7 @@ export function ProductForm({ availableMaterials, product, settings }: { availab
                                         </p>
                                     )}
 
-                                    <Button type="submit" size="lg" className="w-full h-14 text-lg font-black uppercase tracking-widest bg-foreground hover:bg-foreground/90 text-background" disabled={isPending}>
+                                    <Button type="submit" size="lg" className="w-full h-14 text-lg font-semibold uppercase tracking-widest" disabled={isPending}>
                                         {isPending ? 'Salvando...' : 'Salvar Produto'}
                                     </Button>
                                 </div>
@@ -439,6 +456,4 @@ export function ProductForm({ availableMaterials, product, settings }: { availab
         </Dialog>
     )
 }
-
-
 

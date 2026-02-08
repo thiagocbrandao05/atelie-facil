@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     format,
     addMonths,
@@ -16,7 +16,7 @@ import {
     isToday
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,39 +26,37 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-interface Order {
-    id: string;
-    customer: { name: string };
-    status: string;
-    dueDate: Date;
-    totalValue: number;
-}
-
 interface OrderCalendarProps {
     initialOrders: any[];
 }
 
-const statusColors: Record<string, string> = {
-    'PENDING': 'bg-amber-50 text-amber-700 border-amber-200/50 hover:bg-amber-100',
-    'PRODUCTION': 'bg-blue-50 text-blue-700 border-blue-200/50 hover:bg-blue-100',
-    'READY': 'bg-emerald-50 text-emerald-700 border-emerald-200/50 hover:bg-emerald-100',
-    'DELIVERED': 'bg-slate-50 text-slate-600 border-slate-200/50 hover:bg-slate-100',
-};
-
-const statusLabels: Record<string, string> = {
-    'PENDING': 'Pendente',
-    'PRODUCTION': 'Em Produção',
-    'READY': 'Pronto',
-    'DELIVERED': 'Entregue',
-};
+import {
+    getStatusCalendarClasses,
+    getStatusDotClasses,
+    getStatusLabel,
+} from '@/lib/order-status';
 
 export function OrderCalendar({ initialOrders }: OrderCalendarProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
-    const orders = initialOrders.map(o => ({
-        ...o,
-        dueDate: new Date(o.dueDate)
-    }));
+    const orders = useMemo(
+        () => initialOrders.map(o => ({
+            ...o,
+            dueDate: new Date(o.dueDate)
+        })),
+        [initialOrders]
+    );
+
+    const ordersByDate = useMemo(() => {
+        const map = new Map<string, typeof orders>();
+        orders.forEach(order => {
+            const dateKey = format(order.dueDate, 'yyyy-MM-dd');
+            const current = map.get(dateKey) ?? [];
+            current.push(order);
+            map.set(dateKey, current);
+        });
+        return map;
+    }, [orders]);
 
     const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
     const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
@@ -115,7 +113,8 @@ export function OrderCalendar({ initialOrders }: OrderCalendarProps) {
             {/* Days Grid */}
             <div className="grid grid-cols-7 bg-background/20">
                 {calendarDays.map((day, idx) => {
-                    const dayOrders = orders.filter(order => isSameDay(order.dueDate, day));
+                    const dayKey = format(day, 'yyyy-MM-dd');
+                    const dayOrders = ordersByDate.get(dayKey) ?? [];
                     const isSelectedMonth = isSameMonth(day, monthStart);
 
                     return (
@@ -146,11 +145,11 @@ export function OrderCalendar({ initialOrders }: OrderCalendarProps) {
                                                 <div
                                                     className={cn(
                                                         "text-[10px] px-2 py-1.5 rounded-md border truncate cursor-pointer transition-all hover:scale-[1.02] hover:shadow-sm",
-                                                        statusColors[order.status] || 'bg-secondary text-secondary-foreground'
+                                                        getStatusCalendarClasses(order.status)
                                                     )}
                                                 >
                                                     <span className="font-medium flex items-center gap-1">
-                                                        <span className={cn("w-1.5 h-1.5 rounded-full", statusColors[order.status]?.includes('amber') ? 'bg-amber-400' : 'bg-current opacity-50')} />
+                                                        <span className={cn("w-1.5 h-1.5 rounded-full", getStatusDotClasses(order.status))} />
                                                         {order.customer?.name || '---'}
                                                     </span>
                                                 </div>
@@ -159,7 +158,7 @@ export function OrderCalendar({ initialOrders }: OrderCalendarProps) {
                                                 <div className="w-[240px] bg-background p-4 space-y-3">
                                                     <div className="flex justify-between items-start border-b border-border/50 pb-2">
                                                         <span className="font-bold text-sm text-foreground">{order.customer?.name || 'Cliente'}</span>
-                                                        <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-full font-medium uppercase tracking-wide">{statusLabels[order.status]}</span>
+                                                        <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-full font-medium uppercase tracking-wide">{getStatusLabel(order.status)}</span>
                                                     </div>
                                                     <div className="space-y-1">
                                                         <p className="text-xs text-muted-foreground flex justify-between">
@@ -188,15 +187,13 @@ export function OrderCalendar({ initialOrders }: OrderCalendarProps) {
 
             {/* Footer / Legend */}
             <div className="p-4 bg-secondary/30 flex flex-wrap gap-6 border-t border-border/50">
-                {Object.entries(statusLabels).map(([status, label]) => (
+                {["PENDING", "PRODUCTION", "READY", "DELIVERED"].map((status) => (
                     <div key={status} className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                        <div className={cn("w-2.5 h-2.5 rounded-full shadow-sm", statusColors[status].split(' ')[0].replace('bg-', 'bg-').replace('-50', '-400'))} />
-                        {label}
+                        <div className={cn("w-2.5 h-2.5 rounded-full shadow-sm", getStatusDotClasses(status))} />
+                        {getStatusLabel(status)}
                     </div>
                 ))}
             </div>
         </div>
     );
 }
-
-

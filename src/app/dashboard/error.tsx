@@ -18,8 +18,8 @@ export default function Error({
 
     return (
         <div className="flex h-[80vh] flex-col items-center justify-center space-y-4">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
-                <AlertCircle className="h-10 w-10 text-red-600" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-danger/10">
+                <AlertCircle className="h-10 w-10 text-danger" />
             </div>
             <h2 className="text-xl font-bold">Algo deu errado!</h2>
             <p className="text-muted-foreground text-center max-w-md">
@@ -36,5 +36,4 @@ export default function Error({
         </div>
     )
 }
-
 

@@ -1,39 +1,18 @@
 'use client'
 
 import { useEffect } from 'react'
+import { DEFAULT_THEME, THEME_OPTIONS, ThemeKey, resolveThemeKey } from '@/lib/theme-tokens'
 
-const COLORS = {
-    indigo: {
-        primary: '243 75% 59%',       // #4f46e5
-        ring: '243 75% 59%',
-    },
-    rose: {
-        primary: '343 87% 55%',       // #f43f5e
-        ring: '343 87% 55%',
-    },
-    emerald: {
-        primary: '158 64% 52%',       // #10b981
-        ring: '158 64% 52%',
-    },
-    slate: {
-        primary: '215 16% 47%',       // #64748b
-        ring: '215 16% 47%',
-    }
-}
+const themeKeys = new Set(THEME_OPTIONS.map((theme) => theme.key))
 
 export function ThemeColorManager({ color }: { color?: string }) {
     useEffect(() => {
         const root = document.documentElement
-        const themeColor = color as keyof typeof COLORS || 'indigo'
-        const values = COLORS[themeColor]
+        const selectedTheme = resolveThemeKey(color)
+        const theme = themeKeys.has(selectedTheme) ? selectedTheme : DEFAULT_THEME
 
-        if (values) {
-            root.style.setProperty('--primary', values.primary)
-            root.style.setProperty('--ring', values.ring)
-        }
+        root.setAttribute('data-theme', theme)
     }, [color])
 
     return null
 }
-
-

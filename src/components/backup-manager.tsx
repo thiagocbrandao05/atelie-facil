@@ -6,13 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Download, Upload, Database, AlertTriangle, CheckCircle } from 'lucide-react'
 import { generateBackup, restoreBackup, getBackupStats } from '@/features/backup/actions'
-import { useToast } from './notification-provider'
+import { toast } from 'sonner'
 
 export function BackupManager() {
     const [loading, setLoading] = useState(false)
     const [stats, setStats] = useState<any>(null)
-    const toast = useToast()
-
     const loadStats = async () => {
         const data = await getBackupStats()
         setStats(data)
@@ -33,12 +31,18 @@ export function BackupManager() {
                 link.click()
                 URL.revokeObjectURL(url)
 
-                toast.success('Backup Criado', 'Arquivo baixado com sucesso!')
+                toast.success('Backup Criado', {
+                    description: 'Arquivo baixado com sucesso!'
+                })
             } else {
-                toast.error('Erro', result.message)
+                toast.error('Erro', {
+                    description: result.message
+                })
             }
         } catch (error) {
-            toast.error('Erro', 'Falha ao gerar backup')
+            toast.error('Erro', {
+                description: 'Falha ao gerar backup'
+            })
         } finally {
             setLoading(false)
         }
@@ -54,13 +58,19 @@ export function BackupManager() {
             const result = await restoreBackup(text)
 
             if (result.success) {
-                toast.success('Restaurado', 'Backup restaurado com sucesso!')
+                toast.success('Restaurado', {
+                    description: 'Backup restaurado com sucesso!'
+                })
                 loadStats()
             } else {
-                toast.error('Erro', result.message)
+                toast.error('Erro', {
+                    description: result.message
+                })
             }
         } catch (error) {
-            toast.error('Erro', 'Arquivo de backup inválido')
+            toast.error('Erro', {
+                description: 'Arquivo de backup inválido'
+            })
         } finally {
             setLoading(false)
             event.target.value = '' // Reset input
@@ -153,5 +163,4 @@ export function BackupManager() {
         </Card>
     )
 }
-
 

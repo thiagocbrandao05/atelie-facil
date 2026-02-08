@@ -29,7 +29,7 @@ export default async function FornecedoresPage() {
                     </div>
                 ) : (
                     suppliers.map((supplier) => (
-                        <Card key={supplier.id} className="group hover:shadow-lg transition-all border-l-4 border-l-purple-500">
+                        <Card key={supplier.id} className="group hover:shadow-lg transition-all border-l-4 border-l-primary">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-lg font-bold truncate pr-4">
                                     {supplier.name}
@@ -38,7 +38,7 @@ export default async function FornecedoresPage() {
                                     <SupplierForm
                                         supplier={supplier}
                                         trigger={
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-purple-600">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
                                                 <Pencil size={16} />
                                             </Button>
                                         }
@@ -56,20 +56,20 @@ export default async function FornecedoresPage() {
                                     )}
 
                                     <div className="flex items-center gap-2 text-muted-foreground">
-                                        <Phone size={14} className="text-purple-500" />
+                                        <Phone size={14} className="text-primary" />
                                         <span>{supplier.phone || 'Sem telefone'}</span>
                                     </div>
 
                                     {supplier.email && (
                                         <div className="flex items-center gap-2 text-muted-foreground truncate">
-                                            <Mail size={14} className="text-purple-500" />
+                                            <Mail size={14} className="text-primary" />
                                             <span className="truncate">{supplier.email}</span>
                                         </div>
                                     )}
 
                                     {supplier.address && (
                                         <div className="flex items-center gap-2 text-muted-foreground truncate">
-                                            <MapPin size={14} className="text-purple-500" />
+                                            <MapPin size={14} className="text-primary" />
                                             <span className="truncate">{supplier.address}</span>
                                         </div>
                                     )}
@@ -82,5 +82,3 @@ export default async function FornecedoresPage() {
         </div>
     )
 }
-
-

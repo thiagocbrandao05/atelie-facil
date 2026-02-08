@@ -43,7 +43,7 @@ export function DashboardSidebar({ user }: { user?: { name?: string | null, emai
         <aside className="w-64 border-r bg-card flex flex-col hidden md:flex sticky top-0 h-screen transition-all duration-300 shadow-sm">
             <div className="p-6">
                 <Link href="/dashboard" className="flex items-center gap-2 group">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-primary-foreground font-bold shadow-md group-hover:scale-105 transition-transform">
+                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-md group-hover:scale-105 transition-transform">
                         A
                     </div>
                     <span className="font-bold text-xl tracking-tight text-foreground group-hover:text-primary transition-colors">AteliêFácil</span>
@@ -79,7 +79,7 @@ export function DashboardSidebar({ user }: { user?: { name?: string | null, emai
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <div className="bg-secondary/50 rounded-xl p-3 flex items-center gap-3 hover:bg-secondary transition-colors cursor-pointer w-full">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-accent to-pink-500 flex items-center justify-center text-white font-medium shadow-sm">
+                            <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-medium shadow-sm">
                                 {userInitials}
                             </div>
                             <div className="flex flex-col text-left">
@@ -114,5 +114,4 @@ export function DashboardSidebar({ user }: { user?: { name?: string | null, emai
         </aside>
     )
 }
-
 

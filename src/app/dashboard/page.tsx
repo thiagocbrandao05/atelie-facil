@@ -96,7 +96,7 @@ export default async function DashboardPage() {
                   {financials.totalProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </div>
               </div>
-              <div className="ml-auto flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-sm font-medium">
+              <div className="ml-auto flex items-center gap-2 text-success bg-success/10 px-3 py-1 rounded-full text-sm font-medium">
                 <TrendingUp size={16} />
                 Em crescimento
               </div>
@@ -111,10 +111,10 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Low Stock Alert - Medium Card (Bento Slot) */}
-        <Card className={`md:col-span-2 lg:col-span-2 border-none shadow-sm overflow-hidden flex flex-col ${lowStockMaterials.length > 0 ? 'bg-amber-50/30 ring-1 ring-amber-100' : 'bg-white'}`}>
+        <Card className={`md:col-span-2 lg:col-span-2 border-none shadow-sm overflow-hidden flex flex-col ${lowStockMaterials.length > 0 ? 'bg-warning/10 ring-1 ring-warning/20' : 'bg-white'}`}>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-medium flex items-center gap-2">
-              <PackageIcon size={20} className={lowStockMaterials.length > 0 ? "text-amber-600" : "text-primary"} />
+              <PackageIcon size={20} className={lowStockMaterials.length > 0 ? "text-warning" : "text-primary"} />
               Estoque
             </CardTitle>
             <CardDescription>Materiais monitorados</CardDescription>
@@ -122,15 +122,15 @@ export default async function DashboardPage() {
           <CardContent className="flex-1 flex flex-col justify-center">
             {lowStockMaterials.length > 0 ? (
               <div className="space-y-4">
-                <div className="text-4xl font-bold text-amber-700">{lowStockMaterials.length}</div>
-                <p className="text-sm text-amber-800/70">Itens abaixo do nível mínimo de segurança.</p>
-                <Button variant="outline" size="sm" className="w-full bg-white border-amber-200 text-amber-700 hover:bg-amber-50" asChild>
+                <div className="text-4xl font-bold text-warning">{lowStockMaterials.length}</div>
+                <p className="text-sm text-warning/80">Itens abaixo do nível mínimo de segurança.</p>
+                <Button variant="outline" size="sm" className="w-full bg-white border-warning/30 text-warning hover:bg-warning/10" asChild>
                   <Link href="/estoque">Repor Materiais</Link>
                 </Button>
               </div>
             ) : (
               <div className="text-center py-4 space-y-2">
-                <div className="text-emerald-500 font-medium">Estoque Ideal</div>
+                <div className="text-success font-medium">Estoque Ideal</div>
                 <p className="text-xs text-muted-foreground">Todos os itens estão com níveis adequados.</p>
               </div>
             )}
@@ -205,5 +205,4 @@ export default async function DashboardPage() {
     </div>
   );
 }
-
 

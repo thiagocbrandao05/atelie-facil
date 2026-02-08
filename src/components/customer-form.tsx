@@ -67,12 +67,11 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
             </Button>
 
             {showSuccess && state?.message && (
-                <p className="text-xs text-center text-green-600 font-bold bg-green-500/10 py-2 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                <p className="text-xs text-center text-success font-bold bg-success/10 py-2 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
                     {state.message}
                 </p>
             )}
         </form>
     )
 }
-
 

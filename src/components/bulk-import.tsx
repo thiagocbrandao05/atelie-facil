@@ -209,8 +209,8 @@ export function BulkImport() {
                         <div key={s} className="flex items-center gap-2">
                             <div className={cn(
                                 "w-8 h-8 rounded-full flex items-center justify-center font-bold transition-all",
-                                step === s ? "bg-primary text-white scale-110 shadow-lg" :
-                                    step > s ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
+                                step === s ? "bg-primary text-primary-foreground scale-110 shadow-lg" :
+                                    step > s ? "bg-success text-white" : "bg-muted text-muted-foreground"
                             )}>
                                 {step > s ? <CheckCircle2 size={16} /> : s}
                             </div>
@@ -239,13 +239,13 @@ export function BulkImport() {
                                 onClick={() => { setType(t.id as ImportType); setStep(2); }}
                                 className="p-6 rounded-2xl border-2 border-transparent bg-white hover:border-primary/40 hover:shadow-xl transition-all text-left flex items-start gap-4 active:scale-95 group"
                             >
-                                <div className="p-3 rounded-xl bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                <div className="p-3 rounded-xl bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                                     {t.id === "materials" ? <CheckCircle2 size={24} /> :
                                         t.id === "stock" ? <TableIcon size={24} /> :
                                             t.id === "customers" ? <Upload size={24} /> : <FileSpreadsheet size={24} />}
                                 </div>
                                 <div>
-                                    <p className="font-black text-[#455448]">{t.label}</p>
+                                    <p className="font-black text-foreground">{t.label}</p>
                                     <p className="text-xs text-muted-foreground">{t.sub}</p>
                                 </div>
                             </button>
@@ -270,7 +270,7 @@ export function BulkImport() {
                             <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                                 <Upload className="text-primary w-10 h-10" />
                             </div>
-                            <h3 className="text-xl font-black text-[#455448] mb-2">Selecione o arquivo Excel</h3>
+                            <h3 className="text-xl font-black text-foreground mb-2">Selecione o arquivo Excel</h3>
                             <p className="text-muted-foreground max-w-xs mx-auto">
                                 Arraste ou clique para carregar sua planilha de <span className="text-primary font-bold">{FIELDS_MAP[type].map(f => f.label).length} campos</span>.
                             </p>
@@ -292,10 +292,10 @@ export function BulkImport() {
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
                         <div className="bg-white rounded-3xl border p-6">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="font-black text-[#455448] flex items-center gap-2">
+                                <h3 className="font-black text-foreground flex items-center gap-2">
                                     <TableIcon size={18} /> Mapeamento de Colunas
                                 </h3>
-                                <span className="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold">
+                                <span className="text-xs bg-success/10 text-success px-3 py-1 rounded-full font-bold">
                                     {fileData.length} registros encontrados
                                 </span>
                             </div>
@@ -304,7 +304,7 @@ export function BulkImport() {
                                 {FIELDS_MAP[type].map(field => (
                                     <div key={field.key} className="grid grid-cols-1 sm:grid-cols-2 items-center gap-4 py-3 border-b border-dashed last:border-0">
                                         <div className="flex items-center gap-2">
-                                            <p className="font-bold text-[#455448]">{field.label}</p>
+                                            <p className="font-bold text-foreground">{field.label}</p>
                                             {field.required && <span className="text-red-500 text-xs">*</span>}
                                         </div>
                                         <Select
