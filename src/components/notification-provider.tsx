@@ -135,6 +135,7 @@ function NotificationItem({ notification, onClose }: { notification: Notificatio
             </div>
             <button
                 onClick={onClose}
+                aria-label="Fechar notificação"
                 className="text-muted-foreground hover:text-foreground transition-colors"
             >
                 <X className="h-4 w-4" />
@@ -160,4 +161,3 @@ export function useToast() {
             addNotification({ type: 'info', title, message })
     }
 }
-
