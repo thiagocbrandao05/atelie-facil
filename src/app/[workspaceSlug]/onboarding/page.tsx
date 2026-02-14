@@ -1,6 +1,4 @@
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle2, Circle, ArrowRight, Star } from 'lucide-react'
+﻿import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
@@ -18,25 +16,25 @@ const STEPS_BY_PLAN: Partial<Record<PlanType, OnboardingStep[]>> = {
   start: [
     {
       id: 'profile',
-      title: 'Configurar Ateliê',
+      title: 'Configurar ateliê',
       description: 'Preencha os dados do seu negócio',
       link: 'app/configuracoes',
     },
     {
       id: 'material',
-      title: 'Cadastrar Material',
+      title: 'Cadastrar material',
       description: 'Registre seu primeiro insumo',
       link: 'app/materiais',
     },
     {
       id: 'product',
-      title: 'Criar Produto',
+      title: 'Criar produto',
       description: 'Calcule o preço do seu primeiro produto',
       link: 'app/produtos',
     },
     {
       id: 'order',
-      title: 'Registrar Pedido',
+      title: 'Registrar pedido',
       description: 'Faça seu primeiro pedido de venda',
       link: 'app/pedidos',
     },
@@ -58,7 +56,7 @@ const STEPS_BY_PLAN: Partial<Record<PlanType, OnboardingStep[]>> = {
   premium: [
     {
       id: 'seasonality',
-      title: 'Sazonalidade Avançada',
+      title: 'Sazonalidade avançada',
       description: 'Descubra padrões de compra dos clientes',
       link: 'app/dashboard/automacoes',
     },
@@ -66,7 +64,6 @@ const STEPS_BY_PLAN: Partial<Record<PlanType, OnboardingStep[]>> = {
 }
 
 export default async function OnboardingPage({ params }: { params: { workspaceSlug: string } }) {
-  // simplified for brevity in retry, full content in previous turn logic
   const supabase = await createClient()
   const { data: workspace } = await supabase
     .from('Tenant')
@@ -83,19 +80,17 @@ export default async function OnboardingPage({ params }: { params: { workspaceSl
     .single()
 
   const currentPlan: PlanType = (planData as any)?.plan || 'start'
-
-  // Ensure we handle missing keys safely if logic expands
   const steps = STEPS_BY_PLAN[currentPlan] ?? STEPS_BY_PLAN.start ?? []
 
   return (
     <div className="container max-w-4xl py-10">
       <div className="mb-12 text-center">
-        <h1 className="mb-4 text-3xl font-bold">Bem-vindo(a) ao Atelis!</h1>
+        <h1 className="mb-4 text-3xl font-bold">Bem-vindo(a) ao Atelis</h1>
         <p className="text-muted-foreground text-lg">
-          Vamos configurar seu ateli? <strong>{(workspace as any).name}</strong>.
+          Vamos configurar seu ateliê <strong>{(workspace as any).name}</strong>.
         </p>
       </div>
-      {/* Logic to render steps similar to previous attempt */}
+
       <div className="flex flex-col gap-4">
         {steps.map(step => (
           <Card key={step.id}>

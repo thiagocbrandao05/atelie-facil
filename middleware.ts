@@ -3,6 +3,10 @@ import { type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   const response = await updateSession(request)
+  const isProd = process.env.NODE_ENV === 'production'
+  const scriptSrc = isProd
+    ? "script-src 'self' 'unsafe-inline' https://js.sentry-cdn.com https://cdn.jsdelivr.net;"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.sentry-cdn.com https://cdn.jsdelivr.net;"
 
   // =====================================================
   // SECURITY HEADERS (Phase 6 - Security Hardening)
@@ -11,7 +15,7 @@ export async function middleware(request: NextRequest) {
   // Content Security Policy (CSP) - Prevents XSS attacks
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.sentry-cdn.com https://cdn.jsdelivr.net;
+    ${scriptSrc}
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: https: blob:;
     font-src 'self' data:;
@@ -38,17 +42,14 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
 
   // Permissions policy to restrict browser features
-  response.headers.set(
-    'Permissions-Policy',
-    'geolocation=(), microphone=(), camera=()'
-  )
+  response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
 
   // XSS Protection (legacy but still useful)
   response.headers.set('X-XSS-Protection', '1; mode=block')
 
   // Strict Transport Security (HSTS) - Force HTTPS
   // Only enable in production with HTTPS
-  if (process.env.NODE_ENV === 'production') {
+  if (isProd) {
     response.headers.set(
       'Strict-Transport-Security',
       'max-age=31536000; includeSubDomains; preload'
@@ -67,6 +68,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public files (images, etc)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
