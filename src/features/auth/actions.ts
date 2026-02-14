@@ -7,20 +7,14 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limiter'
 import { getClientIP } from '@/lib/security'
 import { logError, logWarning, logInfo } from '@/lib/logger'
 
-export async function authenticate(
-  prevState: string | undefined,
-  formData: FormData,
-) {
+export async function authenticate(prevState: string | undefined, formData: FormData) {
   try {
     const clientIP = await getClientIP()
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
     // Rate limit
-    const rateLimitResult = await rateLimit(
-      `login:${clientIP}`,
-      rateLimitPresets.login
-    )
+    const rateLimitResult = await rateLimit(`login:${clientIP}`, rateLimitPresets.login)
 
     if (!rateLimitResult.success) {
       return 'Too many login attempts. Please try again later.'
@@ -37,20 +31,24 @@ export async function authenticate(
       return 'Invalid credentials.'
     }
 
-    logInfo('Successful login', { email, ip: clientIP })
+    const { data: userData } = await supabase
+      .from('User')
+      .select('tenant:Tenant(slug)')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id || '')
+      .single()
 
+    const slug = (userData as any)?.tenant?.slug || 'atelis'
+
+    logInfo('Successful login', { email, ip: clientIP, slug })
+    redirect(`/${slug}/app/dashboard`)
   } catch (error) {
+    if ((error as any)?.message === 'NEXT_REDIRECT') throw error
     logError(error as Error, { action: 'authenticate' })
     return 'Something went wrong.'
   }
-
-  redirect('/dashboard')
 }
 
-export async function register(
-  prevState: string | undefined,
-  formData: FormData,
-) {
+export async function register(prevState: string | undefined, formData: FormData) {
   try {
     const name = formData.get('name') as string
     const storeName = formData.get('storeName') as string
@@ -82,7 +80,10 @@ export async function register(
     }
 
     // 2. Create Tenant & User Data (using Admin client to bypass RLS)
-    const slug = storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).substring(2, 6)
+    const slug =
+      storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-') +
+      '-' +
+      Math.random().toString(36).substring(2, 6)
 
     // Create Tenant
     const { data: tenant, error: tenantError } = await supabaseAdmin
@@ -91,7 +92,7 @@ export async function register(
         name: storeName,
         slug: slug,
         plan: 'free',
-        status: 'active'
+        status: 'active',
       })
       .select()
       .single()
@@ -104,16 +105,14 @@ export async function register(
     }
 
     // Create User Profile
-    const { error: userError } = await supabaseAdmin
-      .from('User')
-      .insert({
-        id: authData.user.id, // Link to Auth User
-        tenantId: tenant.id,
-        name: name,
-        email: email,
-        role: 'admin',
-        // password hash is not stored in our table anymore, handled by Supabase Auth
-      })
+    const { error: userError } = await supabaseAdmin.from('User').insert({
+      id: authData.user.id, // Link to Auth User
+      tenantId: tenant.id,
+      name: name,
+      email: email,
+      role: 'admin',
+      // password hash is not stored in our table anymore, handled by Supabase Auth
+    })
 
     if (userError) {
       console.error('User profile creation failed:', userError)
@@ -123,14 +122,14 @@ export async function register(
     // Create Settings
     await supabaseAdmin.from('Settings').insert({
       tenantId: tenant.id,
-      storeName: storeName
+      storeName: storeName,
     })
 
     // 3. Auto-login after registration (if email confirmation is not required)
     // For now, we attempt login, if it fails (e.g. unconfirmed), we ask user to check email
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password,
     })
 
     if (signInError) {
@@ -138,11 +137,11 @@ export async function register(
       return 'Account created! Please check your email to confirm.'
     }
 
+    const redirectUrl = `/${slug}/app/dashboard`
+    redirect(redirectUrl)
   } catch (error) {
+    if ((error as any)?.message === 'NEXT_REDIRECT') throw error
     console.error('Registration error:', error)
     return 'Something went wrong.'
   }
-
-  redirect('/dashboard')
 }
-

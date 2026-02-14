@@ -1,0 +1,49 @@
+import { PlanType, WhatsAppLimits } from './types'
+
+export const PLANS: Record<PlanType, { label: string; description: string; price: number }> = {
+  start: { label: 'Start', description: 'Antigo plano inicial.', price: 29.9 },
+  pro: { label: 'Pro', description: 'Antigo plano intermediário.', price: 89.9 },
+  premium: { label: 'Premium', description: 'Antigo plano premium.', price: 249.9 },
+  free_creative: {
+    label: 'Gratuito Criativo',
+    description: 'Essencial para artesãos começarem a organizar sua produção.',
+    price: 0,
+  },
+  free_reseller: {
+    label: 'Gratuito Revenda',
+    description: 'Essencial para revendedores gerenciarem estoque pronto.',
+    price: 0,
+  },
+  paid_creative: {
+    label: 'Pago Criativo',
+    description: 'Gestão completa para ateliês em crescimento.',
+    price: 49.9,
+  },
+  paid_reseller: {
+    label: 'Pago Revenda',
+    description: 'Gestão completa para lojas com estoque pronto.',
+    price: 49.9,
+  },
+  premium_creative: {
+    label: 'Premium Criativo',
+    description: 'Automação total e API oficial para grandes ateliês.',
+    price: 199.9,
+  },
+  premium_reseller: {
+    label: 'Premium Revenda',
+    description: 'Automação total e API oficial para grandes lojas.',
+    price: 199.9,
+  },
+}
+
+export const FALLBACK_LIMITS: Record<PlanType, WhatsAppLimits> = {
+  start: { plan: 'start', monthlyTransactional: 300, transactionalMinimum: 50, monthlyCampaign: 300, dailyCampaign: 150, maxRecipientsPerCampaign: 200, maxTestDaily: 10 },
+  pro: { plan: 'pro', monthlyTransactional: 1500, transactionalMinimum: 200, monthlyCampaign: 5000, dailyCampaign: 1000, maxRecipientsPerCampaign: 1000, maxTestDaily: 20 },
+  premium: { plan: 'premium', monthlyTransactional: 10000, transactionalMinimum: null, monthlyCampaign: 20000, dailyCampaign: 5000, maxRecipientsPerCampaign: 5000, maxTestDaily: 50 },
+  free_creative: { plan: 'free_creative', monthlyTransactional: 50, transactionalMinimum: 0, monthlyCampaign: 0, dailyCampaign: 0, maxRecipientsPerCampaign: 0, maxTestDaily: 0 },
+  free_reseller: { plan: 'free_reseller', monthlyTransactional: 50, transactionalMinimum: 0, monthlyCampaign: 0, dailyCampaign: 0, maxRecipientsPerCampaign: 0, maxTestDaily: 0 },
+  paid_creative: { plan: 'paid_creative', monthlyTransactional: 500, transactionalMinimum: 0, monthlyCampaign: 1000, dailyCampaign: 200, maxRecipientsPerCampaign: 500, maxTestDaily: 5 },
+  paid_reseller: { plan: 'paid_reseller', monthlyTransactional: 500, transactionalMinimum: 0, monthlyCampaign: 1000, dailyCampaign: 200, maxRecipientsPerCampaign: 500, maxTestDaily: 5 },
+  premium_creative: { plan: 'premium_creative', monthlyTransactional: 5000, transactionalMinimum: 0, monthlyCampaign: 10000, dailyCampaign: 2000, maxRecipientsPerCampaign: 2000, maxTestDaily: 20 },
+  premium_reseller: { plan: 'premium_reseller', monthlyTransactional: 5000, transactionalMinimum: 0, monthlyCampaign: 10000, dailyCampaign: 2000, maxRecipientsPerCampaign: 2000, maxTestDaily: 20 },
+}

@@ -3,6 +3,7 @@
 ## Setup Instructions
 
 ### 1. Create Sentry Account
+
 1. Go to https://sentry.io
 2. Create a new account or sign in
 3. Create a new project (Next.js)
@@ -11,6 +12,7 @@
 ### 2. Add Environment Variables
 
 Add to `.env.local`:
+
 ```bash
 # Sentry
 SENTRY_DSN=your_sentry_dsn_here
@@ -22,11 +24,13 @@ SENTRY_AUTH_TOKEN=your_auth_token
 ### 3. Initialize Sentry
 
 Run the Sentry wizard:
+
 ```bash
 npx @sentry/wizard@latest -i nextjs
 ```
 
 This will create:
+
 - `sentry.client.config.ts`
 - `sentry.server.config.ts`
 - `sentry.edge.config.ts`
@@ -37,6 +41,7 @@ This will create:
 If you prefer manual setup, create these files:
 
 **sentry.client.config.ts**:
+
 ```typescript
 import * as Sentry from '@sentry/nextjs'
 
@@ -56,6 +61,7 @@ Sentry.init({
 ```
 
 **sentry.server.config.ts**:
+
 ```typescript
 import * as Sentry from '@sentry/nextjs'
 
@@ -69,6 +75,7 @@ Sentry.init({
 ### 5. Usage Examples
 
 **In Server Actions**:
+
 ```typescript
 import * as Sentry from '@sentry/nextjs'
 
@@ -83,11 +90,13 @@ export async function myAction() {
 ```
 
 **Custom Events**:
+
 ```typescript
 Sentry.captureMessage('Custom event', 'info')
 ```
 
 **User Context**:
+
 ```typescript
 Sentry.setUser({ id: user.id, email: user.email })
 ```
@@ -95,6 +104,7 @@ Sentry.setUser({ id: user.id, email: user.email })
 ### 6. Test Sentry
 
 Create a test error:
+
 ```typescript
 throw new Error('Test Sentry error')
 ```
@@ -108,10 +118,11 @@ Check your Sentry dashboard for the error.
 ⚠️ **Sentry package installed but not configured**
 
 To complete setup:
+
 1. Run `npx @sentry/wizard@latest -i nextjs`
 2. Add environment variables
 3. Test error tracking
 
 ---
 
-*Note: Sentry is optional but highly recommended for production monitoring*
+_Note: Sentry is optional but highly recommended for production monitoring_

@@ -1,16 +1,23 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import type { ActionResponse, PaginatedResponse, OrderWithDetails, OrderStatus } from '@/lib/types'
+import type { ActionResponse, PaginatedResponse, OrderWithDetails, OrderStatus, OrderSummary } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 import { OrderSchema, type OrderInput } from '@/lib/schemas'
 import { calculateOrderTotal } from '@/lib/logic'
-import { checkStockAvailability, deductStockForOrder } from '../../lib/inventory'
+import { getCurrentUser } from '@/lib/auth'
+import { validateCSRF } from '@/lib/security'
+import { isReseller } from '@/features/subscription/utils'
+import { getCurrentTenantPlan } from '@/features/subscription/actions'
+import {
+  checkStockAvailability,
+  deductStockForOrder,
+  checkFinishedStockAvailability,
+  deductFinishedStockForOrder
+} from '@/lib/inventory'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limiter'
 import { logError } from '@/lib/logger'
 import { enqueueOrderStatusNotification } from '@/features/whatsapp/actions'
-import { getCurrentUser } from '@/lib/auth'
-import { validateCSRF } from '@/lib/security'
 
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
@@ -27,7 +34,7 @@ export async function getOrdersPaginated(
   page: number = 1,
   pageSize: number = 20,
   status?: string
-): Promise<PaginatedResponse<OrderWithDetails>> {
+): Promise<PaginatedResponse<OrderSummary>> {
   const user = await getCurrentUser()
   if (!user) return { data: [], total: 0, page, pageSize, totalPages: 0 }
 
@@ -63,8 +70,11 @@ export async function getOrdersPaginated(
     return { data: [], total: 0, page, pageSize, totalPages: 0 }
   }
 
+  // Cast seguro usando unknown primeiro, pois supabase types não estão gerados
+  const orders = data as unknown as OrderSummary[]
+
   return {
-    data: data as any as OrderWithDetails[], // Type casting due to join structure differences
+    data: orders,
     total: count || 0,
     page,
     pageSize,
@@ -81,7 +91,7 @@ export async function getOrders() {
 
   const supabase = await createClient()
 
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from('Order')
     .select(
       `
@@ -102,7 +112,9 @@ export async function getOrders() {
     .eq('tenantId', user.tenantId)
     .order('createdAt', { ascending: false })
 
-  return data || []
+  // Cast seguro usando unknown
+  const orders = data as unknown as OrderWithDetails[]
+  return orders || []
 }
 
 export async function createOrder(data: OrderInput): Promise<ActionResponse> {
@@ -128,7 +140,7 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
 
   try {
     // Use RPC to create order and items atomically
-    const { data: rpcData, error } = await supabase.rpc('create_order', {
+    const { data: rpcData, error } = await (supabase as any).rpc('create_order', {
       p_tenant_id: user.tenantId,
       p_customer_id: customerId,
       p_status: status || 'PENDING',
@@ -138,12 +150,21 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
       p_discount: discount || 0,
     } as any)
 
-    if (error) throw error
+    const createdOrderId = (rpcData as any).id as string
+
+    // If it's a reseller, deduct from finished product stock immediately if status is PENDING/PRODUCING
+    const { plan } = await getCurrentTenantPlan()
+    if (isReseller(plan as any) && (status === 'PENDING' || status === 'PRODUCING')) {
+      const stock = await checkFinishedStockAvailability(createdOrderId)
+      if (stock.isAvailable) {
+        await deductFinishedStockForOrder(createdOrderId)
+      }
+    }
 
     revalidatePath('/pedidos')
     revalidatePath('/')
 
-    const createdOrderId = (rpcData as any).id as string
+    // ... notification logic ...
     if (status === 'QUOTATION' && createdOrderId) {
       const notificationResult = await enqueueOrderStatusNotification({
         orderId: createdOrderId,
@@ -152,11 +173,18 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
         statusTo: 'QUOTATION',
       })
 
-      if (!notificationResult.success) {
-        await logError(new Error(notificationResult.message || 'Falha ao enviar orçamento.'), {
-          action: 'send_order_quotation_notification',
-          data: { orderId: createdOrderId },
-        })
+      if (!(notificationResult as any).success) {
+        await logError(
+          new Error(
+            (notificationResult as any).message ||
+            (notificationResult as any).error ||
+            'Falha ao enviar orçamento.'
+          ),
+          {
+            action: 'send_order_quotation_notification',
+            data: { orderId: createdOrderId },
+          }
+        )
       }
     }
 
@@ -178,11 +206,11 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
 
   try {
     // Get current order status
-    const { data: order, error: fetchError } = await supabase
+    const { data: order, error: fetchError } = await (supabase as any)
       .from('Order')
       .select('status')
       .eq('id', id)
-      .single<any>()
+      .single()
 
     if (fetchError || !order) return { success: false, message: 'Pedido não encontrado.' }
 
@@ -192,18 +220,32 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
 
     // If moving to PRODUCING and it was PENDING or QUOTATION, check and deduct stock
     if (newStatus === 'PRODUCING' && (order.status === 'PENDING' || order.status === 'QUOTATION')) {
-      const stock = await checkStockAvailability(id)
-      if (!stock.isAvailable) {
-        const missing = stock.missingMaterials.map(m => m.name).join(', ')
-        return {
-          success: false,
-          message: `Estoque insuficiente para os materiais: ${missing}`,
+      const { plan } = await getCurrentTenantPlan()
+
+      if (isReseller(plan as any)) {
+        const stock = await checkFinishedStockAvailability(id)
+        if (!stock.isAvailable) {
+          const missing = stock.missingProducts.map(p => p.name).join(', ')
+          return {
+            success: false,
+            message: `Estoque insuficiente para os produtos: ${missing}`,
+          }
         }
+        await deductFinishedStockForOrder(id)
+      } else {
+        const stock = await checkStockAvailability(id)
+        if (!stock.isAvailable) {
+          const missing = stock.missingMaterials.map(m => m.name).join(', ')
+          return {
+            success: false,
+            message: `Estoque insuficiente para os materiais: ${missing}`,
+          }
+        }
+        await deductStockForOrder(id)
       }
-      await deductStockForOrder(id)
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase as any)
       .from('Order')
       .update({ status: newStatus } as any as never)
       .eq('id', id)
@@ -221,9 +263,13 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
       statusTo: newStatus as OrderStatus,
     })
 
-    if (!notificationResult.success) {
+    if (!(notificationResult as any).success) {
       await logError(
-        new Error(notificationResult.message || 'Falha ao enviar notificação de status.'),
+        new Error(
+          (notificationResult as any).message ||
+          (notificationResult as any).error ||
+          'Falha ao enviar notificação de status.'
+        ),
         {
           action: 'send_order_status_notification',
           data: { orderId: id, statusFrom: order.status, statusTo: newStatus },
@@ -248,7 +294,7 @@ export async function deleteOrder(id: string): Promise<ActionResponse> {
 
   try {
     // Use RPC for atomic delete (cascading items)
-    const { error } = await supabase.rpc('delete_order', {
+    const { error } = await (supabase as any).rpc('delete_order', {
       p_order_id: id,
       p_tenant_id: user.tenantId,
     } as any)
@@ -271,7 +317,7 @@ export async function getOrdersStats() {
   const supabase = await createClient()
 
   // Active orders: Not COMPLETED and Not DELIVERED
-  const { count, error } = await supabase
+  const { count, error } = await (supabase as any)
     .from('Order')
     .select('*', { count: 'exact', head: true })
     .eq('tenantId', user.tenantId)

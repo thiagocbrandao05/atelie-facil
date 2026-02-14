@@ -3,46 +3,54 @@ import { ArrowLeft } from 'lucide-react'
 import { RegisterForm } from '@/components/auth/register-form'
 
 export default function RegisterPage() {
-    return (
-        <div className="flex items-center justify-center min-h-screen relative overflow-hidden bg-background">
-            {/* Animated Background */}
-            <div className="absolute inset-0 z-0">
-                <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl animate-pulse" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-accent/15 rounded-full blur-3xl animate-pulse delay-1000" />
+  return (
+    <div className="bg-background relative flex min-h-screen items-center justify-center overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 z-0">
+        <div className="bg-primary/15 absolute top-[-10%] right-[-10%] h-[500px] w-[500px] animate-pulse rounded-full blur-3xl" />
+        <div className="bg-accent/15 absolute bottom-[-10%] left-[-10%] h-[500px] w-[500px] animate-pulse rounded-full blur-3xl delay-1000" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md px-4">
+        <div className="animate-fade-in-up mb-8 text-center">
+          <Link
+            href="/"
+            className="text-muted-foreground hover:text-primary mb-6 inline-flex items-center gap-2 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            <span>Voltar ao início</span>
+          </Link>
+
+          <div className="mb-4 flex justify-center">
+            <div className="bg-primary text-primary-foreground flex h-12 w-12 items-center justify-center rounded-xl font-bold shadow-lg">
+              <span className="text-xl">A</span>
             </div>
-
-            <div className="w-full max-w-md relative z-10 px-4">
-                <div className="mb-8 text-center animate-fade-in-up">
-                    <Link href="/" className="inline-flex items-center gap-2 mb-6 text-muted-foreground hover:text-primary transition-colors">
-                        <ArrowLeft size={16} />
-                        <span>Voltar ao início</span>
-                    </Link>
-
-                    <div className="flex justify-center mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold shadow-lg">
-                            <span className="text-xl">A</span>
-                        </div>
-                    </div>
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight">Crie sua conta</h1>
-                    <p className="text-muted-foreground mt-2">Comece a transformar seu ateliê hoje</p>
-                </div>
-
-                <div className="bg-card/90 backdrop-blur-xl border border-border/60 shadow-2xl rounded-2xl p-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-                    <RegisterForm />
-
-                    <div className="mt-6 text-center text-sm text-muted-foreground">
-                        Já tem uma conta?{' '}
-                        <Link href="/login" className="font-semibold text-primary hover:text-primary/80 hover:underline">
-                            Entrar
-                        </Link>
-                    </div>
-                </div>
-
-                <p className="text-center text-xs text-muted-foreground/70 mt-8">
-                    &copy; 2024 AteliêFácil. Gestão inteligente.
-                </p>
-            </div>
+          </div>
+          <h1 className="text-foreground text-3xl font-bold tracking-tight">Crie sua conta</h1>
+          <p className="text-muted-foreground mt-2">Comece a transformar seu ateliê hoje</p>
         </div>
-    )
-}
 
+        <div
+          className="bg-card/90 border-border/60 animate-fade-in-up rounded-2xl border p-8 shadow-2xl backdrop-blur-xl"
+          style={{ animationDelay: '0.1s' }}
+        >
+          <RegisterForm />
+
+          <div className="text-muted-foreground mt-6 text-center text-sm">
+            Já tem uma conta?{' '}
+            <Link
+              href="/login"
+              className="text-primary hover:text-primary/80 font-semibold hover:underline"
+            >
+              Entrar
+            </Link>
+          </div>
+        </div>
+
+        <p className="text-muted-foreground/70 mt-8 text-center text-xs">
+          &copy; 2026 Atelis. Gestão inteligente.
+        </p>
+      </div>
+    </div>
+  )
+}

@@ -5,67 +5,80 @@ import { getCurrentUser } from '@/lib/auth'
 import { calculateStockAlerts } from '@/lib/inventory'
 
 export async function getAllInventoryMovements() {
-    const user = await getCurrentUser()
-    if (!user) return []
+  const user = await getCurrentUser()
+  if (!user) return []
 
-    const supabase = await createClient()
+  const supabase = await createClient()
 
-    // Fetch from new stock_movements table
-    // Ordering by created_at descending (newest first)
-    const { data: rawData, error } = await supabase
-        .from('stock_movements')
-        .select(`
+  // Fetch movements first
+  // Note: Using 'InventoryMovement' table as per schema
+  const { data: movementsData, error: movementsError } = await supabase
+    .from('InventoryMovement')
+    .select(
+      `
             id,
             type,
             quantity,
-            note,
-            source,
-            created_at,
-            color,
-            Material (
-                name,
-                unit
-            )
-        `)
-        .eq('tenant_id', user.tenantId) // Use tenant_id (snake_case)
-        .order('created_at', { ascending: false })
-        .limit(50) // Limit per requirement
+            reason,
+            reference,
+            createdAt,
+            materialId,
+            color
+        `
+    )
+    .eq('tenantId', user.tenantId)
+    .order('createdAt', { ascending: false })
+    .limit(50)
 
-    if (error) {
-        console.error('Error fetching stock movements:', error)
-        return []
-    }
+  if (movementsError) {
+    console.error('Error fetching stock movements:', movementsError.message, movementsError)
+    return []
+  }
 
-    // Map to friendly format for UI if needed, but existing component expects specific fields.
-    // Let's assume UI expects logic similar to what we return.
-    // I need to verify what InventoryHistory component expects.
-    // Assuming it expects: date, materialName, type, quantity, reason/note.
+  if (!movementsData || movementsData.length === 0) {
+    return []
+  }
 
-    return rawData.map((m: any) => {
-        // Safe access to Material relation
-        // Supabase might return it as 'Material' or 'material', depending on exact setup.
-        // We'll try both or inspection. But type hints say 'Material'.
-        const mat = m.Material || m.material
+  // Get unique material IDs
+  const materialIds = Array.from(new Set(movementsData.map((m: any) => m.materialId)))
 
-        return {
-            id: m.id,
-            createdAt: m.created_at,
-            materialName: mat?.name || 'Material Removido/Desconhecido',
-            type: m.type, // ENTRADA, SAIDA, etc.
-            quantity: m.quantity,
-            unit: mat?.unit || '',
-            reason: m.note || m.source, // Fallback to source if no note
-            color: m.color
-        }
+  // Fetch materials
+  const { data: materialsData, error: materialsError } = await supabase
+    .from('Material')
+    .select('id, name, unit')
+    .in('id', materialIds)
+    .eq('tenantId', user.tenantId)
+
+  if (materialsError) {
+    console.error('Error fetching materials for movements:', materialsError.message, materialsError)
+  }
+
+  // Create map
+  const materialMap = new Map()
+  if (materialsData) {
+    materialsData.forEach((m: any) => {
+      materialMap.set(m.id, m)
     })
+  }
 
+  return movementsData.map((m: any) => {
+    const mat = materialMap.get(m.materialId)
+    return {
+      id: m.id,
+      createdAt: m.createdAt,
+      materialName: mat?.name || 'Material Removido/Desconhecido',
+      type: m.type,
+      quantity: m.quantity,
+      unit: mat?.unit || '',
+      reason: m.reason || m.reference || '',
+      color: m.color || null,
+    }
+  })
 }
 
 export async function getStockAlerts() {
-    const user = await getCurrentUser()
-    if (!user) return []
+  const user = await getCurrentUser()
+  if (!user) return []
 
-    return calculateStockAlerts(user.tenantId)
+  return calculateStockAlerts(user.tenantId)
 }
-
-

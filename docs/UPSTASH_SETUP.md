@@ -3,6 +3,7 @@
 ## 🚀 Quick Start
 
 ### 1. Create Upstash Account
+
 1. Go to https://upstash.com
 2. Sign up with GitHub/Google
 3. Create a new Redis database
@@ -10,12 +11,14 @@
 ### 2. Get Credentials
 
 After creating database, copy:
+
 - **REST URL**: `https://your-db.upstash.io`
 - **REST TOKEN**: Your authentication token
 
 ### 3. Add Environment Variables
 
 Add to `.env.local`:
+
 ```bash
 UPSTASH_REDIS_REST_URL=https://your-database.upstash.io
 UPSTASH_REDIS_REST_TOKEN=your_token_here
@@ -24,6 +27,7 @@ UPSTASH_REDIS_REST_TOKEN=your_token_here
 ### 4. Test Connection
 
 Create a test file `test-upstash.ts`:
+
 ```typescript
 import { Redis } from '@upstash/redis'
 
@@ -50,11 +54,13 @@ Run: `npx tsx test-upstash.ts`
 ### Current Setup (`lib/ratelimit.ts`)
 
 **Default Rate Limit**:
+
 - 10 requests per 10 seconds
 - Sliding window algorithm
 - Analytics enabled
 
 **API Rate Limit**:
+
 - 5 requests per 10 seconds
 - More restrictive for APIs
 
@@ -67,14 +73,14 @@ export async function createCustomer(formData: FormData) {
   // Check rate limit
   const identifier = await getIdentifier()
   const { success, remaining } = await checkRateLimit(identifier)
-  
+
   if (!success) {
-    return { 
-      success: false, 
-      message: 'Too many requests. Please try again later.' 
+    return {
+      success: false,
+      message: 'Too many requests. Please try again later.',
     }
   }
-  
+
   // Continue with action
   // ...
 }
@@ -124,11 +130,11 @@ const apiLimit = await ratelimit.limit(`api:${apiKey}`)
 const { success, limit, remaining, reset, pending } = await ratelimit.limit(identifier)
 
 console.log({
-  success,      // true if request is allowed
-  limit,        // total limit
-  remaining,    // requests remaining
-  reset,        // timestamp when limit resets
-  pending,      // pending requests
+  success, // true if request is allowed
+  limit, // total limit
+  remaining, // requests remaining
+  reset, // timestamp when limit resets
+  pending, // pending requests
 })
 ```
 
@@ -139,16 +145,14 @@ import { headers } from 'next/headers'
 
 export async function getIdentifier(): Promise<string> {
   const headersList = headers()
-  const ip = headersList.get('x-forwarded-for') || 
-             headersList.get('x-real-ip') || 
-             'unknown'
-  
+  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+
   // Or use user ID if authenticated
   const user = await getCurrentUser()
   if (user) {
     return `user:${user.id}`
   }
-  
+
   return `ip:${ip}`
 }
 ```
@@ -158,6 +162,7 @@ export async function getIdentifier(): Promise<string> {
 ## 📈 Monitoring
 
 ### Upstash Dashboard
+
 - View request counts
 - Monitor rate limit hits
 - Check Redis usage
@@ -171,13 +176,7 @@ import { logAction } from '@/lib/audit'
 const { success } = await checkRateLimit(identifier)
 
 if (!success) {
-  await logAction(
-    tenantId,
-    userId,
-    'RATE_LIMIT_EXCEEDED',
-    'RateLimit',
-    identifier
-  )
+  await logAction(tenantId, userId, 'RATE_LIMIT_EXCEEDED', 'RateLimit', identifier)
 }
 ```
 
@@ -186,11 +185,13 @@ if (!success) {
 ## 💰 Pricing
 
 ### Free Tier
+
 - 10,000 commands/day
 - 256 MB storage
 - Perfect for development and small apps
 
 ### Pro Tier
+
 - 1M commands/day
 - 1 GB storage
 - $0.2 per 100K additional commands
@@ -200,6 +201,7 @@ if (!success) {
 ## 🔒 Security Best Practices
 
 ### 1. Environment Variables
+
 ```bash
 # Never commit these!
 UPSTASH_REDIS_REST_URL=...
@@ -207,6 +209,7 @@ UPSTASH_REDIS_REST_TOKEN=...
 ```
 
 ### 2. Different Limits per Route
+
 ```typescript
 // Public routes - restrictive
 const publicLimit = Ratelimit.slidingWindow(5, '60 s')
@@ -219,6 +222,7 @@ const adminLimit = Ratelimit.slidingWindow(200, '60 s')
 ```
 
 ### 3. Graceful Degradation
+
 ```typescript
 if (!ratelimit) {
   // If Upstash is not configured, allow all requests
@@ -232,14 +236,14 @@ if (!ratelimit) {
 ## 🧪 Testing
 
 ### Local Testing
+
 ```typescript
 // Disable rate limiting in development
-const ratelimit = process.env.NODE_ENV === 'production' 
-  ? createRatelimit() 
-  : null
+const ratelimit = process.env.NODE_ENV === 'production' ? createRatelimit() : null
 ```
 
 ### Load Testing
+
 ```bash
 # Install autocannon
 npm install -g autocannon
@@ -272,5 +276,5 @@ autocannon -c 100 -d 10 http://localhost:3000/api/test
 
 ---
 
-*Setup guide created: 31/01/2026*  
-*Status: Ready for configuration*
+_Setup guide created: 31/01/2026_  
+_Status: Ready for configuration_
