@@ -10,56 +10,69 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 function Header() {
-    const { currentMonth, currentYear, changeMonth } = useFinancials()
-    const date = new Date(currentYear, currentMonth - 1)
+  const { currentMonth, currentYear, changeMonth } = useFinancials()
+  const date = new Date(currentYear, currentMonth - 1)
 
-    return (
-        <div className="flex items-center justify-between mb-6">
-            <div>
-                <h1 className="text-2xl font-black tracking-tight text-foreground">Financeiro</h1>
-                <p className="text-sm text-muted-foreground font-medium">Fluxo de Caixa</p>
-            </div>
-            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
-                <Button variant="ghost" size="icon" onClick={() => changeMonth('prev')} className="h-8 w-8 hover:bg-background shadow-none">
-                    <ChevronLeft size={16} />
-                </Button>
-                <div className="px-2 min-w-[100px] text-center">
-                    <span className="text-xs font-black uppercase tracking-wider block">
-                        {format(date, 'MMMM', { locale: ptBR })}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-bold block leading-none">
-                        {currentYear}
-                    </span>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => changeMonth('next')} className="h-8 w-8 hover:bg-background shadow-none">
-                    <ChevronRight size={16} />
-                </Button>
-            </div>
+  return (
+    <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 className="text-foreground text-2xl font-black tracking-tight sm:text-3xl">
+          Financeiro
+        </h1>
+        <p className="text-muted-foreground text-sm font-medium">Fluxo de caixa</p>
+      </div>
+      <div className="bg-muted/50 flex w-full items-center justify-between gap-1 rounded-lg p-1 sm:w-auto sm:justify-start">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => changeMonth('prev')}
+          className="hover:bg-background h-10 w-10 shadow-none"
+          aria-label="Mês anterior"
+        >
+          <ChevronLeft size={16} />
+        </Button>
+        <div className="min-w-[108px] px-2 text-center">
+          <span className="block text-xs font-black tracking-wider uppercase">
+            {format(date, 'MMMM', { locale: ptBR })}
+          </span>
+          <span className="text-muted-foreground block text-[10px] leading-none font-bold">
+            {currentYear}
+          </span>
         </div>
-    )
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => changeMonth('next')}
+          className="hover:bg-background h-10 w-10 shadow-none"
+          aria-label="Próximo mês"
+        >
+          <ChevronRight size={16} />
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 function FinanceContent() {
-    return (
-        <div className="space-y-6 pb-24 md:pb-10 relative">
-            <Header />
-            <FinancialDashboardCard />
+  return (
+    <div className="relative space-y-5 pb-24 md:space-y-6 md:pb-10">
+      <Header />
+      <FinancialDashboardCard />
 
-            <div className="flex items-center justify-between mt-8 mb-4">
-                <h3 className="text-lg font-bold tracking-tight">Extrato</h3>
-                {/* Future: Filter button here */}
-            </div>
+      <div className="mt-7 mb-3 flex items-center justify-between sm:mt-8 sm:mb-4">
+        <h3 className="text-lg font-bold tracking-tight">Extrato</h3>
+      </div>
 
-            <TransactionList />
-            <QuickAddTransactionModal />
-        </div>
-    )
+      <TransactionList />
+      <QuickAddTransactionModal />
+    </div>
+  )
 }
 
 export function FinanceClient() {
-    return (
-        <FinancialProvider>
-            <FinanceContent />
-        </FinancialProvider>
-    )
+  return (
+    <FinancialProvider>
+      <FinanceContent />
+    </FinancialProvider>
+  )
 }

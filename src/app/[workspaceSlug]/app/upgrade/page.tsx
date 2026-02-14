@@ -23,7 +23,11 @@ export default async function UpgradePage({
 }) {
   const { workspaceSlug } = await params
   const user = await getCurrentUser()
-  if (!user) redirect('/auth/login')
+  if (!user) redirect('/login')
+
+  const appBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
   const supabase = await createClient()
   const { data: workspace } = await supabase
@@ -53,10 +57,10 @@ export default async function UpgradePage({
       </Link>
 
       <div className="mb-16 space-y-4 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">Escale seu Ateliê</h1>
+        <h1 className="text-4xl font-bold tracking-tight">Escolha o pr?ximo passo do seu ateli?</h1>
         <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-          Desbloqueie recursos avançados de IA, aumente seus limites de mensagens e profissionalize
-          sua gestão.
+          Ganhe mais tempo com automa??es, aumente seus limites de mensagens e acompanhe melhor a
+          sa?de do neg?cio.
         </p>
       </div>
 
@@ -80,7 +84,7 @@ export default async function UpgradePage({
                     href="/planos/pro"
                     className="text-primary mt-2 block text-xs font-bold hover:underline"
                   >
-                    Saiba mais sobre este plano →
+                    Saiba mais sobre este plano ?
                   </Link>
                 </CardDescription>
               </div>
@@ -133,14 +137,14 @@ export default async function UpgradePage({
                   await createStripeCheckoutSession({
                     workspaceId: (workspace as any).id,
                     plan: 'pro',
-                    successUrl: `${process.env.NEXTAUTH_URL}/${workspaceSlug}/app/configuracoes?success=upgrade`,
-                    cancelUrl: `${process.env.NEXTAUTH_URL}/${workspaceSlug}/app/upgrade`,
+                    successUrl: `${appBaseUrl}/${workspaceSlug}/app/configuracoes?success=upgrade`,
+                    cancelUrl: `${appBaseUrl}/${workspaceSlug}/app/upgrade`,
                   }).then(res => redirect(res.url))
                 }}
                 className="w-full"
               >
                 <Button className="w-full font-bold" size="lg">
-                  Fazer Upgrade para Pro
+                  Quero o Pro
                 </Button>
               </form>
             )}
@@ -168,7 +172,7 @@ export default async function UpgradePage({
                     href="/planos/premium"
                     className="text-warning mt-2 block text-xs font-bold hover:underline"
                   >
-                    Saiba mais sobre este plano →
+                    Saiba mais sobre este plano ?
                   </Link>
                 </CardDescription>
               </div>
@@ -215,8 +219,8 @@ export default async function UpgradePage({
                   await createStripeCheckoutSession({
                     workspaceId: (workspace as any).id,
                     plan: 'premium',
-                    successUrl: `${process.env.NEXTAUTH_URL}/${workspaceSlug}/app/configuracoes?success=upgrade`,
-                    cancelUrl: `${process.env.NEXTAUTH_URL}/${workspaceSlug}/app/upgrade`,
+                    successUrl: `${appBaseUrl}/${workspaceSlug}/app/configuracoes?success=upgrade`,
+                    cancelUrl: `${appBaseUrl}/${workspaceSlug}/app/upgrade`,
                   }).then(res => redirect(res.url))
                 }}
                 className="w-full"
@@ -226,7 +230,7 @@ export default async function UpgradePage({
                   className="w-full border-gray-300 font-bold hover:bg-gray-50"
                   size="lg"
                 >
-                  Assinar Premium
+                  Quero o Premium
                 </Button>
               </form>
             )}
@@ -236,9 +240,9 @@ export default async function UpgradePage({
 
       <p className="text-muted-foreground mt-12 text-center text-sm">
         Dúvidas sobre os planos?{' '}
-        <a href="#" className="hover:text-primary underline">
-          Fale com nosso suporte
-        </a>
+        <Link href={`/${workspaceSlug}/app/configuracoes`} className="hover:text-primary underline">
+          Fale com o suporte no painel
+        </Link>
         .
       </p>
     </div>

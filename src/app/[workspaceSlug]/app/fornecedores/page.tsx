@@ -10,18 +10,20 @@ export default async function FornecedoresPage() {
   const suppliers = (await getSuppliers()) as any[]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5 md:space-y-6">
+      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Fornecedores</h1>
-          <p className="text-muted-foreground">Gerencie seus parceiros de negócio</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Fornecedores</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Gerencie seus parceiros de negócio
+          </p>
         </div>
         <SupplierForm />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
         {suppliers.length === 0 ? (
-          <div className="bg-muted/20 col-span-full flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center">
+          <div className="bg-muted/20 col-span-full flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center md:p-12">
             <Package className="text-muted-foreground/50 mb-3 h-12 w-12" />
             <h3 className="text-lg font-semibold">Nenhum fornecedor cadastrado</h3>
             <p className="text-muted-foreground mb-4 text-sm">
@@ -37,7 +39,7 @@ export default async function FornecedoresPage() {
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="truncate pr-4 text-lg font-bold">{supplier.name}</CardTitle>
-                <div className="flex items-center gap-1 opacity-100 transition-opacity group-hover:opacity-100 md:opacity-0">
+                <div className="flex items-center gap-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                   <SupplierForm
                     supplier={supplier}
                     trigger={

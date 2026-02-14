@@ -14,7 +14,7 @@ interface OnboardingStep {
   completed?: boolean
 }
 
-const STEPS_BY_PLAN: Record<PlanType, OnboardingStep[]> = {
+const STEPS_BY_PLAN: Partial<Record<PlanType, OnboardingStep[]>> = {
   start: [
     {
       id: 'profile',
@@ -85,14 +85,14 @@ export default async function OnboardingPage({ params }: { params: { workspaceSl
   const currentPlan: PlanType = (planData as any)?.plan || 'start'
 
   // Ensure we handle missing keys safely if logic expands
-  const steps = STEPS_BY_PLAN[currentPlan] || STEPS_BY_PLAN.start
+  const steps = STEPS_BY_PLAN[currentPlan] ?? STEPS_BY_PLAN.start ?? []
 
   return (
     <div className="container max-w-4xl py-10">
       <div className="mb-12 text-center">
-        <h1 className="mb-4 text-3xl font-bold">Bem-vinda ao Atelis!</h1>
+        <h1 className="mb-4 text-3xl font-bold">Bem-vindo(a) ao Atelis!</h1>
         <p className="text-muted-foreground text-lg">
-          Vamos configurar seu workspace <strong>{(workspace as any).name}</strong>.
+          Vamos configurar seu ateli? <strong>{(workspace as any).name}</strong>.
         </p>
       </div>
       {/* Logic to render steps similar to previous attempt */}
@@ -104,7 +104,12 @@ export default async function OnboardingPage({ params }: { params: { workspaceSl
             </CardHeader>
             <CardContent>
               <p>{step.description}</p>
-              <Link href={`/${params.workspaceSlug}/${step.link}`}>Ir</Link>
+              <Link
+                href={`/${params.workspaceSlug}/${step.link}`}
+                className="text-primary mt-3 inline-flex items-center font-semibold hover:underline"
+              >
+                Abrir etapa
+              </Link>
             </CardContent>
           </Card>
         ))}

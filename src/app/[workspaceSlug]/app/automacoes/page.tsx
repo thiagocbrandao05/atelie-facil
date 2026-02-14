@@ -10,7 +10,7 @@ import { CustomerSeasonalityCard } from '@/features/automations/components/custo
 import { Sparkles } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Automações Inteligentes | Ateliê Fácil',
+  title: 'Automações inteligentes | Atelis',
   description: 'Insights e automações para o seu ateliê',
 }
 
@@ -24,16 +24,18 @@ export default async function AutomationsPage() {
     ])
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6">
+    <div className="flex-1 space-y-5 p-4 pt-4 sm:space-y-6 sm:p-6 sm:pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-3">
           <div className="bg-primary/10 rounded-lg p-2">
             <Sparkles className="text-primary h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Automações Inteligentes</h2>
-            <p className="text-muted-foreground">
-              Insights e sugestões baseados nos dados do seu ateliê.
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              Automações inteligentes
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Insights e sugestões com base nos dados do seu ateliê.
             </p>
           </div>
         </div>

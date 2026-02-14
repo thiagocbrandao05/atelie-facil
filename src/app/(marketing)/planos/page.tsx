@@ -10,11 +10,11 @@ export default function PricingPage() {
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-primary text-base leading-7 font-semibold">Preços</h2>
           <p className="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Escolha o plano ideal para seu ateliê
+            Escolha o plano certo para o seu momento
           </p>
         </div>
         <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-600">
-          Comece pequeno e cresça com a gente. Mude de plano a qualquer momento.
+          Comece simples e evolua no seu ritmo. Voc? pode mudar de plano quando quiser.
         </p>
 
         <div className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3">
@@ -29,7 +29,7 @@ export default function PricingPage() {
                 href="/planos/start"
                 className="text-primary mt-2 block text-xs font-bold hover:underline"
               >
-                Saiba mais sobre este plano →
+                Saiba mais sobre este plano ?
               </Link>
             </p>
             <p className="mt-6 flex items-baseline gap-x-1">
@@ -39,10 +39,10 @@ export default function PricingPage() {
               <span className="text-sm leading-6 font-semibold text-gray-600">/mês</span>
             </p>
             <Link
-              href="/auth/register"
+              href="/register"
               className="bg-primary/10 text-primary hover:bg-primary/20 focus-visible:outline-primary mt-6 block rounded-md px-3 py-2 text-center text-sm leading-6 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              Começar Grátis
+              Criar conta gr?tis
             </Link>
             <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
               <li className="flex gap-x-3">
@@ -77,7 +77,7 @@ export default function PricingPage() {
                 href="/planos/pro"
                 className="text-primary mt-2 block text-xs font-bold hover:underline"
               >
-                Saiba mais sobre este plano →
+                Saiba mais sobre este plano ?
               </Link>
             </p>
             <p className="mt-6 flex items-baseline gap-x-1">
@@ -87,10 +87,10 @@ export default function PricingPage() {
               <span className="text-sm leading-6 font-semibold text-gray-600">/mês</span>
             </p>
             <Link
-              href="/auth/register?plan=pro"
+              href="/register?plan=pro"
               className="bg-primary hover:bg-primary/90 focus-visible:outline-primary mt-6 block rounded-md px-3 py-2 text-center text-sm leading-6 font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              Assinar Agora
+              Come?ar no Pro
             </Link>
             <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
               <li className="flex gap-x-3">
@@ -127,7 +127,7 @@ export default function PricingPage() {
                 href="/planos/premium"
                 className="text-primary mt-2 block text-xs font-bold hover:underline"
               >
-                Saiba mais sobre este plano →
+                Saiba mais sobre este plano ?
               </Link>
             </p>
             <p className="mt-6 flex items-baseline gap-x-1">
@@ -137,10 +137,10 @@ export default function PricingPage() {
               <span className="text-sm leading-6 font-semibold text-gray-600">/mês</span>
             </p>
             <Link
-              href="/auth/register?plan=premium"
+              href="/register?plan=premium"
               className="text-primary mt-6 block rounded-md bg-gray-50 px-3 py-2 text-center text-sm leading-6 font-semibold ring-1 ring-gray-200/50 ring-inset hover:bg-gray-100"
             >
-              Fale com Consultor
+              Quero o Premium
             </Link>
             <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
               <li className="flex gap-x-3">
