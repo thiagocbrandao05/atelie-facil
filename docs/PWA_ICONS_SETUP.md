@@ -3,6 +3,7 @@
 ## 🎨 Ícone Base Gerado
 
 Um ícone profissional foi gerado com:
+
 - Agulha e linha formando letra "A"
 - Gradiente indigo (#6366f1) para roxo
 - Design minimalista e moderno
@@ -26,12 +27,14 @@ Você precisa criar 8 tamanhos do ícone:
 ### Opção 1: Online (Recomendado)
 
 **RealFaviconGenerator** (https://realfavicongenerator.net/):
+
 1. Upload o ícone base (512x512)
 2. Configure para PWA
 3. Download o package
 4. Extract para `public/icons/`
 
 **PWA Builder** (https://www.pwabuilder.com/):
+
 1. Upload o ícone base
 2. Generate icons
 3. Download package
@@ -100,17 +103,20 @@ Após criar os ícones:
 ## 🎨 Design Tips
 
 ### Cores
+
 - Primary: #6366f1 (Indigo)
 - Secondary: #8b5cf6 (Purple)
 - Background: White ou transparent
 
 ### Formato
+
 - PNG com transparência
 - Quadrado (1:1 ratio)
 - Padding: 10% das bordas
 - Safe zone: 80% do centro
 
 ### Qualidade
+
 - High resolution
 - Anti-aliased edges
 - Consistent style
@@ -119,39 +125,45 @@ Após criar os ícones:
 ## 📱 Platform-Specific
 
 ### Android
+
 - Uses 192x192 for home screen
 - Uses 512x512 for splash screen
 - Maskable icons recommended
 
 ### iOS
+
 - Uses 152x152 for home screen
 - Prefers solid background
 - Rounded corners automatic
 
 ### Desktop
+
 - Uses 192x192 for taskbar
 - Uses 512x512 for shortcuts
 
 ## 🔧 Troubleshooting
 
 ### Icons not showing
+
 - Check file paths in manifest.json
 - Verify files exist in public/icons/
 - Clear cache and reload
 - Check console for errors
 
 ### Install prompt not showing
+
 - Ensure all 8 icons exist
 - Check manifest.json is valid
 - Service worker must be registered
 - HTTPS required (or localhost)
 
 ### Wrong size displayed
+
 - Verify exact pixel dimensions
 - Check manifest.json sizes match
 - Regenerate icons if needed
 
 ---
 
-*Ícone base gerado e pronto para resize*  
-*Use ferramentas online para facilitar*
+_Ícone base gerado e pronto para resize_  
+_Use ferramentas online para facilitar_

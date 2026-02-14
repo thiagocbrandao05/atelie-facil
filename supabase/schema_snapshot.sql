@@ -17,7 +17,6 @@ DROP TABLE IF EXISTS "ProductMaterial" CASCADE;
 DROP TABLE IF EXISTS "Product" CASCADE;
 DROP TABLE IF EXISTS "Material" CASCADE;
 DROP TABLE IF EXISTS "Supplier" CASCADE;
-DROP TABLE IF EXISTS "CustomerMeasurements" CASCADE;
 DROP TABLE IF EXISTS "Customer" CASCADE;
 DROP TABLE IF EXISTS "Settings" CASCADE;
 DROP TABLE IF EXISTS "User" CASCADE;
@@ -115,9 +114,10 @@ CREATE TABLE "Material" (
     "supplierId" TEXT,
     "name" TEXT NOT NULL,
     "unit" TEXT NOT NULL,
-    "cost" DOUBLE PRECISION NOT NULL,
+    "cost" DOUBLE PRECISION DEFAULT NULL,
     "quantity" DOUBLE PRECISION NOT NULL,
     "minQuantity" DOUBLE PRECISION,
+    "colors" TEXT,
 
     CONSTRAINT "Material_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "Material_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
@@ -173,24 +173,6 @@ CREATE TABLE "Customer" (
 CREATE INDEX "Customer_tenantId_idx" ON "Customer"("tenantId");
 CREATE INDEX "Customer_tenantId_name_idx" ON "Customer"("tenantId", "name");
 
--- CustomerMeasurements (NEW)
-CREATE TABLE "CustomerMeasurements" (
-    "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    "tenantId" TEXT NOT NULL,
-    "customerId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "value" TEXT NOT NULL,
-    "unit" TEXT,
-    "notes" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "CustomerMeasurements_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "CustomerMeasurements_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "CustomerMeasurements_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-CREATE INDEX "CustomerMeasurements_customerId_idx" ON "CustomerMeasurements"("customerId");
-CREATE INDEX "CustomerMeasurements_tenantId_idx" ON "CustomerMeasurements"("tenantId");
 
 -- Order
 CREATE TABLE "Order" (
@@ -356,7 +338,6 @@ CREATE INDEX "Notification_tenantId_createdAt_idx" ON "Notification"("tenantId",
 ALTER TABLE "Tenant" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Customer" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "CustomerMeasurements" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Material" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Product" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "ProductMaterial" ENABLE ROW LEVEL SECURITY;
@@ -389,10 +370,6 @@ CREATE POLICY "Tenant isolation for Customer" ON "Customer"
   USING ("tenantId" = get_current_tenant_id())
   WITH CHECK ("tenantId" = get_current_tenant_id());
 
--- CustomerMeasurements
-CREATE POLICY "Tenant isolation for CustomerMeasurements" ON "CustomerMeasurements"
-  USING ("tenantId" = get_current_tenant_id())
-  WITH CHECK ("tenantId" = get_current_tenant_id());
 
 -- Material
 CREATE POLICY "Tenant isolation for Material" ON "Material"

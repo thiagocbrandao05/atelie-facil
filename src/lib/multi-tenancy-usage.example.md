@@ -1,19 +1,20 @@
-/**
- * Multi-Tenancy Usage Guide
- * 
- * The Prisma middleware automatically filters all queries by tenantId.
- * You don't need to manually add tenantId to queries.
- * 
- * Example Server Action:
- */
+/\*\*
+
+- Multi-Tenancy Usage Guide
+-
+- The Prisma middleware automatically filters all queries by tenantId.
+- You don't need to manually add tenantId to queries.
+-
+- Example Server Action:
+  \*/
 
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createTenantMiddleware } from '@/lib/prisma-middleware'
 
 export async function exampleServerAction() {
-    // 1. Get current user (includes tenant info)
-    const user = await getCurrentUser()
+// 1. Get current user (includes tenant info)
+const user = await getCurrentUser()
 
     if (!user || !user.tenantId) {
         return { success: false, message: 'Não autorizado' }
@@ -47,14 +48,16 @@ export async function exampleServerAction() {
     })
 
     return { success: true, data: { customers, orders } }
+
 }
 
-/**
- * Important Notes:
- * 
- * 1. Always call getCurrentUser() first
- * 2. Always check user.tenant.status
- * 3. Apply middleware with prisma.$use(createTenantMiddleware(user.tenantId))
- * 4. All subsequent queries are automatically filtered
- * 5. Middleware prevents cross-tenant data access
- */
+/\*\*
+
+- Important Notes:
+-
+- 1.  Always call getCurrentUser() first
+- 2.  Always check user.tenant.status
+- 3.  Apply middleware with prisma.$use(createTenantMiddleware(user.tenantId))
+- 4.  All subsequent queries are automatically filtered
+- 5.  Middleware prevents cross-tenant data access
+      \*/

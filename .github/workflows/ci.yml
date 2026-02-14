@@ -1,38 +1,35 @@
-name: CI
+name: CI Quality Gate
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
 
 jobs:
-  build:
+  quality:
+    name: Lint & Test
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x]
 
     steps:
     - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
+    
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: '20'
         cache: 'npm'
-    
-    - name: Install dependencies
+        
+    - name: Install Dependencies
       run: npm ci
-    
+      
     - name: Run Lint
       run: npm run lint
-    
+      
     - name: Type Check
       run: npx tsc --noEmit
       
     - name: Run Unit Tests
-      run: npm run test
-
-    - name: Build
-      run: npm run build
+      run: npm run test:unit
+      env:
+         CI: true

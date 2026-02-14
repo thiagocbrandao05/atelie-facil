@@ -1,0 +1,189 @@
+import { getOrdersPaginated, getOrders, deleteOrder } from '@/features/orders/actions'
+import { getProducts } from '@/features/products/actions'
+import { OrderDialog } from '@/components/order-dialog'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { getCustomers } from '@/features/customers/actions'
+import { StatusUpdateButton } from '@/components/status-update-button'
+import { DeleteButton } from '@/components/delete-button'
+import { Pagination } from '@/components/pagination'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { KanbanBoard } from '@/components/orders/kanban-board'
+import { LayoutGrid, List } from 'lucide-react'
+import { WhatsAppNotifyWrapper } from '@/features/whatsapp/components/WhatsAppNotifyWrapper'
+import { getCurrentTenantPlan } from '@/features/subscription/actions'
+
+export default async function PedidosPage(props: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const searchParams = await props.searchParams
+  const page = Number(searchParams.page) || 1
+  const [{ data: orders, totalPages, page: currentPage }, allOrders, products, customers, tenantPlan] =
+    await Promise.all([
+      getOrdersPaginated(page),
+      getOrders(),
+      getProducts(),
+      getCustomers(),
+      getCurrentTenantPlan(),
+    ])
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+        <div>
+          <h1 className="text-primary text-3xl font-bold tracking-tight">Gestão de Pedidos</h1>
+          <p className="text-muted-foreground mt-1">Acompanhe prazos e status de produção.</p>
+        </div>
+        <OrderDialog products={products} customers={customers} />
+      </div>
+
+      <Tabs defaultValue="list" className="w-full">
+        <div className="mb-4 flex justify-end">
+          <TabsList>
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <List size={16} /> Lista
+            </TabsTrigger>
+            <TabsTrigger value="kanban" className="flex items-center gap-2">
+              <LayoutGrid size={16} /> Quadro
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="list" className="space-y-4">
+          {orders.length === 0 ? (
+            <div className="text-muted-foreground bg-muted/30 rounded-lg py-12 text-center">
+              Nenhum pedido encontrado. Crie o primeiro!
+            </div>
+          ) : (
+            <>
+              {orders.map(order => (
+                <Card key={order.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg flex items-center justify-between">
+                          <span>{order.customer?.name || 'Cliente Desconhecido'}</span>
+                          <span className="text-primary/60 text-sm font-mono">#{order.orderNumber}</span>
+                        </CardTitle>
+                        <CardDescription>
+                          {order.dueDate ? new Intl.DateTimeFormat('pt-BR', {
+                            day: '2-digit',
+                            month: 'long',
+                          }).format(new Date(order.dueDate)) : 'Sem data'}
+                        </CardDescription>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              order.status === 'QUOTATION'
+                                ? 'secondary'
+                                : order.status === 'PENDING'
+                                  ? 'outline'
+                                  : order.status === 'PRODUCING'
+                                    ? 'default'
+                                    : order.status === 'READY'
+                                      ? 'secondary'
+                                      : 'outline'
+                            }
+                          >
+                            {order.status === 'QUOTATION'
+                              ? 'Orçamento'
+                              : order.status === 'PENDING'
+                                ? 'Aguardando Início'
+                                : order.status === 'PRODUCING'
+                                  ? 'Em Produção'
+                                  : order.status === 'READY'
+                                    ? 'Pronto p/ Entrega'
+                                    : order.status === 'DELIVERED'
+                                      ? 'Entregue'
+                                      : order.status}
+                          </Badge>
+
+                          {order.status === 'QUOTATION' && (
+                            <StatusUpdateButton
+                              id={order.id}
+                              status="PENDING"
+                              label="Aprovar Orçamento"
+                            />
+                          )}
+                          {order.status === 'PENDING' && (
+                            <StatusUpdateButton
+                              id={order.id}
+                              status="PRODUCING"
+                              label="Iniciar Produção"
+                            />
+                          )}
+                          {order.status === 'PRODUCING' && (
+                            <StatusUpdateButton id={order.id} status="READY" label="Finalizar" />
+                          )}
+                          {order.status === 'READY' && (
+                            <StatusUpdateButton id={order.id} status="DELIVERED" label="Entregar" />
+                          )}
+
+                          <DeleteButton id={order.id} onDelete={deleteOrder} className="h-8 w-8" />
+                        </div>
+                        <div className="font-bold">
+                          {order.totalValue.toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          })}
+                        </div>
+                        {(order.discount ?? 0) > 0 && (
+                          <div className="text-[10px] font-medium text-red-500">
+                            Desc. Total:{' '}
+                            {order.discount?.toLocaleString('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-muted-foreground mt-2 text-sm">
+                      <p className="text-foreground/80 mb-1 font-medium">Itens:</p>
+                      <ul className="list-inside list-disc">
+                        {order.items.map((item: any, idx) => (
+                          <li key={idx}>
+                            {item.quantity}x {item.product.name}
+                            {(item.discount ?? 0) > 0 && (
+                              <span className="ml-2 text-[10px] font-medium text-red-500">
+                                (-
+                                {item.discount.toLocaleString('pt-BR', {
+                                  style: 'currency',
+                                  currency: 'BRL',
+                                })}
+                                /un)
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* WhatsApp Notification Button */}
+                    <div className="mt-4 border-t pt-4">
+                      <WhatsAppNotifyWrapper
+                        orderId={order.id}
+                        customerPhone={order.customer?.phone}
+                        customerName={order.customer?.name || 'Cliente'}
+                        tenantPlan={tenantPlan.plan}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              <Pagination currentPage={currentPage} totalPages={totalPages} />
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="kanban">
+          <KanbanBoard initialOrders={allOrders} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

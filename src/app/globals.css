@@ -1,156 +1,146 @@
-@import "tailwindcss";
-@plugin "tailwindcss-animate";
-@config "../tailwind.config.ts";
+@import 'tailwindcss';
+@plugin 'tailwindcss-animate';
+@config '../tailwind.config.ts';
+
+@theme {
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Outfit', sans-serif;
+}
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    /* Space for fixed navbar */
+  }
+
   :root {
-    --background: 20 43% 99%;
-    --foreground: 0 0% 17%;
+    /* DEFAULT THEME: Lavanda Ateliê (Refined for Contrast) */
+    --background: 30 20% 98%;
+    /* Slightly more tinted: #F9F7F5 */
+    --foreground: 224 71% 4%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 17%;
+    --card-foreground: 224 71% 4%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 17%;
+    --popover-foreground: 224 71% 4%;
 
-    --primary: 254 57% 65%;
-    --primary-hover: 252 44% 56%;
-    --primary-soft: 256 70% 95%;
+    --primary: 254 56% 65%;
+    /* #8A72D8 */
     --primary-foreground: 0 0% 100%;
+    --primary-hover: 254 56% 55%;
+    --primary-soft: 254 56% 96%;
 
-    --secondary: 256 70% 95%;
-    --secondary-foreground: 252 44% 32%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 224 71% 4%;
 
-    --muted: 30 24% 96%;
-    --muted-foreground: 0 0% 43%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 220 14% 46%;
 
-    --accent: 34 76% 60%;
-    --accent-soft: 41 100% 94%;
-    --accent-foreground: 0 0% 17%;
+    --accent: 35 77% 60%;
+    /* #E6A44B */
+    --accent-foreground: 0 0% 100%;
+    --accent-soft: 35 77% 96%;
 
-    --destructive: 0 72% 61%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 28 21% 88%;
-    --input: 28 21% 88%;
-    --ring: 254 57% 65%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 254 56% 65%;
 
-    --success: 142 71% 45%;
-    --warning: 31 81% 50%;
-    --danger: 0 72% 61%;
-    --info: 207 94% 60%;
+    --radius: 1.25rem;
 
-    --radius: 1rem;
+    /* Glass Defaults - More subtle and crisp */
+    --glass-border: 255 255 255 0.8;
+    --glass-bg: 255 255 255 0.9;
+    --glass-shadow: 224 71% 4% 0.03;
   }
 
-  :root[data-theme="lavanda-atelie"] {
-    --background: 20 43% 99%;
-    --foreground: 0 0% 17%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 17%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 17%;
-    --primary: 254 57% 65%;
-    --primary-hover: 252 44% 56%;
-    --primary-soft: 256 70% 95%;
-    --secondary: 256 70% 95%;
-    --secondary-foreground: 252 44% 32%;
-    --muted: 30 24% 96%;
-    --muted-foreground: 0 0% 43%;
-    --accent: 34 76% 60%;
-    --accent-soft: 41 100% 94%;
-    --accent-foreground: 0 0% 17%;
-    --border: 28 21% 88%;
-    --input: 28 21% 88%;
-    --ring: 254 57% 65%;
+  /* Lavanda Ateliê overrides */
+  [data-theme='lavanda-atelie'] {
+    --primary: 254 56% 65%;
+    --accent: 35 77% 60%;
+    --background: 30 20% 98%;
+    --border: 30 18% 90%;
   }
 
-  :root[data-theme="cha-de-hortela"] {
-    --background: 158 60% 98%;
-    --foreground: 0 0% 17%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 17%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 17%;
-    --primary: 173 69% 36%;
-    --primary-hover: 173 63% 30%;
-    --primary-soft: 173 55% 93%;
-    --secondary: 173 55% 93%;
-    --secondary-foreground: 173 45% 25%;
-    --muted: 170 45% 96%;
-    --muted-foreground: 0 0% 43%;
-    --accent: 37 91% 55%;
-    --accent-soft: 41 100% 94%;
-    --accent-foreground: 0 0% 17%;
-    --border: 170 35% 89%;
-    --input: 170 35% 89%;
-    --ring: 173 69% 36%;
+  /* Chá de Hortelã (Mint Tea) */
+  [data-theme='cha-de-hortela'] {
+    --primary: 172 68% 36%;
+    --accent: 38 92% 55%;
+    --background: 160 80% 97%;
+    --border: 168 36% 89%;
   }
 
-  :root[data-theme="algodao-doce"] {
-    --background: 340 100% 98%;
-    --foreground: 0 0% 17%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 17%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 17%;
-    --primary: 340 54% 75%;
-    --primary-hover: 340 42% 65%;
-    --primary-soft: 340 60% 93%;
-    --secondary: 340 60% 93%;
-    --secondary-foreground: 340 45% 35%;
-    --muted: 340 45% 96%;
-    --muted-foreground: 0 0% 43%;
+  /* Algodão Doce (Cotton Candy) */
+  [data-theme='algodao-doce'] {
+    --primary: 340 54% 74%;
     --accent: 340 100% 87%;
-    --accent-soft: 340 100% 95%;
-    --accent-foreground: 0 0% 17%;
-    --border: 340 32% 90%;
-    --input: 340 32% 90%;
-    --ring: 340 54% 75%;
+    --background: 330 80% 97%;
+    --border: 343 45% 90%;
   }
 
-  :root[data-theme="terra-cotta"] {
-    --background: 33 100% 97%;
-    --foreground: 0 0% 17%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 17%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 17%;
-    --primary: 28 47% 54%;
-    --primary-hover: 28 40% 46%;
-    --primary-soft: 28 55% 93%;
-    --secondary: 28 55% 93%;
-    --secondary-foreground: 28 40% 32%;
-    --muted: 30 35% 95%;
-    --muted-foreground: 0 0% 43%;
-    --accent: 33 78% 75%;
-    --accent-soft: 33 100% 93%;
-    --accent-foreground: 0 0% 17%;
-    --border: 28 30% 85%;
-    --input: 28 30% 85%;
-    --ring: 28 47% 54%;
+  /* Terra Cotta */
+  [data-theme='terra-cotta'] {
+    --primary: 30 52% 55%;
+    --accent: 33 82% 75%;
+    --background: 33 80% 95%;
+    --border: 30 40% 85%;
   }
 
-  :root[data-theme="noite-criativa"] {
-    --background: 223 100% 98%;
-    --foreground: 0 0% 17%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 17%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 17%;
+  /* Noite Criativa (Creative Night) */
+  [data-theme='noite-criativa'] {
     --primary: 220 50% 43%;
-    --primary-hover: 220 50% 36%;
-    --primary-soft: 220 55% 93%;
-    --secondary: 220 55% 93%;
-    --secondary-foreground: 220 40% 28%;
-    --muted: 220 40% 96%;
-    --muted-foreground: 0 0% 43%;
-    --accent: 203 96% 71%;
-    --accent-soft: 203 90% 93%;
-    --accent-foreground: 0 0% 17%;
-    --border: 220 40% 88%;
-    --input: 220 40% 88%;
-    --ring: 220 50% 43%;
+    --accent: 202 100% 72%;
+    --background: 225 60% 97%;
+    --border: 225 100% 93%;
+  }
+
+  /* Landing Page Specific Theme (Sophisticated Deep Navy) */
+  .theme-landing {
+    --background: 210 20% 98%;
+    --foreground: 224 71% 4%;
+    --primary: 224 64% 33%;
+    /* Deep Indigo */
+    --primary-foreground: 210 40% 98%;
+    --primary-hover: 224 64% 23%;
+    --accent: 43 96% 64%;
+    /* Muted Gold */
+    --accent-foreground: 224 71% 4%;
+    --ring: 224 64% 33%;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 210 20% 98%;
+
+    --card: 224 71% 4%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 224 64% 50%;
+    /* Brighter indigo for dark mode */
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 43 96% 64%;
+    --accent-foreground: 224 71% 4%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 224 64% 50%;
   }
 }
 
@@ -163,7 +153,29 @@
     @apply bg-background text-foreground;
   }
 
-  html {
-    background-color: hsl(var(--background));
+  /* Glass Utility Classes */
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
+  }
+
+  .glass-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 hover:bg-muted-foreground/50 rounded-full transition-colors;
   }
 }

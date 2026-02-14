@@ -8,49 +8,45 @@ import { getCustomers } from '@/features/customers/actions'
  * Hook for managing customer data with loading and error states
  */
 export function useCustomers() {
-    const [customers, setCustomers] = useState<Customer[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-    const fetchCustomers = async () => {
-        try {
-            setLoading(true)
-            setError(null)
-            const data = await getCustomers()
-            setCustomers(data)
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erro ao carregar clientes')
-        } finally {
-            setLoading(false)
-        }
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getCustomers()
+      setCustomers(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar clientes')
+    } finally {
+      setLoading(false)
     }
+  }
 
-    useEffect(() => {
-        fetchCustomers()
-    }, [])
+  useEffect(() => {
+    fetchCustomers()
+  }, [])
 
-    const refresh = () => {
-        fetchCustomers()
-    }
+  const refresh = () => {
+    fetchCustomers()
+  }
 
-    const findById = (id: string) => {
-        return customers.find(c => c.id === id)
-    }
+  const findById = (id: string) => {
+    return customers.find(c => c.id === id)
+  }
 
-    const findByName = (name: string) => {
-        return customers.filter(c =>
-            c.name.toLowerCase().includes(name.toLowerCase())
-        )
-    }
+  const findByName = (name: string) => {
+    return customers.filter(c => c.name.toLowerCase().includes(name.toLowerCase()))
+  }
 
-    return {
-        customers,
-        loading,
-        error,
-        refresh,
-        findById,
-        findByName
-    }
+  return {
+    customers,
+    loading,
+    error,
+    refresh,
+    findById,
+    findByName,
+  }
 }
-
-
