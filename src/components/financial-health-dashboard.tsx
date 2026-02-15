@@ -3,14 +3,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { calculateSuggestedPrice } from '@/lib/logic'
-import { ProductWithMaterials } from '@/lib/types'
+import { AppSettings, ProductWithMaterials } from '@/lib/types'
 import { TrendingUp, Target, Heart, AlertTriangle } from 'lucide-react'
 import { useMemo } from 'react'
+import { PlanType } from '@/features/subscription/types'
 
 interface FinancialHealthDashboardProps {
   products: ProductWithMaterials[]
-  settings: any
-  plan: any
+  settings: AppSettings
+  plan: PlanType
 }
 
 export function FinancialHealthDashboard({

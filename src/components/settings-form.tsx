@@ -41,6 +41,8 @@ import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { DEFAULT_THEME, THEME_OPTIONS, resolveThemeKey } from '@/lib/theme-tokens'
+import { AppSettings } from '@/lib/types'
+import { UsageSummary } from '@/features/subscription/types'
 
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -83,17 +85,22 @@ export function SettingsForm({
   whatsappUsage,
   workspaceSlug,
 }: {
-  settings: any
-  whatsappUsage?: any
+  settings: AppSettings
+  whatsappUsage?: UsageSummary | null
   workspaceSlug: string
 }) {
   const [state, action, isPending] = useActionState(updateSettings, initialState)
   const [activeTab, setActiveTab] = useState('general')
+  const monthlyFixedCosts = settings.monthlyFixedCosts ?? []
 
   // Financial Calculator State
   const [fixedCosts, setFixedCosts] = useState<FixedCostItem[]>(
-    settings.monthlyFixedCosts?.length > 0
-      ? settings.monthlyFixedCosts.map((c: any, i: number) => ({ ...c, id: `cost-${i}` }))
+    monthlyFixedCosts.length > 0
+      ? monthlyFixedCosts.map((c, i: number) => ({
+          id: c.id || `cost-${i}`,
+          label: c.label || '',
+          value: Number(c.value) || 0,
+        }))
       : []
   )
   const [desirableSalary, setDesirableSalary] = useState(Number(settings.desirableSalary) || 2000)

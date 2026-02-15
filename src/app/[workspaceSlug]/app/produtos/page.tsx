@@ -1,11 +1,10 @@
 import { getProducts, deleteProduct } from '@/features/products/actions'
 import { getMaterials } from '@/features/materials/actions'
 import { ProductForm } from '@/components/product-form'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { calculateSuggestedPrice } from '@/lib/logic'
 import { DeleteButton } from '@/components/delete-button'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, TrendingUp, Package } from 'lucide-react'
 
 import { getSettings } from '@/features/settings/actions'
 
@@ -13,8 +12,8 @@ import { getCurrentTenantPlan } from '@/features/subscription/actions'
 import { isReseller } from '@/features/subscription/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PricingSandbox } from '@/components/pricing-sandbox'
-import { TrendingUp, Package, Heart, Target, Percent } from 'lucide-react'
 import { FinancialHealthDashboard } from '@/components/financial-health-dashboard'
+import { AppSettings, ProductWithMaterials } from '@/lib/types'
 
 export default async function ProdutosPage() {
   const [products, materials, settings, tenantStats] = await Promise.all([
@@ -23,14 +22,13 @@ export default async function ProdutosPage() {
     getSettings(),
     getCurrentTenantPlan(),
   ])
-  const productsAsAny = products as any[]
-  const { plan, profile } = tenantStats
 
-  const hourlyRate = Number(settings?.hourlyRate || 20)
+  const productsList = products as ProductWithMaterials[]
+  const appSettings = settings as AppSettings
+  const { plan } = tenantStats
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 pb-12">
-      {/* Artisan Header - Scaled Down */}
       <div className="flex flex-col items-center justify-between gap-6 rounded-2xl border border-white/40 bg-white/90 p-6 shadow-md backdrop-blur-2xl md:flex-row">
         <div className="space-y-1 text-center md:text-left">
           <h1 className="text-primary font-serif text-2xl font-black tracking-tight italic sm:text-3xl">
@@ -40,11 +38,10 @@ export default async function ProdutosPage() {
             Gerencie cada criação e seu valor real.
           </p>
         </div>
-        <ProductForm availableMaterials={materials} settings={settings} tenantPlan={plan} />
+        <ProductForm availableMaterials={materials} settings={appSettings} tenantPlan={plan} />
       </div>
 
-      {/* Financial Health Overview (Invisible Finance) */}
-      <FinancialHealthDashboard products={products as any} settings={settings} plan={plan} />
+      <FinancialHealthDashboard products={productsList} settings={appSettings} plan={plan} />
 
       <Tabs defaultValue="catalog" className="space-y-5 sm:space-y-6">
         <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-white/40 bg-white/50 p-1 md:w-fit">
@@ -63,29 +60,28 @@ export default async function ProdutosPage() {
         </TabsList>
 
         <TabsContent value="catalog" className="space-y-6">
-          {products.length === 0 && (
+          {productsList.length === 0 && (
             <div className="text-muted-foreground bg-muted/5 border-border/60 flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed">
               <ShoppingBag size={40} className="mb-3 opacity-20" />
               <p className="text-sm font-bold">Nenhum produto cadastrado ainda.</p>
             </div>
           )}
 
-          {productsAsAny.map(product => {
+          {productsList.map(product => {
             const {
               materialCost,
               laborCost,
               fixedCost,
-              marginValue,
               suggestedPrice,
               contributionMargin,
               contributionMarginPercentage,
             } = calculateSuggestedPrice(
-              product as any,
-              Number(settings?.hourlyRate || 20),
-              settings?.monthlyFixedCosts || [],
-              Number(settings?.workingHoursPerMonth || 160),
-              Number(settings?.taxRate || 0),
-              Number(settings?.cardFeeRate || 0)
+              product,
+              Number(appSettings.hourlyRate || 20),
+              appSettings.monthlyFixedCosts || [],
+              Number(appSettings.workingHoursPerMonth || 160),
+              Number(appSettings.taxRate || 0),
+              Number(appSettings.cardFeeRate || 0)
             )
 
             const finalPrice = product.price || suggestedPrice
@@ -107,8 +103,8 @@ export default async function ProdutosPage() {
                         <div className="flex gap-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                           <ProductForm
                             availableMaterials={materials}
-                            product={product as any}
-                            settings={settings}
+                            product={product}
+                            settings={appSettings}
                             tenantPlan={plan}
                           />
                           <DeleteButton
@@ -139,12 +135,13 @@ export default async function ProdutosPage() {
 
                   <div className="flex flex-col items-start gap-2 lg:items-end">
                     <div className="flex items-center gap-2">
-                      {contributionMarginPercentage >= (settings.marginThresholdOptimal || 40) ? (
+                      {contributionMarginPercentage >=
+                      (appSettings.marginThresholdOptimal || 40) ? (
                         <Badge className="border-green-200 bg-green-100 px-2 text-[9px] font-black tracking-widest text-green-700 uppercase hover:bg-green-100">
                           Saudável
                         </Badge>
                       ) : contributionMarginPercentage >=
-                        (settings.marginThresholdWarning || 20) ? (
+                        (appSettings.marginThresholdWarning || 20) ? (
                         <Badge className="border-yellow-200 bg-yellow-100 px-2 text-[9px] font-black tracking-widest text-yellow-700 uppercase hover:bg-yellow-100">
                           Alerta
                         </Badge>
@@ -204,31 +201,33 @@ export default async function ProdutosPage() {
                   </div>
                   <div
                     className={`bg-primary/10 flex flex-col justify-center rounded-xl border p-3 shadow-inner ${
-                      contributionMarginPercentage >= (settings.marginThresholdOptimal || 40)
+                      contributionMarginPercentage >= (appSettings.marginThresholdOptimal || 40)
                         ? 'border-green-500/20 bg-green-50/50'
-                        : contributionMarginPercentage >= (settings.marginThresholdWarning || 20)
+                        : contributionMarginPercentage >= (appSettings.marginThresholdWarning || 20)
                           ? 'border-yellow-500/20 bg-yellow-50/50'
                           : 'border-red-500/20 bg-red-50/50'
                     }`}
                   >
                     <p
                       className={`mb-1 text-[8px] font-black tracking-widest uppercase ${
-                        contributionMarginPercentage >= (settings.marginThresholdOptimal || 40)
+                        contributionMarginPercentage >= (appSettings.marginThresholdOptimal || 40)
                           ? 'text-green-700'
-                          : contributionMarginPercentage >= (settings.marginThresholdWarning || 20)
+                          : contributionMarginPercentage >=
+                              (appSettings.marginThresholdWarning || 20)
                             ? 'text-yellow-700'
                             : 'text-red-700'
                       }`}
                     >
-                      {settings.financialDisplayMode === 'advanced'
-                        ? `Margem de contribuição bruta`
-                        : `O que sobra`}
+                      {appSettings.financialDisplayMode === 'advanced'
+                        ? 'Margem de contribuição bruta'
+                        : 'O que sobra'}
                     </p>
                     <p
                       className={`text-base font-black tracking-tighter ${
-                        contributionMarginPercentage >= (settings.marginThresholdOptimal || 40)
+                        contributionMarginPercentage >= (appSettings.marginThresholdOptimal || 40)
                           ? 'text-green-700'
-                          : contributionMarginPercentage >= (settings.marginThresholdWarning || 20)
+                          : contributionMarginPercentage >=
+                              (appSettings.marginThresholdWarning || 20)
                             ? 'text-yellow-700'
                             : 'text-red-700'
                       }`}
@@ -238,7 +237,7 @@ export default async function ProdutosPage() {
                         style: 'currency',
                         currency: 'BRL',
                       })}{' '}
-                      {settings.financialDisplayMode === 'simple'
+                      {appSettings.financialDisplayMode === 'simple'
                         ? `(${contributionMarginPercentage.toFixed(1)}%)`
                         : `(${contributionMarginPercentage.toFixed(1)}% MC)`}
                     </p>
@@ -247,7 +246,7 @@ export default async function ProdutosPage() {
 
                 {product.materials.length > 0 && (
                   <div className="border-primary/5 mt-6 flex flex-wrap gap-2 border-t pt-4">
-                    {(product.materials as any[]).map((pm: any) => (
+                    {product.materials.map(pm => (
                       <div
                         key={pm.materialId}
                         className="bg-background border-border/50 flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold shadow-sm"
@@ -264,7 +263,7 @@ export default async function ProdutosPage() {
         </TabsContent>
 
         <TabsContent value="sandbox">
-          <PricingSandbox products={products as any} settings={settings} tenantPlan={plan} />
+          <PricingSandbox products={productsList} settings={appSettings} tenantPlan={plan} />
         </TabsContent>
       </Tabs>
     </div>

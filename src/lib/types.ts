@@ -301,6 +301,54 @@ export interface MaterialQueryResponse extends Material {
   }[]
 }
 
+export interface AppSettings {
+  id?: string
+  tenantId?: string
+  storeName?: string
+  hourlyRate?: number
+  phone?: string | null
+  email?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  logoUrl?: string | null
+  primaryColor?: string
+  msgQuotation?: string | null
+  msgApproved?: string | null
+  msgReady?: string | null
+  msgFinished?: string | null
+  workingHoursPerMonth?: number
+  desirableSalary?: number
+  quotationValidityDays?: number
+  defaultQuotationNotes?: string | null
+  addressStreet?: string | null
+  addressNumber?: string | null
+  addressComplement?: string | null
+  addressNeighborhood?: string | null
+  addressCity?: string | null
+  addressState?: string | null
+  addressZip?: string | null
+  defaultProfitMargin?: number
+  monthlyFixedCosts?: Array<{
+    id?: string
+    label?: string
+    value?: number
+    amount?: number
+    valor?: number
+    custo?: number
+  }>
+  taxRate?: number
+  cardFeeRate?: number
+  targetMonthlyProfit?: number
+  psychologicalPricingPattern?: string
+  financialDisplayMode?: 'simple' | 'advanced' | string
+  marginThresholdWarning?: number
+  marginThresholdOptimal?: number
+  whatsappPhoneNumberId?: string
+  whatsappAccessToken?: string
+  whatsappConfigVerified?: boolean
+  [key: string]: unknown
+}
+
 export interface OrderWithDetails extends Order {
   customer: Customer
   items: (OrderItem & {

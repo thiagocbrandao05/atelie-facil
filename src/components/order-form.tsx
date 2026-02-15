@@ -14,8 +14,18 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
-import { calculateOrderTotal, calculateSuggestedPrice, ProductWithMaterials } from '@/lib/logic'
-import { ActionResponse } from '@/lib/types'
+import { calculateSuggestedPrice, ProductWithMaterials } from '@/lib/logic'
+import { ActionResponse, Customer, OrderStatus } from '@/lib/types'
+
+type DiscountType = 'fixed' | 'percent'
+type CustomerOption = Pick<Customer, 'id' | 'name'>
+type OrderItemDraft = {
+  productId: string
+  productName: string
+  quantity: number
+  price: number
+  discount: number
+}
 
 export function OrderForm({
   products,
@@ -23,7 +33,7 @@ export function OrderForm({
   onSuccess,
 }: {
   products: ProductWithMaterials[]
-  customers: any[]
+  customers: CustomerOption[]
   onSuccess?: () => void
 }) {
   const router = useRouter()
@@ -37,22 +47,14 @@ export function OrderForm({
   const [selectedProductId, setSelectedProductId] = useState<string>('')
   const [quantity, setQuantity] = useState(1)
   const [itemDiscount, setItemDiscount] = useState(0)
-  const [itemDiscountType, setItemDiscountType] = useState<'fixed' | 'percent'>('fixed')
+  const [itemDiscountType, setItemDiscountType] = useState<DiscountType>('fixed')
 
   // Order discount
   const [orderDiscount, setOrderDiscount] = useState(0)
-  const [orderDiscountType, setOrderDiscountType] = useState<'fixed' | 'percent'>('fixed')
+  const [orderDiscountType, setOrderDiscountType] = useState<DiscountType>('fixed')
 
   // Cart
-  const [items, setItems] = useState<
-    {
-      productId: string
-      productName: string
-      quantity: number
-      price: number
-      discount?: number
-    }[]
-  >([])
+  const [items, setItems] = useState<OrderItemDraft[]>([])
 
   const selectedProduct = products.find(p => p.id === selectedProductId)
   const currentPrice = selectedProduct ? calculateSuggestedPrice(selectedProduct).suggestedPrice : 0
@@ -86,7 +88,7 @@ export function OrderForm({
     setItems(newItems)
   }
 
-  async function handleSubmit(status: string) {
+  async function handleSubmit(status: OrderStatus) {
     setLoading(true)
     setState({ success: false, message: '' })
 
@@ -94,8 +96,8 @@ export function OrderForm({
       const result = await createOrder({
         customerId,
         dueDate: new Date(dueDate),
-        items: items as any,
-        status: status,
+        items,
+        status,
         discount: finalOrderDiscount,
       })
 
@@ -204,7 +206,10 @@ export function OrderForm({
               Desc. (un)
             </Label>
             <div className="bg-background focus-within:ring-primary/30 flex h-10 overflow-hidden rounded-md border focus-within:ring-1">
-              <Select value={itemDiscountType} onValueChange={(v: any) => setItemDiscountType(v)}>
+              <Select
+                value={itemDiscountType}
+                onValueChange={value => setItemDiscountType(value as DiscountType)}
+              >
                 <SelectTrigger className="bg-muted/50 h-full w-[70px] rounded-r-none border-r border-none px-3 text-xs font-bold shadow-none focus:ring-0">
                   <SelectValue />
                 </SelectTrigger>
@@ -340,7 +345,7 @@ export function OrderForm({
               <div className="bg-background focus-within:ring-primary/20 focus-within:border-primary flex h-10 items-center overflow-hidden rounded-lg border shadow-sm focus-within:ring-2">
                 <Select
                   value={orderDiscountType}
-                  onValueChange={(v: any) => setOrderDiscountType(v)}
+                  onValueChange={value => setOrderDiscountType(value as DiscountType)}
                 >
                   <SelectTrigger className="bg-muted/40 h-full w-16 rounded-r-none border-r border-none px-3 text-xs font-bold shadow-none focus:ring-0">
                     <SelectValue />

@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { createProduct, updateProduct } from '@/features/products/actions'
-import { Material } from '@/lib/types'
+import { AppSettings, Material } from '@/lib/types'
 import { Plus, Trash2, Pencil, Package, Wand2, TrendingUp } from 'lucide-react'
 import { applyPsychologicalPricing } from '@/lib/finance/intelligence'
 import { useFormHandler } from '@/hooks/use-form-handler'
@@ -48,7 +48,7 @@ export function ProductForm({
 }: {
   availableMaterials: Material[]
   product?: ProductWithMaterials
-  settings: any
+  settings: AppSettings
   tenantPlan?: PlanType
 }) {
   const hourlyRate = Number(settings?.hourlyRate || 20)

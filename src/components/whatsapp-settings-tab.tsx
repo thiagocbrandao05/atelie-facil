@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'
 import { saveWhatsAppCredentials, validateWhatsAppCredentials } from '@/features/whatsapp/actions'
 import { toast } from 'sonner'
+import { AppSettings } from '@/lib/types'
+import { UsageSummary } from '@/features/subscription/types'
 
 const initialState = { success: false, message: '' }
 
@@ -33,8 +35,8 @@ export function WhatsAppSettingsTab({
   usageSummary,
   workspaceSlug,
 }: {
-  settings: any
-  usageSummary?: any
+  settings: AppSettings
+  usageSummary?: UsageSummary | null
   workspaceSlug: string
 }) {
   const [state, saveAction, isPending] = useActionState(saveWhatsAppCredentials, initialState)
@@ -101,7 +103,7 @@ export function WhatsAppSettingsTab({
       </Card>
 
       {/* Usage Limits Card */}
-      <WhatsAppUsageCard summary={usageSummary} workspaceSlug={workspaceSlug} />
+      <WhatsAppUsageCard summary={usageSummary ?? null} workspaceSlug={workspaceSlug} />
 
       {/* Tutorial Accordion */}
       <Card className="border-blue-100 bg-blue-50/50">
