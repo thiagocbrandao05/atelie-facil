@@ -15,6 +15,12 @@ export type SupplyRecommendation = {
   suggestedPurchase: number
 }
 
+type ProductRecipeRow = {
+  productId: string
+  materialId: string
+  quantity: number
+}
+
 export async function getSupplyRecommendations(): Promise<SupplyRecommendation[]> {
   const user = await getCurrentUser()
   if (!user) throw new Error('Unauthorized')
@@ -44,7 +50,7 @@ export async function getSupplyRecommendations(): Promise<SupplyRecommendation[]
   // Map<MaterialId, Usage>
   const materialUsage = new Map<string, number>()
 
-  recipes?.forEach((recipe: any) => {
+  ;(recipes as ProductRecipeRow[] | null)?.forEach(recipe => {
     const forecast = forecasts.find(f => f.productId === recipe.productId)
     if (!forecast) return
 

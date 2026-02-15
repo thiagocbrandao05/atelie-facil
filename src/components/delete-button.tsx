@@ -14,10 +14,11 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
+import type { ActionResponse } from '@/lib/types'
 
 interface DeleteButtonProps {
   id: string
-  onDelete: (id: string) => Promise<any>
+  onDelete: (id: string) => Promise<ActionResponse>
   label?: string
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
   className?: string

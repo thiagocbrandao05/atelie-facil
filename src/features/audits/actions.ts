@@ -8,6 +8,12 @@ export type AuditLogWithUser = AuditLog & {
   user: Pick<User, 'name' | 'email'> | null
 }
 
+type AuditStats = {
+  totalLogs: number
+  recentActivity: number
+  actionBreakdown: { action: string; count: number }[]
+}
+
 export interface AuditFilters {
   action?: AuditAction
   entity?: string
@@ -77,7 +83,7 @@ export async function getAuditLogs(
   }
 
   return {
-    data: data as any as AuditLogWithUser[],
+    data: (data || []) as AuditLogWithUser[],
     total: count || 0,
     page,
     pageSize,
@@ -96,17 +102,14 @@ export async function getAuditStats() {
     const supabase = await createClient()
 
     // Use RPC for stats aggregation
+    // @ts-expect-error legacy rpc typing missing in generated Database type
     const { data, error } = await supabase.rpc('get_audit_stats', {
       p_tenant_id: user.tenantId,
-    } as any)
+    })
 
     if (error) throw error
 
-    return data as {
-      totalLogs: number
-      recentActivity: number
-      actionBreakdown: { action: string; count: number }[]
-    }
+    return data as AuditStats
   } catch (e) {
     console.error('Error fetching audit stats:', e)
     return null

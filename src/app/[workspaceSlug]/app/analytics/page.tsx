@@ -15,6 +15,14 @@ export const metadata = {
 
 export const revalidate = 300 // Revalidate every 5 minutes
 
+type RecentActivityItem = {
+  id: string
+  action: string
+  entity: string
+  createdAt: string | Date
+  user?: { name?: string | null } | null
+}
+
 export default async function AnalyticsPage() {
   const [salesMetrics, inventoryMetrics, topProducts, recentActivity] = await Promise.all([
     getSalesMetrics(30),
@@ -165,7 +173,7 @@ export default async function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentActivity.map((activity: any) => (
+              {(recentActivity as RecentActivityItem[]).map(activity => (
                 <div key={activity.id} className="flex items-center justify-between text-sm">
                   <div>
                     <span className="font-medium">{activity.user?.name || 'Sistema'}</span>

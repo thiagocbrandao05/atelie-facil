@@ -24,8 +24,9 @@ import { useMediaQuery } from '@/hooks/use-media-query'
 import { useFinancials } from '@/features/financials/use-financials'
 import { cn } from '@/lib/utils'
 import * as Icons from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   'shopping-bag': Icons.ShoppingBag,
   scissors: Icons.Scissors,
   package: Icons.Package,

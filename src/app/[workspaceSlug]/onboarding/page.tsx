@@ -75,14 +75,15 @@ export default async function OnboardingPage(props: {
     .single()
 
   if (!workspace) redirect('/')
+  const workspaceData = workspace as { id: string; name: string }
 
   const { data: planData } = await supabase
     .from('WorkspacePlans')
     .select('plan')
-    .eq('workspaceId', (workspace as any).id)
+    .eq('workspaceId', workspaceData.id)
     .single()
 
-  const currentPlan: PlanType = (planData as any)?.plan || 'start'
+  const currentPlan: PlanType = (planData as { plan?: PlanType } | null)?.plan || 'start'
   const steps = STEPS_BY_PLAN[currentPlan] ?? STEPS_BY_PLAN.start ?? []
 
   return (
@@ -90,7 +91,7 @@ export default async function OnboardingPage(props: {
       <div className="mb-12 text-center">
         <h1 className="mb-4 text-3xl font-bold">Bem-vindo(a) ao Atelis</h1>
         <p className="text-muted-foreground text-lg">
-          Vamos configurar seu ateliê <strong>{(workspace as any).name}</strong>.
+          Vamos configurar seu ateliê <strong>{workspaceData.name}</strong>.
         </p>
       </div>
 

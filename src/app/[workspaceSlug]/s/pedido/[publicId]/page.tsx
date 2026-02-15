@@ -11,19 +11,31 @@ type Props = {
   }>
 }
 
+type PublicOrderRow = {
+  id: string
+  tenantSlug: string
+  tenantName: string
+  customerName: string
+  orderNumber?: number | null
+  status: string
+  dueDate?: string | null
+}
+
 export default async function PublicTrackingPage({ params }: Props) {
   const { workspaceSlug, publicId } = await params
   const supabase = await createClient()
 
-  const { data: order, error } = await (supabase as any).rpc('get_public_order', {
+  // @ts-expect-error legacy rpc typing missing in generated Database type
+  const { data: order, error } = await supabase.rpc('get_public_order', {
     p_public_id: publicId,
   })
+  const orderRows = (order || []) as PublicOrderRow[]
 
-  if (error || !order || order.length === 0 || order[0].tenantSlug !== workspaceSlug) {
+  if (error || orderRows.length === 0 || orderRows[0].tenantSlug !== workspaceSlug) {
     notFound()
   }
 
-  const data = order[0]
+  const data = orderRows[0]
 
   // Simplified Status Timeline Logic
   // In a real app, you'd fetch a status history table.

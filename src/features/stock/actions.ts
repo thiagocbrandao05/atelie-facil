@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
@@ -8,14 +8,14 @@ import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-res
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 const stockEntryItemSchema = z.object({
-  materialId: z.string().min(1, 'Material é obrigatório'),
+  materialId: z.string().min(1, 'Material e obrigatorio'),
   quantity: z.coerce.number().positive('Quantidade deve ser maior que zero'),
-  unitCost: z.coerce.number().min(0, 'Custo unitário deve ser positivo'),
+  unitCost: z.coerce.number().min(0, 'Custo unitario deve ser positivo'),
   color: z.string().optional().nullable(),
 })
 
 const createStockEntrySchema = z.object({
-  supplierName: z.string().min(1, 'Nome do fornecedor é obrigatório'),
+  supplierName: z.string().min(1, 'Nome do fornecedor e obrigatorio'),
   freightCost: z.coerce.number().min(0).default(0),
   items: z.array(stockEntryItemSchema).min(1, 'Adicione pelo menos um item'),
   note: z.string().optional(),
@@ -24,23 +24,37 @@ const createStockEntrySchema = z.object({
 })
 
 const manualMovementSchema = z.object({
-  materialId: z.string().min(1, 'Material é obrigatório'),
+  materialId: z.string().min(1, 'Material e obrigatorio'),
   type: z.enum(['ENTRADA_AJUSTE', 'SAIDA_AJUSTE', 'PERDA', 'RETIRADA', 'ENTRADA']),
   quantity: z.coerce.number().positive('Quantidade deve ser maior que zero'),
   color: z.string().optional().nullable(),
   note: z.string().optional(),
 })
 
+type InventoryMovementRow = {
+  materialId: string
+  type: string
+  quantity: number
+  color: string | null
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return 'Erro desconhecido'
+}
+
 export async function createStockEntry(
-  prevState: any,
+  _prevState: unknown,
   formData: FormData
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
-  let itemsRaw = []
+  let itemsRaw: z.infer<typeof stockEntryItemSchema>[] = []
   try {
-    itemsRaw = JSON.parse((formData.get('items') as string) || '[]')
+    itemsRaw = JSON.parse((formData.get('items') as string) || '[]') as z.infer<
+      typeof stockEntryItemSchema
+    >[]
   } catch {
     return actionError('Erro ao processar itens da entrada')
   }
@@ -56,7 +70,7 @@ export async function createStockEntry(
 
   const validated = createStockEntrySchema.safeParse(rawData)
   if (!validated.success) {
-    return actionError('Erro de validação', validated.error.flatten().fieldErrors)
+    return actionError('Erro de validacao', validated.error.flatten().fieldErrors)
   }
 
   const { supplierName, freightCost, items, note, paymentMethod, installments } = validated.data
@@ -66,7 +80,8 @@ export async function createStockEntry(
   const supabase = await createClient()
 
   try {
-    const { error } = await (supabase as any).rpc('create_stock_entry_transaction', {
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { error } = await supabase.rpc('create_stock_entry_transaction', {
       p_tenant_id: user.tenantId,
       p_supplier_name: supplierName,
       p_freight_cost: freightCost,
@@ -84,14 +99,14 @@ export async function createStockEntry(
       revalidateWorkspaceAppPaths(slug, ['/estoque'])
     }
     return actionSuccess('Entrada de estoque registrada com sucesso!')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create Stock Entry Error:', error)
-    return actionError('Erro ao registrar entrada: ' + error.message)
+    return actionError('Erro ao registrar entrada: ' + getErrorMessage(error))
   }
 }
 
 export async function addManualStockMovement(
-  prevState: any,
+  _prevState: unknown,
   formData: FormData
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
@@ -107,20 +122,21 @@ export async function addManualStockMovement(
 
   const validated = manualMovementSchema.safeParse(rawData)
   if (!validated.success) {
-    return actionError('Erro de validação', validated.error.flatten().fieldErrors)
+    return actionError('Erro de validacao', validated.error.flatten().fieldErrors)
   }
 
   const { materialId, type, quantity, color, note } = validated.data
 
   if ((type === 'PERDA' || type === 'RETIRADA') && !note?.trim()) {
-    return actionError('Observação é obrigatória para Perda ou Retirada', {
-      note: ['Campo obrigatório'],
+    return actionError('Observacao e obrigatoria para Perda ou Retirada', {
+      note: ['Campo obrigatorio'],
     })
   }
 
   const supabase = await createClient()
 
-  const { error } = await (supabase as any).from('stock_movements').insert({
+  // @ts-expect-error legacy schema not fully represented in generated DB types
+  const { error } = await supabase.from('stock_movements').insert({
     tenant_id: user.tenantId,
     material_id: materialId,
     type,
@@ -132,14 +148,14 @@ export async function addManualStockMovement(
 
   if (error) {
     console.error('Manual Movement Error:', error)
-    return actionError('Erro ao registrar movimentação')
+    return actionError('Erro ao registrar movimentacao')
   }
 
   const slug = user.tenant?.slug
   if (slug) {
     revalidateWorkspaceAppPaths(slug, ['/estoque'])
   }
-  return actionSuccess('Movimentação registrada com sucesso!')
+  return actionSuccess('Movimentacao registrada com sucesso!')
 }
 
 export async function getStockReport() {
@@ -155,7 +171,7 @@ export async function getStockReport() {
   if (error || !movements) return []
 
   const stockMap = new Map<string, number>()
-  const movementsList = movements as any[]
+  const movementsList = movements as InventoryMovementRow[]
 
   movementsList.forEach(movement => {
     const qty = Number(movement.quantity)

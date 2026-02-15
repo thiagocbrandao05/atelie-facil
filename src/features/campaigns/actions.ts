@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
@@ -13,14 +13,35 @@ type CreateCampaignInput = {
   recipientIds: string[]
 }
 
+type CampaignRecord = {
+  id: string
+  campaignToken: string
+  messageText: string
+  imageUrl?: string | null
+}
+
+type CampaignRecipientRecord = {
+  id: string
+  customer?: {
+    phone?: string | null
+    name?: string | null
+  } | null
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return 'Erro desconhecido'
+}
+
 export async function createCampaign(input: CreateCampaignInput) {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
   const supabase = await createClient()
 
-  const { data: campaign, error: campaignError } = await (supabase as any)
+  const { data: campaign, error: campaignError } = await supabase
     .from('Campaign')
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     .insert({
       tenantId: user.tenantId,
       name: input.name,
@@ -31,25 +52,27 @@ export async function createCampaign(input: CreateCampaignInput) {
     .select()
     .single()
 
-  if (campaignError || !campaign) {
+  const campaignRecord = campaign as CampaignRecord | null
+  if (campaignError || !campaignRecord) {
     console.error('Error creating campaign:', campaignError)
     return actionError('Erro ao criar campanha.')
   }
 
   const recipientsData = input.recipientIds.map(customerId => ({
-    campaignId: campaign.id,
+    campaignId: campaignRecord.id,
     customerId,
     status: 'PENDING',
   }))
 
   if (recipientsData.length > 0) {
-    const { error: recipientError } = await (supabase as any)
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { error: recipientError } = await supabase
       .from('CampaignRecipient')
       .insert(recipientsData)
 
     if (recipientError) {
       console.error('Error adding recipients:', recipientError)
-      return actionError('Campanha criada, mas erro ao adicionar destinatários.')
+      return actionError('Campanha criada, mas erro ao adicionar destinatarios.')
     }
   }
 
@@ -58,7 +81,7 @@ export async function createCampaign(input: CreateCampaignInput) {
     revalidateWorkspaceAppPaths(slug, ['/configuracoes/campanhas'])
   }
 
-  return actionSuccess('Campanha criada com sucesso!', { campaignId: (campaign as any).id })
+  return actionSuccess('Campanha criada com sucesso!', { campaignId: campaignRecord.id })
 }
 
 export async function sendCampaign(campaignId: string) {
@@ -67,58 +90,55 @@ export async function sendCampaign(campaignId: string) {
 
   const credsCheck = await validateWhatsAppCredentials()
   if (!credsCheck.success) {
-    return actionError('Credenciais do WhatsApp inválidas. Verifique configurações.')
+    return actionError('Credenciais do WhatsApp invalidas. Verifique configuracoes.')
   }
 
   const supabase = await createClient()
 
-  const { data: campaign } = await (supabase as any)
+  const { data: campaign } = await supabase
     .from('Campaign')
     .select('*')
     .eq('id', campaignId)
     .single()
-  if (!campaign) return actionError('Campanha não encontrada.')
+  const campaignRecord = campaign as CampaignRecord | null
+  if (!campaignRecord) return actionError('Campanha nao encontrada.')
 
-  const { data: recipients } = await (supabase as any)
+  const { data: recipients } = await supabase
     .from('CampaignRecipient')
     .select('*, customer:Customer(phone, name)')
     .eq('campaignId', campaignId)
     .eq('status', 'PENDING')
 
-  if (!recipients || recipients.length === 0) {
-    return actionSuccess('Não há destinatários pendentes para envio.', {
+  const recipientsList = (recipients || []) as CampaignRecipientRecord[]
+  if (recipientsList.length === 0) {
+    return actionSuccess('Nao ha destinatarios pendentes para envio.', {
       stats: { successCount: 0, failureCount: 0 },
     })
   }
 
   try {
     await import('@/features/whatsapp/limits').then(m =>
-      m.ensureCanSendCampaign(user.tenantId, recipients.length)
+      m.ensureCanSendCampaign(user.tenantId, recipientsList.length)
     )
-  } catch (error: any) {
-    return actionError(error.message)
+  } catch (error: unknown) {
+    return actionError(getErrorMessage(error))
   }
 
   let successCount = 0
   let failureCount = 0
 
-  const publicLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://ateliefacil.com'}/${user.tenant?.slug}/s/campanha/${(campaign as any).campaignToken}`
+  const publicLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://ateliefacil.com'}/${user.tenant?.slug}/s/campanha/${campaignRecord.campaignToken}`
 
-  for (const recipient of recipients) {
-    const customer = (recipient as any).customer
+  for (const recipient of recipientsList) {
+    const customer = recipient.customer
     if (!customer?.phone) {
-      await updateRecipientStatus(
-        supabase,
-        (recipient as any).id,
-        'FAILED',
-        'Telefone não cadastrado'
-      )
+      await updateRecipientStatus(supabase, recipient.id, 'FAILED', 'Telefone nao cadastrado')
       failureCount++
       continue
     }
 
-    let message = campaign.messageText
-    message = message.replace('{cliente}', customer.name).replace('{link}', publicLink)
+    let message = campaignRecord.messageText
+    message = message.replace('{cliente}', customer.name || 'cliente').replace('{link}', publicLink)
     if (!message.includes(publicLink) && !message.includes('{link}')) {
       message += `\n\nVeja mais: ${publicLink}`
     }
@@ -126,20 +146,14 @@ export async function sendCampaign(campaignId: string) {
     const result = await sendWhatsAppMessage({
       phone: customer.phone,
       message,
-      imageUrl: (campaign as any).imageUrl || undefined,
+      imageUrl: campaignRecord.imageUrl || undefined,
     })
 
     if (result.success) {
-      await updateRecipientStatus(
-        supabase,
-        (recipient as any).id,
-        'SENT',
-        null,
-        new Date().toISOString()
-      )
+      await updateRecipientStatus(supabase, recipient.id, 'SENT', null, new Date().toISOString())
       successCount++
     } else {
-      await updateRecipientStatus(supabase, (recipient as any).id, 'FAILED', result.message)
+      await updateRecipientStatus(supabase, recipient.id, 'FAILED', result.message)
       failureCount++
     }
   }
@@ -156,7 +170,7 @@ export async function sendCampaign(campaignId: string) {
 }
 
 async function updateRecipientStatus(
-  supabase: any,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   id: string,
   status: string,
   errorMsg?: string | null,
@@ -164,6 +178,7 @@ async function updateRecipientStatus(
 ) {
   await supabase
     .from('CampaignRecipient')
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     .update({
       status,
       errorMessage: errorMsg,
@@ -179,7 +194,7 @@ export async function getCampaigns() {
 
   const supabase = await createClient()
 
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from('Campaign')
     .select(
       `

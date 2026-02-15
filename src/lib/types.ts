@@ -223,7 +223,7 @@ export interface AuditLog {
   action: AuditAction
   entity: string
   entityId: string
-  details: any
+  details: Record<string, unknown> | null
   createdAt: Date
 }
 
@@ -299,6 +299,54 @@ export interface MaterialQueryResponse extends Material {
   v_material_last_costs?: {
     last_cost: number
   }[]
+}
+
+export interface AppSettings {
+  id?: string
+  tenantId?: string
+  storeName?: string
+  hourlyRate?: number
+  phone?: string | null
+  email?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  logoUrl?: string | null
+  primaryColor?: string
+  msgQuotation?: string | null
+  msgApproved?: string | null
+  msgReady?: string | null
+  msgFinished?: string | null
+  workingHoursPerMonth?: number
+  desirableSalary?: number
+  quotationValidityDays?: number
+  defaultQuotationNotes?: string | null
+  addressStreet?: string | null
+  addressNumber?: string | null
+  addressComplement?: string | null
+  addressNeighborhood?: string | null
+  addressCity?: string | null
+  addressState?: string | null
+  addressZip?: string | null
+  defaultProfitMargin?: number
+  monthlyFixedCosts?: Array<{
+    id?: string
+    label?: string
+    value?: number
+    amount?: number
+    valor?: number
+    custo?: number
+  }>
+  taxRate?: number
+  cardFeeRate?: number
+  targetMonthlyProfit?: number
+  psychologicalPricingPattern?: string
+  financialDisplayMode?: 'simple' | 'advanced' | string
+  marginThresholdWarning?: number
+  marginThresholdOptimal?: number
+  whatsappPhoneNumberId?: string
+  whatsappAccessToken?: string
+  whatsappConfigVerified?: boolean
+  [key: string]: unknown
 }
 
 export interface OrderWithDetails extends Order {
@@ -402,7 +450,7 @@ export interface OrderFormData {
 // API Response Types
 // ============================================================================
 
-export interface ActionResponse<T = any> {
+export interface ActionResponse<T = unknown> {
   success: boolean
   message: string
   errors?: Record<string, string[]>
@@ -462,7 +510,7 @@ export interface DialogState {
   setOpen: (open: boolean) => void
 }
 
-export interface FormState<T = any> extends ActionResponse<T> {
+export interface FormState<T = unknown> extends ActionResponse<T> {
   isPending: boolean
 }
 
@@ -470,10 +518,14 @@ export interface FormState<T = any> extends ActionResponse<T> {
 // Type Guards
 // ============================================================================
 
-export function isProductWithMaterials(product: any): product is ProductWithMaterials {
-  return product && Array.isArray(product.materials)
+export function isProductWithMaterials(product: unknown): product is ProductWithMaterials {
+  if (!product || typeof product !== 'object') return false
+  const candidate = product as { materials?: unknown }
+  return Array.isArray(candidate.materials)
 }
 
-export function isOrderWithDetails(order: any): order is OrderWithDetails {
-  return order && order.customer && Array.isArray(order.items)
+export function isOrderWithDetails(order: unknown): order is OrderWithDetails {
+  if (!order || typeof order !== 'object') return false
+  const candidate = order as { customer?: unknown; items?: unknown }
+  return !!candidate.customer && Array.isArray(candidate.items)
 }

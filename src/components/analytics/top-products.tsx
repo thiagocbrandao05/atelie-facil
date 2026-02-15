@@ -1,6 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export function TopProducts({ data }: { data: any[] }) {
+type TopProductItem = {
+  name?: string
+  value?: number
+  productName?: string
+  quantity?: number
+}
+
+export function TopProducts({ data }: { data: TopProductItem[] }) {
   return (
     <Card>
       <CardHeader>
@@ -13,8 +20,12 @@ export function TopProducts({ data }: { data: any[] }) {
           ) : (
             data.map((item, index) => (
               <div key={index} className="flex items-center justify-between">
-                <span className="text-sm leading-none font-medium">{item.name}</span>
-                <span className="text-muted-foreground text-sm font-bold">{item.value} un.</span>
+                <span className="text-sm leading-none font-medium">
+                  {item.name || item.productName || 'Produto'}
+                </span>
+                <span className="text-muted-foreground text-sm font-bold">
+                  {item.value ?? item.quantity ?? 0} un.
+                </span>
               </div>
             ))
           )}

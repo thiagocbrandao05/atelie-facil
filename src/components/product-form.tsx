@@ -22,9 +22,9 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { createProduct, updateProduct } from '@/features/products/actions'
-import { Material } from '@/lib/types'
+import { AppSettings, Material } from '@/lib/types'
 import { Plus, Trash2, Pencil, Package, Wand2, TrendingUp } from 'lucide-react'
-import { applyPsychologicalPricing } from '@/lib/finance/intelligence'
+import { applyPsychologicalPricing, type PsychologicalPattern } from '@/lib/finance/intelligence'
 import { useFormHandler } from '@/hooks/use-form-handler'
 import { calculateMaterialCost, calculateSuggestedPrice, ProductWithMaterials } from '@/lib/logic'
 import { UNITS } from '@/lib/units'
@@ -34,6 +34,12 @@ type MaterialItem = {
   quantity: number
   unit: string
   color: string | null
+}
+
+const PSYCHOLOGICAL_PATTERNS: readonly PsychologicalPattern[] = ['90', '99', '97', 'round']
+
+function isPsychologicalPattern(value: unknown): value is PsychologicalPattern {
+  return typeof value === 'string' && PSYCHOLOGICAL_PATTERNS.includes(value as PsychologicalPattern)
 }
 
 import { PlanType } from '@/features/subscription/types'
@@ -48,7 +54,7 @@ export function ProductForm({
 }: {
   availableMaterials: Material[]
   product?: ProductWithMaterials
-  settings: any
+  settings: AppSettings
   tenantPlan?: PlanType
 }) {
   const hourlyRate = Number(settings?.hourlyRate || 20)
@@ -151,8 +157,9 @@ export function ProductForm({
   const previewMaterials = selectedMaterials
     .map(item => {
       const mat = availableMaterials.find(m => m.id === item.id)
+      if (!mat) return null
       return {
-        material: mat!,
+        material: mat,
         quantity: item.quantity,
         unit: item.unit,
         productId: '',
@@ -161,7 +168,7 @@ export function ProductForm({
         id: 'temp-' + item.id,
       }
     })
-    .filter(pm => pm.material)
+    .filter((pm): pm is NonNullable<typeof pm> => pm !== null)
 
   const totalCost = calculateMaterialCost(previewMaterials)
 
@@ -443,7 +450,7 @@ export function ProductForm({
                           {selectedMaterials.map(item => {
                             const mat = availableMaterials.find(m => m.id === item.id)
                             const costNode = mat
-                              ? (((mat as any).cost || 0) * item.quantity).toFixed(2)
+                              ? ((mat.cost || 0) * item.quantity).toFixed(2)
                               : '?'
                             return (
                               <div
@@ -561,7 +568,9 @@ export function ProductForm({
                           R${' '}
                           {(() => {
                             const totalMonthlyFixed = monthlyFixedCosts.reduce(
-                              (acc: number, item: any) => acc + (Number(item.value) || 0),
+                              (acc, item) =>
+                                acc +
+                                Number(item.value ?? item.amount ?? item.valor ?? item.custo ?? 0),
                               0
                             )
                             const fixedCostPerHour =
@@ -580,7 +589,7 @@ export function ProductForm({
                         {
                           laborTime: Number(laborTime || 0),
                           profitMargin: Number(profitMargin || 0),
-                          materials: previewMaterials as any,
+                          materials: previewMaterials,
                           cost: isReseller(tenantPlan) ? product?.cost || 0 : 0,
                         },
                         hourlyRate,
@@ -717,10 +726,13 @@ export function ProductForm({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                  const pattern = settings.psychologicalPricingPattern || '90'
+                                  const rawPattern = settings.psychologicalPricingPattern
+                                  const pattern = isPsychologicalPattern(rawPattern)
+                                    ? rawPattern
+                                    : '90'
                                   const refined = applyPsychologicalPricing(
                                     simulation.suggestedPrice,
-                                    pattern as any
+                                    pattern
                                   )
                                   setPrice(refined.toString())
                                 }}

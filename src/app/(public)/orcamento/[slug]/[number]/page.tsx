@@ -6,6 +6,32 @@ import { PrintButton } from '@/components/print-button'
 import { Phone, Mail, MapPin, Globe } from 'lucide-react'
 import Image from 'next/image'
 
+type PublicOrderRpcItem = {
+  productName: string
+  quantity: number
+  price?: number
+  discount?: number
+}
+
+type PublicOrderRpc = {
+  tenantName: string
+  storePhone?: string | null
+  storeEmail?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  logoUrl?: string | null
+  customerName: string
+  customerPhone?: string | null
+  customerAddress?: string | null
+  dueDate: string
+  createdAt: string
+  orderNumber: number
+  status: string
+  items: PublicOrderRpcItem[]
+  totalValue: number
+  defaultQuotationNotes?: string | null
+}
+
 export default async function FriendlyQuotationPage(props: {
   params: Promise<{ slug: string; number: string }>
   searchParams: Promise<{ p?: string }>
@@ -32,7 +58,8 @@ export default async function FriendlyQuotationPage(props: {
   }
 
   // Fetch order data via existing RPC
-  const { data, error: rpcError } = await (supabase as any).rpc('get_public_order', {
+  // @ts-expect-error legacy schema not fully represented in generated DB types
+  const { data, error: rpcError } = await supabase.rpc('get_public_order', {
     p_public_id: publicId,
   })
 
@@ -41,7 +68,7 @@ export default async function FriendlyQuotationPage(props: {
     notFound()
   }
 
-  const order = data[0]
+  const order = data[0] as unknown as PublicOrderRpc
 
   // Fallback tenantId fetch if RPC one is ambiguous (RPC returns order.id as "id")
   // Actually, let's just use the order.id from the RPC which is o."id" (the order id).
@@ -181,7 +208,7 @@ export default async function FriendlyQuotationPage(props: {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {(order.items || []).map((item: any, idx: number) => {
+              {(order.items || []).map((item, idx: number) => {
                 const unitPrice = (item.price || 0) - (item.discount || 0)
                 const subtotal = unitPrice * item.quantity
                 return (
@@ -190,10 +217,10 @@ export default async function FriendlyQuotationPage(props: {
                       <p className="text-base leading-tight font-black text-slate-800">
                         {item.productName}
                       </p>
-                      {item.discount > 0 && (
+                      {(item.discount || 0) > 0 && (
                         <p className="mt-1 text-[10px] font-bold tracking-tight text-rose-500 uppercase italic">
                           Desconto:{' '}
-                          {item.discount.toLocaleString('pt-BR', {
+                          {(item.discount || 0).toLocaleString('pt-BR', {
                             style: 'currency',
                             currency: 'BRL',
                           })}{' '}

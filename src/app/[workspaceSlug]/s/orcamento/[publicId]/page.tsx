@@ -12,22 +12,41 @@ type Props = {
   }>
 }
 
+type PublicOrderItem = {
+  productName: string
+  quantity: number
+}
+
+type PublicOrderData = {
+  id: string
+  tenantSlug: string
+  tenantName: string
+  customerName: string
+  status: string
+  createdAt: string
+  totalValue: number
+  items: PublicOrderItem[]
+}
+
 export default async function PublicBudgetPage({ params }: Props) {
   const { workspaceSlug, publicId } = await params
   const supabase = await createClient()
 
   // Call the RPC to get public order details
-  const { data: order, error } = await (supabase as any).rpc('get_public_order', {
+  // @ts-expect-error legacy schema not fully represented in generated DB types
+  const { data: order, error } = await supabase.rpc('get_public_order', {
     p_public_id: publicId,
   })
 
+  const orderRows = (order as unknown as PublicOrderData[] | null) ?? []
+
   // Validate if order exists and belongs to the correct workspace
   // The RPC already joins Tenant, so we just check the slug
-  if (error || !order || order.length === 0 || order[0].tenantSlug !== workspaceSlug) {
+  if (error || orderRows.length === 0 || orderRows[0].tenantSlug !== workspaceSlug) {
     notFound()
   }
 
-  const data = order[0]
+  const data = orderRows[0]
   const isBudget = data.status === 'DRAFT' || data.status === 'PENDING' // Assuming these are budget/quote statuses
 
   return (
@@ -67,7 +86,7 @@ export default async function PublicBudgetPage({ params }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {(data.items as any[])?.map((item: any, idx: number) => (
+                  {(data.items || []).map((item, idx: number) => (
                     <tr key={idx} className="bg-card">
                       <td className="px-4 py-3">{item.productName}</td>
                       <td className="px-4 py-3 text-right">{item.quantity}</td>

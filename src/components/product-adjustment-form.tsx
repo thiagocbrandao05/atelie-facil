@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Product } from '@/lib/types'
+import { ActionResponse, Product } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,7 +26,7 @@ export function ProductAdjustmentForm({ products }: ProductAdjustmentFormProps) 
   const [quantity, setQuantity] = useState('')
   const [reason, setReason] = useState('')
 
-  const handleAction = async (prevState: any, formData: FormData) => {
+  const handleAction = async (_prevState: ActionResponse, _formData: FormData) => {
     const qty = parseFloat(quantity)
     if (isNaN(qty) || qty <= 0) {
       return { success: false, message: 'Quantidade inválida' }
@@ -38,7 +38,7 @@ export function ProductAdjustmentForm({ products }: ProductAdjustmentFormProps) 
     return await adjustProductStock(productId, qty, type, reason)
   }
 
-  const { state, formAction, isPending } = useFormHandler(handleAction as any)
+  const { state, formAction, isPending } = useFormHandler(handleAction)
 
   return (
     <form action={formAction} className="mx-auto max-w-2xl space-y-6 py-4">

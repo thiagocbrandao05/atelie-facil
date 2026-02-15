@@ -12,6 +12,13 @@ interface AnimatedSectionProps {
   viewportAmount?: number
 }
 
+type VariantState = {
+  opacity: number
+  x?: number
+  y?: number
+  scale?: number
+}
+
 export function AnimatedSection({
   children,
   className,
@@ -23,8 +30,8 @@ export function AnimatedSection({
   const isInView = useInView(ref, { once: true, amount: viewportAmount })
 
   const getVariants = () => {
-    const hidden: any = { opacity: 0 }
-    const visible: any = { opacity: 1 }
+    const hidden: VariantState = { opacity: 0 }
+    const visible: VariantState = { opacity: 1 }
 
     switch (direction) {
       case 'up':

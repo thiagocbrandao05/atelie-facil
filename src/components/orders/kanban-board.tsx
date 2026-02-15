@@ -6,13 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { updateOrderStatus } from '@/features/orders/actions'
 import { toast } from 'sonner'
-import { Order } from '@/lib/types'
+import type { OrderStatus } from '@/lib/types'
 import { Package as PackageIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
+type KanbanOrder = {
+  id: string
+  status: OrderStatus
+  dueDate: string | Date | null
+  totalValue: number
+  customer?: { name: string | null } | null
+  items?: Array<{ quantity: number; product?: { name: string } | null }>
+}
+
 type KanbanBoardProps = {
-  initialOrders: any[]
+  initialOrders: KanbanOrder[]
 }
 
 const STATUS_CONFIG = {
@@ -38,7 +47,7 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
     if (!result.destination) return
 
     const { source, destination, draggableId } = result
-    const newStatus = destination.droppableId as any
+    const newStatus = destination.droppableId as OrderStatus
 
     if (source.droppableId === destination.droppableId) return
 
@@ -118,7 +127,7 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
                               </div>
                               <div className="text-muted-foreground line-clamp-1 text-[11px] font-medium italic">
                                 {order.items
-                                  ?.map((i: any) => `${i.quantity} ${i.product?.name}`)
+                                  ?.map(i => `${i.quantity} ${i.product?.name}`)
                                   .join(', ') || 'Sem itens cadastrados'}
                               </div>
                             </div>

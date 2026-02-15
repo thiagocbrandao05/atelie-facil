@@ -13,6 +13,14 @@ import { analyzeProfitability } from './finance/intelligence'
 export { HOURLY_RATE }
 export type { ProductWithMaterials }
 
+type FixedCostLike = {
+  value?: number | string | null
+  amount?: number | string | null
+  valor?: number | string | null
+  custo?: number | string | null
+  [key: string]: unknown
+}
+
 /**
  * Calculates the total material cost for a product based on its composition.
  */
@@ -52,16 +60,16 @@ export function calculateSuggestedPrice(
         lastCost?: number
       },
   hourlyRate: number = HOURLY_RATE,
-  monthlyFixedCosts: any[] = [],
+  monthlyFixedCosts: FixedCostLike[] = [],
   workingHoursPerMonth: number = 160,
   taxRate: number = 0,
   cardFeeRate: number = 0
 ): PriceCalculation {
   const laborTime = Number(product.laborTime || 0)
-  const profitMargin = Number((product as any).profitMargin ?? 0)
+  const profitMargin = Number(product.profitMargin ?? 0)
 
   // Use Product.cost (MPM) preferably, fallback to lastCost (legacy/deprecated)
-  const purchaseCost = product.cost ?? (product as any).lastCost ?? 0
+  const purchaseCost = product.cost ?? product.lastCost ?? 0
   const materialCost = calculateMaterialCost(product.materials)
 
   const laborCostTotal = calculateLaborCost(laborTime, hourlyRate)
@@ -69,8 +77,8 @@ export function calculateSuggestedPrice(
   // Calculate fixed cost distribution
   const totalMonthlyFixed = Array.isArray(monthlyFixedCosts)
     ? monthlyFixedCosts.reduce(
-        (acc, item: any) =>
-          acc + (Number(item.value || item.amount || item.valor || item.custo) || 0),
+        (acc, item) =>
+          acc + (Number(item.value ?? item.amount ?? item.valor ?? item.custo ?? 0) || 0),
         0
       )
     : 0
@@ -131,7 +139,7 @@ export function calculateOrderTotal(
 export function summarizeFinancials(
   orders: { totalValue: number; items: OrderItemWithProduct[] }[],
   hourlyRate: number = HOURLY_RATE,
-  monthlyFixedCosts: any[] = [],
+  monthlyFixedCosts: FixedCostLike[] = [],
   workingHoursPerMonth: number = 160
 ): FinancialSummary {
   return orders.reduce(
@@ -141,7 +149,7 @@ export function summarizeFinancials(
       const totalCosts = order.items.reduce((itemAcc: number, item) => {
         const product = item.product
         const calc = calculateSuggestedPrice(
-          product as any,
+          product,
           hourlyRate,
           monthlyFixedCosts,
           workingHoursPerMonth

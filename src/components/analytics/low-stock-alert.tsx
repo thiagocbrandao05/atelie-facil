@@ -1,7 +1,14 @@
 import { AlertTriangle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export function LowStockAlert({ data }: { data: any[] }) {
+type LowStockAlertItem = {
+  id: string
+  name: string
+  quantity: number
+  unit: string
+}
+
+export function LowStockAlert({ data }: { data: LowStockAlertItem[] }) {
   if (data.length === 0) return null
 
   return (

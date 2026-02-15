@@ -6,7 +6,14 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 
-export function StockAlertBanner({ lowStockItems }: { lowStockItems: any[] }) {
+type LowStockItem = {
+  id: string
+  name: string
+  quantity: number
+  unit: string
+}
+
+export function StockAlertBanner({ lowStockItems }: { lowStockItems: LowStockItem[] }) {
   const [isVisible, setIsVisible] = React.useState(true)
   const params = useParams()
   const slug = params.workspaceSlug as string

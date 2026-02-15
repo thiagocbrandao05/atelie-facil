@@ -35,14 +35,16 @@ export async function createSupplier(input: unknown): Promise<ActionResponse> {
   }
 
   try {
-    const supabase = await createClient()
-    const db = supabase as any
+    const db = await createClient()
     const supplierPayload: SupplierInsert = {
       ...validatedFields.data,
       tenantId: user.tenantId,
     }
 
-    const { error } = await db.from('Supplier').insert(supplierPayload)
+    const { error } = await db
+      .from('Supplier')
+      // @ts-expect-error legacy table typing missing in generated Database type
+      .insert(supplierPayload)
 
     if (error) throw error
 
@@ -67,11 +69,14 @@ export async function updateSupplier(id: string, input: unknown): Promise<Action
   }
 
   try {
-    const supabase = await createClient()
-    const db = supabase as any
+    const db = await createClient()
     const supplierPayload: SupplierUpdate = validatedFields.data
 
-    const { error } = await db.from('Supplier').update(supplierPayload).eq('id', id)
+    const { error } = await db
+      .from('Supplier')
+      // @ts-expect-error legacy table typing missing in generated Database type
+      .update(supplierPayload)
+      .eq('id', id)
 
     if (error) throw error
 

@@ -19,7 +19,7 @@ export default async function AppLayout({
   return (
     <div className="text-foreground bg-background relative flex min-h-screen w-full overflow-x-hidden">
       {/* Sidebar */}
-      <DashboardSidebar user={user as any} />
+      <DashboardSidebar user={user} />
 
       {/* Main Content Area */}
       <div className="flex w-full flex-1 flex-col transition-all duration-500 md:pl-24">
@@ -37,7 +37,7 @@ export default async function AppLayout({
           <div className="container mx-auto px-6 py-6 md:px-8 lg:px-10">{children}</div>
         </main>
       </div>
-      <CommandPalette user={user as any} />
+      <CommandPalette user={user} />
     </div>
   )
 }

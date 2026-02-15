@@ -61,8 +61,12 @@ export async function updateSession(request: NextRequest) {
     .eq('id', user.id)
     .single()
 
-  const userSlug = (dbUser as any)?.tenant?.slug
-  const userRole = (dbUser as any)?.role
+  const userRecord = dbUser as {
+    role?: string | null
+    tenant?: { slug?: string | null } | null
+  } | null
+  const userSlug = userRecord?.tenant?.slug
+  const userRole = userRecord?.role
 
   // 3.3. Admin Route Protection
   if (pathname.startsWith('/admin')) {

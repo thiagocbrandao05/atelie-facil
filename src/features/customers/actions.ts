@@ -66,8 +66,7 @@ export async function createCustomer(
   }
 
   try {
-    const supabase = await createClient()
-    const db = supabase as any
+    const db = await createClient()
     const workspaceSlug = user.tenant?.slug
     const customerPayload: CustomerInsert = {
       ...validatedFields.data,
@@ -77,13 +76,16 @@ export async function createCustomer(
 
     const { data: customer, error } = await db
       .from('Customer')
+      // @ts-expect-error legacy table typing missing in generated Database type
       .insert(customerPayload)
       .select()
       .single()
+    const createdCustomer = customer as { id: string } | null
 
     if (error) throw error
+    if (!createdCustomer) throw new Error('Cliente não encontrado após criação')
 
-    await logAction(user.tenantId, user.id, 'CREATE', 'Customer', customer.id, {
+    await logAction(user.tenantId, user.id, 'CREATE', 'Customer', createdCustomer.id, {
       name: validatedFields.data.name,
       email: validatedFields.data.email,
     })
@@ -91,7 +93,7 @@ export async function createCustomer(
     if (workspaceSlug) {
       revalidateWorkspaceAppPaths(workspaceSlug, ['/clientes'])
     }
-    return actionSuccess('Cliente cadastrado!', customer)
+    return actionSuccess('Cliente cadastrado!', createdCustomer)
   } catch (error) {
     console.error('Failed to create customer:', error)
     return actionError('Erro ao cadastrar cliente.')
@@ -106,8 +108,7 @@ export async function deleteCustomer(id: string): Promise<ActionResponse> {
   if (!user) return unauthorizedAction()
 
   try {
-    const supabase = await createClient()
-    const db = supabase as any
+    const db = await createClient()
     const workspaceSlug = user.tenant?.slug
     const { error } = await db.from('Customer').delete().eq('id', id)
     if (error) throw error
@@ -149,15 +150,18 @@ export async function updateCustomer(
   }
 
   try {
-    const supabase = await createClient()
-    const db = supabase as any
+    const db = await createClient()
     const workspaceSlug = user.tenant?.slug
     const customerPayload: CustomerUpdate = {
       ...validatedFields.data,
       birthday: toNullableIsoDate(validatedFields.data.birthday),
     }
 
-    const { error } = await db.from('Customer').update(customerPayload).eq('id', id)
+    const { error } = await db
+      .from('Customer')
+      // @ts-expect-error legacy table typing missing in generated Database type
+      .update(customerPayload)
+      .eq('id', id)
 
     if (error) throw error
 

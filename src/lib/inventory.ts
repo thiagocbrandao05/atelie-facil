@@ -1,16 +1,63 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
 import { convertQuantity } from './units'
+
+type ProductMaterialRequirement = {
+  quantity: number
+  unit: string
+  color?: string | null
+  material: {
+    id: string
+    name: string
+    quantity: number
+    unit: string
+  }
+}
+
+type OrderItemWithMaterials = {
+  quantity: number
+  product?: {
+    name?: string
+    materials?: ProductMaterialRequirement[]
+  } | null
+}
+
+type FinishedStockRow = {
+  quantity: number
+  product?: {
+    name?: string
+    inventory?: { quantity?: number } | null
+  } | null
+}
+
+type ProductOrderItem = {
+  productId: string
+  quantity: number
+}
+
+type InventoryMovementRow = {
+  materialId: string
+  type: string
+  quantity: number | string
+  color?: string | null
+}
+
+type MaterialAlertRow = {
+  id: string
+  name: string
+  unit: string
+  minQuantity: number | string | null
+  colors?: string[] | string | null
+}
 
 /**
  * Checks if there is enough material in stock for a given order.
  * Returns an object with availability and details about missing items.
  */
 export async function checkStockAvailability(orderId: string) {
-  const supabase = await createClient()
+  const db = await createClient()
 
-  // Fetch order items with product materials
-  const { data: orderItems, error } = await supabase
+  const { data: orderItems, error } = await db
     .from('OrderItem')
     .select(
       `
@@ -43,13 +90,10 @@ export async function checkStockAvailability(orderId: string) {
     { name: string; color: string | null; required: number; available: number }
   > = {}
 
-  // Note: The type assertion here assumes the structure matches the query.
-  for (const item of orderItems as any[]) {
+  for (const item of orderItems as OrderItemWithMaterials[]) {
     if (!item.product?.materials) continue
 
     for (const pm of item.product.materials) {
-      // CRITICAL FIX: Convert requirement to the material's base unit
-      // Example: If product uses 50cm and stock is in m, convertedRequired will be 0.5
       const convertedRequired = convertQuantity(pm.quantity, pm.unit, pm.material.unit)
       const totalRequired = convertedRequired * item.quantity
 
@@ -60,28 +104,26 @@ export async function checkStockAvailability(orderId: string) {
       if (!materialRequirements[key]) {
         materialRequirements[key] = {
           name: pm.material.name,
-          color: color,
+          color,
           required: 0,
-          available: 0, // Will fetch via balance RPC for precision
+          available: 0,
         }
       }
       materialRequirements[key].required += totalRequired
     }
   }
 
-  // Secondary pass to fetch ACTUAL balance for each material|color
+  const currentUser = await getCurrentUser()
   for (const key of Object.keys(materialRequirements)) {
     const [materialId, colorKey] = key.split('|')
     const color = colorKey === 'ALL' ? null : colorKey
 
-    const { data: balance, error: balanceError } = await (supabase as any).rpc(
-      'get_material_balance_v2',
-      {
-        p_tenant_id: (await getCurrentUser())?.tenantId,
-        p_material_id: materialId,
-        p_color: color,
-      }
-    )
+    // @ts-expect-error legacy rpc typing missing in generated Database type
+    const { data: balance, error: balanceError } = await db.rpc('get_material_balance_v2', {
+      p_tenant_id: currentUser?.tenantId,
+      p_material_id: materialId,
+      p_color: color,
+    })
 
     if (!balanceError) {
       materialRequirements[key].available = Number(balance)
@@ -89,11 +131,11 @@ export async function checkStockAvailability(orderId: string) {
   }
 
   const missingMaterials = Object.values(materialRequirements)
-    .filter(m => m.required > m.available)
-    .map(m => ({
-      name: `${m.name}${m.color ? ` (Cor: ${m.color})` : ''}`,
-      required: m.required,
-      available: m.available,
+    .filter(material => material.required > material.available)
+    .map(material => ({
+      name: `${material.name}${material.color ? ` (Cor: ${material.color})` : ''}`,
+      required: material.required,
+      available: material.available,
     }))
 
   return {
@@ -110,12 +152,13 @@ export async function deductStockForOrder(orderId: string) {
   const user = await getCurrentUser()
   if (!user) throw new Error('Unauthorized')
 
-  const supabase = await createClient()
+  const db = await createClient()
 
-  const { error } = await supabase.rpc('deduct_stock_for_order', {
+  // @ts-expect-error legacy rpc typing missing in generated Database type
+  const { error } = await db.rpc('deduct_stock_for_order', {
     p_order_id: orderId,
     p_tenant_id: user.tenantId,
-  } as any)
+  })
 
   if (error) {
     console.error('Error deducting stock:', error)
@@ -127,10 +170,9 @@ export async function deductStockForOrder(orderId: string) {
  * Checks if there is enough finished product stock for a given order.
  */
 export async function checkFinishedStockAvailability(orderId: string) {
-  const supabase = await createClient()
+  const db = await createClient()
 
-  // Fetch order items with current inventory
-  const { data: orderItems, error } = await (supabase as any)
+  const { data: orderItems, error } = await db
     .from('ProductInventory')
     .select(
       `
@@ -151,7 +193,7 @@ export async function checkFinishedStockAvailability(orderId: string) {
     throw new Error('Failed to check finished stock availability')
   }
 
-  const missingProducts = (orderItems as any[])
+  const missingProducts = (orderItems as FinishedStockRow[])
     .filter(item => {
       const available = item.product?.inventory?.quantity || 0
       return item.quantity > available
@@ -175,41 +217,42 @@ export async function deductFinishedStockForOrder(orderId: string) {
   const user = await getCurrentUser()
   if (!user) throw new Error('Unauthorized')
 
-  const supabase = await createClient()
+  const db = await createClient()
 
-  // 1. Get order items
-  const { data: items, error: fetchError } = await supabase
+  const { data: items, error: fetchError } = await db
     .from('OrderItem')
     .select('productId, quantity')
     .eq('orderId', orderId)
 
   if (fetchError || !items) throw new Error('Failed to fetch order items for deduction')
 
-  // 2. Process each item (In production, use a single RPC for atomicity)
-  for (const item of items as any[]) {
-    // Insert movement
-    await (supabase as any).from('ProductInventoryMovement').insert({
-      tenantId: user.tenantId,
-      productId: item.productId,
-      type: 'SAIDA',
-      quantity: item.quantity,
-      reason: `Pedido #${orderId}`,
-      reference: orderId,
-      createdBy: user.id,
-    })
+  for (const item of items as ProductOrderItem[]) {
+    await db
+      .from('ProductInventoryMovement')
+      // @ts-expect-error legacy table typing missing in generated Database type
+      .insert({
+        tenantId: user.tenantId,
+        productId: item.productId,
+        type: 'SAIDA',
+        quantity: item.quantity,
+        reason: `Pedido #${orderId}`,
+        reference: orderId,
+        createdBy: user.id,
+      })
 
-    // Update balance
-    const { data: current } = await (supabase as any)
+    const { data: current } = await db
       .from('ProductInventory')
       .select('quantity')
       .eq('productId', item.productId)
       .eq('tenantId', user.tenantId)
       .single()
+    const currentRow = current as { quantity?: number | string | null } | null
 
-    const newBalance = ((current as any)?.quantity || 0) - item.quantity
+    const newBalance = (Number(currentRow?.quantity) || 0) - item.quantity
 
-    await (supabase as any)
+    await db
       .from('ProductInventory')
+      // @ts-expect-error legacy table typing missing in generated Database type
       .update({ quantity: newBalance, updatedAt: new Date().toISOString() })
       .eq('productId', item.productId)
       .eq('tenantId', user.tenantId)
@@ -223,8 +266,6 @@ export async function deductFinishedStockForOrder(orderId: string) {
 export async function calculateStockAlerts(tenantId: string) {
   const supabase = await createClient()
 
-  // 1. Fetch materials with minQuantity set and their defined colors
-  // Note: colors is a text[] column added in migration_stock.sql
   const { data: materials, error: matError } = await supabase
     .from('Material')
     .select('id, name, unit, minQuantity, colors')
@@ -233,7 +274,6 @@ export async function calculateStockAlerts(tenantId: string) {
 
   if (matError || !materials) return []
 
-  // 2. Fetch all movements to calculate balances in memory
   const { data: movements, error: movError } = await supabase
     .from('InventoryMovement')
     .select('materialId, type, quantity, color')
@@ -241,86 +281,87 @@ export async function calculateStockAlerts(tenantId: string) {
 
   if (movError || !movements) return []
 
-  // 3. Calculate balances per material and color
-  const balances: Record<string, Record<string, number>> = {} // materialId -> color -> balance
+  const balances: Record<string, Record<string, number>> = {}
 
-  ;(movements as any[]).forEach(m => {
-    const materialId = m.materialId
-    const color = m.color || 'DEFAULT'
-    const qty = Number(m.quantity)
-    const isIn = ['ENTRADA', 'ENTRADA_AJUSTE'].includes(m.type)
-    const isOut = ['SAIDA', 'SAIDA_AJUSTE', 'PERDA', 'RETIRADA'].includes(m.type)
+  for (const movement of movements as InventoryMovementRow[]) {
+    const materialId = movement.materialId
+    const color = movement.color || 'DEFAULT'
+    const quantity = Number(movement.quantity)
+    const isIn = ['ENTRADA', 'ENTRADA_AJUSTE'].includes(movement.type)
+    const isOut = ['SAIDA', 'SAIDA_AJUSTE', 'PERDA', 'RETIRADA'].includes(movement.type)
 
     if (!balances[materialId]) balances[materialId] = {}
     if (typeof balances[materialId][color] === 'undefined') balances[materialId][color] = 0
 
-    if (isIn) balances[materialId][color] += qty
-    if (isOut) balances[materialId][color] -= qty
-  })
+    if (isIn) balances[materialId][color] += quantity
+    if (isOut) balances[materialId][color] -= quantity
+  }
 
-  // 4. Identify alerts per color
-  const alerts: any[] = []
+  const alerts: Array<{
+    id: string
+    materialId: string
+    name: string
+    currentQuantity: number
+    minQuantity: number
+    unit: string
+    color: string | null
+    severity: 'critical' | 'high' | 'medium'
+  }> = []
 
-  ;(materials as any[]).forEach(m => {
-    const minQty = Number(m.minQuantity)
-
-    // We consider all colors recorded in movements plus any defined in the 'colors' array
-    const materialMovements = balances[m.id] || {}
+  for (const material of materials as MaterialAlertRow[]) {
+    const minQuantity = Number(material.minQuantity)
+    const materialMovements = balances[material.id] || {}
 
     let definedColors: string[] = []
     try {
-      let parsed: any = m.colors
-      if (typeof parsed === 'string') {
-        if (parsed.startsWith('[')) {
-          parsed = JSON.parse(parsed)
-        }
+      let parsedColors = material.colors
+      if (typeof parsedColors === 'string' && parsedColors.startsWith('[')) {
+        parsedColors = JSON.parse(parsedColors)
       }
 
-      if (Array.isArray(parsed)) {
-        definedColors = parsed
+      if (Array.isArray(parsedColors)) {
+        definedColors = parsedColors
           .flat()
-          .map(c =>
-            String(c)
+          .map(color =>
+            String(color)
               .replace(/['"\[\]]+/g, '')
               .trim()
           )
           .filter(Boolean)
-      } else if (parsed) {
+      } else if (parsedColors) {
         definedColors = [
-          String(parsed)
+          String(parsedColors)
             .replace(/['"\[\]]+/g, '')
             .trim(),
         ].filter(Boolean)
       }
-    } catch (e) {
+    } catch {
       definedColors = []
     }
 
-    // Combine all color keys to check
     const colorsToCheck = new Set([...Object.keys(materialMovements), ...definedColors])
 
-    // If there are no movements and no defined colors, check 'DEFAULT'
     if (colorsToCheck.size === 0) {
       colorsToCheck.add('DEFAULT')
     }
 
-    colorsToCheck.forEach(color => {
+    for (const color of colorsToCheck) {
       const balance = materialMovements[color] || 0
-      if (balance <= minQty) {
+      if (balance <= minQuantity) {
         const colorLabel = color === 'DEFAULT' ? '' : ` (${color})`
         alerts.push({
-          id: `${m.id}|${color}`,
-          materialId: m.id,
-          name: `${m.name}${colorLabel}`,
+          id: `${material.id}|${color}`,
+          materialId: material.id,
+          name: `${material.name}${colorLabel}`,
           currentQuantity: balance,
-          minQuantity: minQty,
-          unit: m.unit,
+          minQuantity,
+          unit: material.unit,
           color: color === 'DEFAULT' ? null : color,
-          severity: balance <= 0 ? 'critical' : balance <= minQty / 2 ? 'high' : 'medium',
+          severity: balance <= 0 ? 'critical' : balance <= minQuantity / 2 ? 'high' : 'medium',
         })
       }
-    })
-  })
+    }
+  }
 
   return alerts
 }

@@ -3,7 +3,12 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export function RevenueChart({ data }: { data: any[] }) {
+type RevenueDataPoint = {
+  name: string
+  value: number
+}
+
+export function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
   if (!data || data.length === 0) {
     return (
       <Card>
@@ -45,7 +50,7 @@ export function RevenueChart({ data }: { data: any[] }) {
               <Tooltip
                 cursor={{ fill: 'transparent' }}
                 contentStyle={{ borderRadius: '8px' }}
-                formatter={(value: any) => [`R$ ${Number(value).toFixed(2)}`, 'Receita']}
+                formatter={value => [`R$ ${Number(value).toFixed(2)}`, 'Receita']}
               />
               <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             </BarChart>

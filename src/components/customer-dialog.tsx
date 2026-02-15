@@ -14,8 +14,9 @@ import {
 import { CustomerForm } from './customer-form'
 import { DeleteButton } from './delete-button'
 import { deleteCustomer } from '@/features/customers/actions'
+import type { Customer } from '@/lib/types'
 
-export function CustomerDialog({ customer }: { customer: any }) {
+export function CustomerDialog({ customer }: { customer: Customer }) {
   const [open, setOpen] = useState(false)
 
   return (

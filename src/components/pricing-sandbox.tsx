@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator'
 import { TrendingUp, Calculator, AlertCircle, ArrowRight, Target, Percent } from 'lucide-react'
 import { analyzeProfitability, applyPsychologicalPricing } from '@/lib/finance/intelligence'
 import { calculateSuggestedPrice } from '@/lib/logic'
-import { ProductWithMaterials } from '@/lib/types'
+import { AppSettings, ProductWithMaterials } from '@/lib/types'
 
 import { PlanType } from '@/features/subscription/types'
 import { isFreePlan } from '@/features/subscription/utils'
@@ -24,7 +24,7 @@ import { UpgradeLock } from '@/components/upgrade-lock'
 
 interface PricingSandboxProps {
   products: ProductWithMaterials[]
-  settings: any
+  settings: AppSettings
   tenantPlan?: PlanType
 }
 
@@ -51,11 +51,11 @@ export function PricingSandbox({
     // Get baseline from logic.ts
     const baseline = calculateSuggestedPrice(
       selectedProduct,
-      settings.hourlyRate,
-      settings.monthlyFixedCosts,
-      settings.workingHoursPerMonth,
-      settings.taxRate,
-      settings.cardFeeRate
+      Number(settings.hourlyRate || 20),
+      settings.monthlyFixedCosts || [],
+      Number(settings.workingHoursPerMonth || 160),
+      Number(settings.taxRate || 0),
+      Number(settings.cardFeeRate || 0)
     )
 
     const currentPrice = selectedProduct.price || baseline.suggestedPrice
@@ -68,10 +68,10 @@ export function PricingSandbox({
     const analysis = analyzeProfitability(
       simulatedPrice,
       simulatedCost,
-      settings.taxRate,
-      settings.cardFeeRate,
-      settings.monthlyFixedCosts.reduce(
-        (acc: number, item: any) => acc + (Number(item.value) || 0),
+      Number(settings.taxRate || 0),
+      Number(settings.cardFeeRate || 0),
+      (settings.monthlyFixedCosts || []).reduce(
+        (acc: number, item) => acc + (Number(item.value) || 0),
         0
       )
     )

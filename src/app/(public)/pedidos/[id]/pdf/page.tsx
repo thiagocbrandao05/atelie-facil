@@ -3,6 +3,29 @@ import { notFound } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { PrintButton } from '@/components/print-button'
 
+type QuotationItem = {
+  quantity: number
+  price?: number
+  discount?: number
+  product?: { name?: string }
+  productName?: string
+}
+
+type QuotationOrder = {
+  id: string
+  orderNumber?: number
+  status: string
+  createdAt: string
+  dueDate: string
+  totalValue: number
+  discount?: number
+  customerName?: string
+  customerPhone?: string
+  customerAddress?: string
+  customer?: { name?: string; phone?: string; address?: string }
+  items?: QuotationItem[]
+}
+
 export default async function QuotationPage(props: {
   params: Promise<{ id: string }>
   searchParams: Promise<{ p?: string }>
@@ -13,12 +36,13 @@ export default async function QuotationPage(props: {
 
   // Se tivermos um publicId nos searchParams, usamos o RPC público
   // Caso contrário, tentamos buscar pelo ID (requer autenticação via RLS)
-  let order: any = null
-  let error: any = null
+  let order: QuotationOrder | null = null
+  let error: unknown = null
 
   if (publicId) {
     console.log('[QUOTATION_PAGE] Fetching by publicId:', publicId)
-    const { data, error: rpcError } = await (supabase as any).rpc('get_public_order', {
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { data, error: rpcError } = await supabase.rpc('get_public_order', {
       p_public_id: publicId,
     })
 
@@ -26,7 +50,7 @@ export default async function QuotationPage(props: {
       console.error('[QUOTATION_PAGE] RPC Error:', rpcError)
     }
 
-    order = data?.[0]
+    order = (data?.[0] as unknown as QuotationOrder) || null
     console.log('[QUOTATION_PAGE] RPC Data:', order ? 'Found' : 'Not Found')
     error = rpcError
 
@@ -39,9 +63,9 @@ export default async function QuotationPage(props: {
           phone: order.customerPhone,
           address: order.customerAddress,
         },
-        items: (order.items || []).map((item: any) => ({
+        items: (order.items || []).map(item => ({
           quantity: item.quantity,
-          product: { name: item.productName },
+          product: { name: item.productName || item.product?.name || 'Produto' },
           price: item.price || 0,
           discount: item.discount || 0,
         })),
@@ -61,8 +85,8 @@ export default async function QuotationPage(props: {
           `
       )
       .eq('id', id)
-      .single<any>()
-    order = data
+      .single()
+    order = (data as QuotationOrder | null) || null
     error = fetchError
   }
 
@@ -112,17 +136,17 @@ export default async function QuotationPage(props: {
           </tr>
         </thead>
         <tbody className="divide-y">
-          {(order.items || []).map((item: any, idx: number) => {
+          {(order.items || []).map((item, idx: number) => {
             const unitPrice = (item.price || 0) - (item.discount || 0)
             const subtotal = unitPrice * item.quantity
             return (
               <tr key={idx} className="text-sm">
                 <td className="py-4">
                   <div className="font-medium">{item.product?.name || 'Produto'}</div>
-                  {item.discount > 0 && (
+                  {(item.discount || 0) > 0 && (
                     <div className="text-[10px] text-red-500">
                       Desconto:{' '}
-                      {item.discount.toLocaleString('pt-BR', {
+                      {(item.discount || 0).toLocaleString('pt-BR', {
                         style: 'currency',
                         currency: 'BRL',
                       })}{' '}
@@ -151,7 +175,11 @@ export default async function QuotationPage(props: {
                 Desconto Adicional
               </td>
               <td className="pt-4 pb-1 text-right text-sm font-medium text-red-500">
-                - {order.discount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                -{' '}
+                {(order.discount || 0).toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
+                })}
               </td>
             </tr>
           )}

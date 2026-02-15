@@ -12,14 +12,26 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
 import { AlertTriangle } from 'lucide-react'
 
+type CampaignCustomer = {
+  id: string
+  name: string
+  phone?: string | null
+}
+
+type CampaignUsage = {
+  daily?: { campaign?: number }
+  monthly?: { campaign?: number }
+  limits?: { dailyCampaign?: number; monthlyCampaign?: number }
+} | null
+
 export function CampaignBuilder({
   customers,
   maxRecipients = 100,
   usage,
 }: {
-  customers: any[]
+  customers: CampaignCustomer[]
   maxRecipients?: number
-  usage?: any
+  usage?: CampaignUsage
 }) {
   const [step, setStep] = useState(1)
   const [name, setName] = useState('')

@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import type {
@@ -24,6 +24,14 @@ import { logError } from '@/lib/logger'
 import { enqueueOrderStatusNotification } from '@/features/whatsapp/actions'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
+
+type CreateOrderRpcResult = { id: string }
+type NotificationResult = { success?: boolean; message?: string; error?: string }
+
+function notificationErrorMessage(result: unknown, fallback: string): string {
+  const parsed = result as NotificationResult
+  return parsed?.message || parsed?.error || fallback
+}
 
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
@@ -89,8 +97,9 @@ export async function getOrders() {
   if (!user) return []
 
   const supabase = await createClient()
+  const db = supabase
 
-  const { data } = await (supabase as any)
+  const { data } = await db
     .from('Order')
     .select(
       `
@@ -120,8 +129,9 @@ export async function getOrdersForKanban() {
   if (!user) return []
 
   const supabase = await createClient()
+  const db = supabase
 
-  const { data } = await (supabase as any)
+  const { data } = await db
     .from('Order')
     .select(
       `
@@ -136,7 +146,7 @@ export async function getOrdersForKanban() {
     .eq('tenantId', user.tenantId)
     .order('createdAt', { ascending: false })
 
-  return (data as any[]) || []
+  return data ?? []
 }
 
 export async function createOrder(data: OrderInput): Promise<ActionResponse> {
@@ -155,12 +165,14 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
   }
 
   const { customerId, dueDate, items, status, discount } = validatedFields.data
-  const totalValue = calculateOrderTotal(items as any, discount)
+  const totalValue = calculateOrderTotal(items, discount)
   const supabase = await createClient()
+  const db = supabase
   const workspaceSlug = user.tenant?.slug
 
   try {
-    const { data: rpcData, error } = await (supabase as any).rpc('create_order', {
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { data: rpcData, error } = await db.rpc('create_order', {
       p_tenant_id: user.tenantId,
       p_customer_id: customerId,
       p_status: status || 'PENDING',
@@ -168,13 +180,13 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
       p_total_value: totalValue,
       p_items: items,
       p_discount: discount || 0,
-    } as any)
+    })
 
     if (error) throw error
-    const createdOrderId = (rpcData as any).id as string
+    const createdOrderId = (rpcData as CreateOrderRpcResult).id
 
     const { plan } = await getCurrentTenantPlan()
-    if (isReseller(plan as any) && (status === 'PENDING' || status === 'PRODUCING')) {
+    if (isReseller(plan) && (status === 'PENDING' || status === 'PRODUCING')) {
       const stock = await checkFinishedStockAvailability(createdOrderId)
       if (stock.isAvailable) {
         await deductFinishedStockForOrder(createdOrderId)
@@ -193,13 +205,9 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
         statusTo: 'QUOTATION',
       })
 
-      if (!(notificationResult as any).success) {
+      if (!notificationResult.success) {
         await logError(
-          new Error(
-            (notificationResult as any).message ||
-              (notificationResult as any).error ||
-              'Falha ao enviar orçamento.'
-          ),
+          new Error(notificationErrorMessage(notificationResult, 'Falha ao enviar orçamento.')),
           {
             action: 'send_order_quotation_notification',
             data: { orderId: createdOrderId },
@@ -209,9 +217,10 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
     }
 
     return actionSuccess('Pedido criado com sucesso!', { id: createdOrderId })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create order:', error)
-    return actionError(error.message || 'Erro ao criar pedido.')
+    const message = error instanceof Error ? error.message : 'Erro ao criar pedido.'
+    return actionError(message)
   }
 }
 
@@ -222,22 +231,27 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
   const supabase = await createClient()
+  const db = supabase
   const workspaceSlug = user.tenant?.slug
 
   try {
-    const { data: order, error: fetchError } = await (supabase as any)
+    const { data: order, error: fetchError } = await db
       .from('Order')
       .select('status')
       .eq('id', id)
       .single()
 
-    if (fetchError || !order) return actionError('Pedido não encontrado.')
-    if (order.status === newStatus) return actionSuccess('Status já estava atualizado.')
+    const currentOrder = order as { status: string } | null
+    if (fetchError || !currentOrder) return actionError('Pedido não encontrado.')
+    if (currentOrder.status === newStatus) return actionSuccess('Status já estava atualizado.')
 
-    if (newStatus === 'PRODUCING' && (order.status === 'PENDING' || order.status === 'QUOTATION')) {
+    if (
+      newStatus === 'PRODUCING' &&
+      (currentOrder.status === 'PENDING' || currentOrder.status === 'QUOTATION')
+    ) {
       const { plan } = await getCurrentTenantPlan()
 
-      if (isReseller(plan as any)) {
+      if (isReseller(plan)) {
         const stock = await checkFinishedStockAvailability(id)
         if (!stock.isAvailable) {
           const missing = stock.missingProducts.map(product => product.name).join(', ')
@@ -254,10 +268,8 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
       }
     }
 
-    const { error: updateError } = await (supabase as any)
-      .from('Order')
-      .update({ status: newStatus } as any as never)
-      .eq('id', id)
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { error: updateError } = await db.from('Order').update({ status: newStatus }).eq('id', id)
     if (updateError) throw updateError
 
     if (workspaceSlug) {
@@ -267,20 +279,18 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
     const notificationResult = await enqueueOrderStatusNotification({
       orderId: id,
       tenantId: user.tenantId,
-      statusFrom: order.status,
+      statusFrom: currentOrder.status,
       statusTo: newStatus as OrderStatus,
     })
 
-    if (!(notificationResult as any).success) {
+    if (!notificationResult.success) {
       await logError(
         new Error(
-          (notificationResult as any).message ||
-            (notificationResult as any).error ||
-            'Falha ao enviar notificação de status.'
+          notificationErrorMessage(notificationResult, 'Falha ao enviar notificação de status.')
         ),
         {
           action: 'send_order_status_notification',
-          data: { orderId: id, statusFrom: order.status, statusTo: newStatus },
+          data: { orderId: id, statusFrom: currentOrder.status, statusTo: newStatus },
         }
       )
     }
@@ -299,13 +309,15 @@ export async function deleteOrder(id: string): Promise<ActionResponse> {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
   const supabase = await createClient()
+  const db = supabase
   const workspaceSlug = user.tenant?.slug
 
   try {
-    const { error } = await (supabase as any).rpc('delete_order', {
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { error } = await db.rpc('delete_order', {
       p_order_id: id,
       p_tenant_id: user.tenantId,
-    } as any)
+    })
 
     if (error) throw error
 
@@ -313,9 +325,10 @@ export async function deleteOrder(id: string): Promise<ActionResponse> {
       revalidateWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])
     }
     return actionSuccess('Pedido excluído com sucesso!')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to delete order:', error)
-    return actionError(error.message || 'Erro ao excluir pedido.')
+    const message = error instanceof Error ? error.message : 'Erro ao excluir pedido.'
+    return actionError(message)
   }
 }
 
@@ -324,8 +337,9 @@ export async function getOrdersStats() {
   if (!user) return { activeOrders: 0 }
 
   const supabase = await createClient()
+  const db = supabase
 
-  const { count, error } = await (supabase as any)
+  const { count, error } = await db
     .from('Order')
     .select('*', { count: 'exact', head: true })
     .eq('tenantId', user.tenantId)

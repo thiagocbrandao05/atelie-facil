@@ -28,6 +28,12 @@ const MONTH_NAMES = [
   'Dezembro',
 ]
 
+type OrderItemDemandRow = {
+  quantity: number
+  order?: { createdAt: string } | null
+  product?: { id?: string | null; name?: string | null } | null
+}
+
 export async function getDemandForecast(monthsBack: number = 6): Promise<ProductDemand[]> {
   const user = await getCurrentUser()
   if (!user) throw new Error('Unauthorized')
@@ -69,14 +75,14 @@ export async function getDemandForecast(monthsBack: number = 6): Promise<Product
   // Initialize history arrays
   // We want an array of 'monthsBack' size, where index 0 is oldest month
 
-  orderItems?.forEach((item: any) => {
+  ;(orderItems as OrderItemDemandRow[] | null)?.forEach(item => {
     const productId = item.product?.id
     const productName = item.product?.name
-    if (!productId) return
+    if (!productId || !item.order?.createdAt) return
 
     if (!productMap.has(productId)) {
       productMap.set(productId, {
-        name: productName,
+        name: productName || 'Produto',
         history: new Array(monthsBack).fill(0),
       })
     }

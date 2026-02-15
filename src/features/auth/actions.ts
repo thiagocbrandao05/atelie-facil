@@ -7,6 +7,10 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limiter'
 import { getClientIP } from '@/lib/security'
 import { logError, logWarning, logInfo } from '@/lib/logger'
 
+function isNextRedirectError(error: unknown): error is Error {
+  return error instanceof Error && error.message === 'NEXT_REDIRECT'
+}
+
 export async function authenticate(prevState: string | undefined, formData: FormData) {
   try {
     const clientIP = await getClientIP()
@@ -37,12 +41,13 @@ export async function authenticate(prevState: string | undefined, formData: Form
       .eq('id', (await supabase.auth.getUser()).data.user?.id || '')
       .single()
 
-    const slug = (userData as any)?.tenant?.slug || 'atelis'
+    const userRecord = userData as { tenant?: { slug?: string | null } | null } | null
+    const slug = userRecord?.tenant?.slug || 'atelis'
 
     logInfo('Successful login', { email, ip: clientIP, slug })
     redirect(`/${slug}/app/dashboard`)
   } catch (error) {
-    if ((error as any)?.message === 'NEXT_REDIRECT') throw error
+    if (isNextRedirectError(error)) throw error
     logError(error as Error, { action: 'authenticate' })
     return 'Something went wrong.'
   }
@@ -140,7 +145,7 @@ export async function register(prevState: string | undefined, formData: FormData
     const redirectUrl = `/${slug}/app/dashboard`
     redirect(redirectUrl)
   } catch (error) {
-    if ((error as any)?.message === 'NEXT_REDIRECT') throw error
+    if (isNextRedirectError(error)) throw error
     console.error('Registration error:', error)
     return 'Something went wrong.'
   }

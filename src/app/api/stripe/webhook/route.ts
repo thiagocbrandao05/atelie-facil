@@ -4,12 +4,12 @@ import { getStripe } from '@/lib/stripe'
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 const ALLOWED_BILLING_PLANS = new Set(['start', 'pro', 'premium'])
 
 // Lazy initialized admin client
-function getSupabaseAdmin() {
+function getSupabaseAdmin(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -22,7 +22,18 @@ function getSupabaseAdmin() {
   return createClient(url, key)
 }
 
-async function reserveWebhookEvent(admin: any, event: Stripe.Event) {
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return 'Unknown error'
+}
+
+function getCurrentPeriodEnd(value: unknown): number | null {
+  if (!value || typeof value !== 'object') return null
+  const candidate = value as { current_period_end?: unknown }
+  return typeof candidate.current_period_end === 'number' ? candidate.current_period_end : null
+}
+
+async function reserveWebhookEvent(admin: SupabaseClient, event: Stripe.Event) {
   const now = new Date().toISOString()
   const { error } = await admin.from('StripeWebhookEvent').insert({
     eventId: event.id,
@@ -46,7 +57,7 @@ async function reserveWebhookEvent(admin: any, event: Stripe.Event) {
   return { reserved: true, trackingDisabled: true }
 }
 
-async function markWebhookProcessed(admin: any, eventId: string) {
+async function markWebhookProcessed(admin: SupabaseClient, eventId: string) {
   await admin
     .from('StripeWebhookEvent')
     .update({
@@ -57,7 +68,7 @@ async function markWebhookProcessed(admin: any, eventId: string) {
     .eq('eventId', eventId)
 }
 
-async function releaseWebhookReservation(admin: any, eventId: string) {
+async function releaseWebhookReservation(admin: SupabaseClient, eventId: string) {
   await admin.from('StripeWebhookEvent').delete().eq('eventId', eventId)
 }
 
@@ -95,9 +106,10 @@ export async function POST(req: Request) {
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-  } catch (error: any) {
-    console.error('Webhook signature verification failed.', error.message)
-    return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 })
+  } catch (error: unknown) {
+    const message = getErrorMessage(error)
+    console.error('Webhook signature verification failed.', message)
+    return new NextResponse(`Webhook Error: ${message}`, { status: 400 })
   }
 
   const session = event.data.object as Stripe.Checkout.Session
@@ -120,7 +132,7 @@ export async function POST(req: Request) {
         const subscriptionId = session.subscription as string
 
         // Retrieve subscription to get status and current_period_end
-        const sub = (await stripe.subscriptions.retrieve(subscriptionId)) as any
+        const sub = await stripe.subscriptions.retrieve(subscriptionId)
 
         // Find plan based on product ID (You need to map this or store in metadata)
         // Ideally, we store plan in metadata during checkout creation
@@ -133,20 +145,22 @@ export async function POST(req: Request) {
           break
         }
 
-        await (admin as any).from('BillingSubscriptions').upsert(
+        await admin.from('BillingSubscriptions').upsert(
           {
             workspaceId: session.metadata.workspaceId,
             stripeCustomerId: session.customer as string,
             stripeSubscriptionId: subscriptionId,
             plan: plan,
             status: sub.status,
-            currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString(),
+            currentPeriodEnd: new Date(
+              (getCurrentPeriodEnd(sub) || Date.now() / 1000) * 1000
+            ).toISOString(),
             updatedAt: new Date().toISOString(),
           },
           { onConflict: 'workspaceId' }
         )
 
-        await (admin as any).from('WorkspacePlans').upsert(
+        await admin.from('WorkspacePlans').upsert(
           {
             workspaceId: session.metadata.workspaceId,
             plan: plan,
@@ -197,12 +211,12 @@ export async function POST(req: Request) {
           ).data?.workspaceId
 
         if (currentId) {
-          await (admin as any)
+          await admin
             .from('BillingSubscriptions')
             .update({
               status: status,
               currentPeriodEnd: new Date(
-                (subscription as any).current_period_end * 1000
+                (getCurrentPeriodEnd(subscription) || Date.now() / 1000) * 1000
               ).toISOString(),
               updatedAt: new Date().toISOString(),
             })
@@ -214,7 +228,7 @@ export async function POST(req: Request) {
             // Check if period ended?
             // For now, let's keep it simple: if not active/trialing, downgrade to start
             if (['active', 'trialing'].includes(status) === false) {
-              await (admin as any)
+              await admin
                 .from('WorkspacePlans')
                 .update({
                   plan: 'start',
@@ -224,7 +238,7 @@ export async function POST(req: Request) {
             }
           } else if (plan) {
             // Ensure plan matches (upgrades/downgrades via portal)
-            await (admin as any)
+            await admin
               .from('WorkspacePlans')
               .update({
                 plan: plan,
@@ -248,12 +262,12 @@ export async function POST(req: Request) {
     if (!reservation.trackingDisabled) {
       await markWebhookProcessed(admin, event.id)
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (!reservation.trackingDisabled) {
       await releaseWebhookReservation(admin, event.id)
     }
     console.error('Error processing webhook:', error)
-    return new NextResponse(`Error processing webhook: ${error.message}`, { status: 500 })
+    return new NextResponse(`Error processing webhook: ${getErrorMessage(error)}`, { status: 500 })
   }
 
   return new NextResponse(null, { status: 200 })

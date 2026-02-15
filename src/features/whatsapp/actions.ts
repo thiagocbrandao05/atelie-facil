@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { headers } from 'next/headers'
 
@@ -22,7 +22,7 @@ const WhatsAppSettingsSchema = z.object({
   whatsappAccessToken: z.string().min(1, 'Access Token é obrigatório'),
 })
 
-export async function saveWhatsAppCredentials(prevState: any, formData: FormData) {
+export async function saveWhatsAppCredentials(_prevState: unknown, formData: FormData) {
   console.log('[WHATSAPP] Saving credentials')
   const csrf = await validateCSRF()
   if (!csrf.valid) {
@@ -42,14 +42,16 @@ export async function saveWhatsAppCredentials(prevState: any, formData: FormData
     })
 
     const supabase = await createClient()
+    const db = supabase
 
-    const { error } = await (supabase as any).from('Settings').upsert(
+    // @ts-expect-error legacy table typing missing in generated Database type
+    const { error } = await db.from('Settings').upsert(
       {
         tenantId: tenantId,
         whatsappPhoneNumberId: data.whatsappPhoneNumberId,
         whatsappAccessToken: data.whatsappAccessToken,
         updatedAt: new Date().toISOString(),
-      } as any,
+      },
       { onConflict: 'tenantId' }
     )
 
@@ -63,7 +65,7 @@ export async function saveWhatsAppCredentials(prevState: any, formData: FormData
       revalidateWorkspaceAppPaths(slug, ['/configuracoes'])
     }
     return actionSuccess('Credenciais do WhatsApp salvas com sucesso!')
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return actionError(error.issues[0]?.message || 'Dados inválidos')
     }
@@ -82,29 +84,31 @@ export async function validateWhatsAppCredentials() {
 
   try {
     await import('./limits').then(m => m.ensureCanSendTestMessage(tenantId))
-  } catch (error: any) {
-    return actionError(error.message)
+  } catch (error: unknown) {
+    return actionError(error instanceof Error ? error.message : 'Falha ao validar limite de teste')
   }
 
   const supabase = await createClient()
-  const { data: settings, error } = await (supabase as any)
+  const db = supabase
+  const { data: settings, error } = await db
     .from('Settings')
     .select('whatsappPhoneNumberId, whatsappAccessToken')
     .eq('tenantId', tenantId)
     .single()
 
-  if (
-    error ||
-    !(settings as any)?.whatsappPhoneNumberId ||
-    !(settings as any)?.whatsappAccessToken
-  ) {
+  const parsedSettings = settings as {
+    whatsappPhoneNumberId?: string | null
+    whatsappAccessToken?: string | null
+  } | null
+
+  if (error || !parsedSettings?.whatsappPhoneNumberId || !parsedSettings?.whatsappAccessToken) {
     return actionError('Credenciais não encontradas. Salve antes de validar.')
   }
 
   try {
     // Facebook Graph API v21.0 - Get Phone Number Info
     // This validates both the ID (if incorrect returns 404) and Token (if invalid returns 401)
-    const url = `https://graph.facebook.com/v21.0/${(settings as any).whatsappPhoneNumberId}?access_token=${(settings as any).whatsappAccessToken}`
+    const url = `https://graph.facebook.com/v21.0/${parsedSettings.whatsappPhoneNumberId}?access_token=${parsedSettings.whatsappAccessToken}`
 
     const response = await fetch(url, { method: 'GET' })
     const data = await response.json()
@@ -115,7 +119,7 @@ export async function validateWhatsAppCredentials() {
       return actionError(`Falha na validação: ${errorMsg}`)
     }
 
-    if (data.id !== (settings as any).whatsappPhoneNumberId) {
+    if (data.id !== parsedSettings.whatsappPhoneNumberId) {
       return actionError('ID retornado pela API não corresponde ao ID salvo.')
     }
 
@@ -123,9 +127,10 @@ export async function validateWhatsAppCredentials() {
     const verifiedName = data.verified_name || 'Conta WhatsApp Business'
 
     // Update verification status in DB
-    await (supabase as any)
+    await db
       .from('Settings')
-      .update({ whatsappConfigVerified: true } as any)
+      // @ts-expect-error legacy table typing missing in generated Database type
+      .update({ whatsappConfigVerified: true })
       .eq('tenantId', tenantId)
 
     // Increment usage
@@ -155,9 +160,9 @@ const STATUS_TEMPLATE_KEYS: Partial<Record<OrderStatus, keyof SettingsMessageTem
 
 const STATUS_FALLBACK_MESSAGES: Partial<Record<OrderStatus, string>> = {
   PENDING: 'Olá {cliente}, seu pedido #{pedido} foi aprovado e está na fila de produção!',
-  PRODUCING: 'Olá {cliente}, seu pedido #{pedido} acaba de entrar em produção! ??',
+  PRODUCING: 'Olá {cliente}, seu pedido #{pedido} acaba de entrar em produção! ✨',
   READY: 'Olá {cliente}, boas notícias! Seu pedido #{pedido} está pronto para retirada! ?',
-  DELIVERED: 'Olá {cliente}, seu pedido #{pedido} foi entregue. Muito obrigado pela confiança! ??',
+  DELIVERED: 'Olá {cliente}, seu pedido #{pedido} foi entregue. Muito obrigado pela confiança! ✨',
   QUOTATION: 'Olá {cliente}, aqui está o orçamento dos seus produtos.',
 }
 
@@ -181,6 +186,41 @@ type ProcessNotificationsOptions = {
   tenantId?: string
   limit?: number
   useAdmin?: boolean
+}
+
+type OrderNotificationItem = {
+  quantity: number
+  price?: number
+  discount?: number
+  product?: { name?: string | null } | null
+}
+
+type OrderNotificationRecord = {
+  id: string
+  status: string
+  totalValue: number
+  orderNumber?: number | null
+  publicId?: string | null
+  customer?: { id?: string; name?: string | null; phone?: string | null } | null
+  items?: OrderNotificationItem[] | null
+}
+
+type NotifyOrderRecord = {
+  id: string
+  status: string
+  totalValue: number
+  orderNumber?: number | null
+  publicId?: string | null
+  customer: { id?: string; name?: string | null; phone?: string | null }
+  items?: Array<{ quantity: number; product?: { name?: string | null } | null }> | null
+}
+
+type NotificationLogRecord = {
+  id: string
+  attempts?: number
+  lastAttemptAt?: string | null
+  customerPhone?: string | null
+  messageBody?: string | null
 }
 
 async function getBaseUrl() {
@@ -243,9 +283,10 @@ function shouldAttempt(attempts: number, lastAttemptAt?: string | null) {
 
 async function buildOrderNotificationPayload(context: OrderNotificationContext) {
   const supabase = await createClient()
+  const db = supabase
 
   const [{ data: order, error: orderError }, { data: settings }] = await Promise.all([
-    (supabase as any)
+    db
       .from('Order')
       .select(
         `
@@ -261,7 +302,7 @@ async function buildOrderNotificationPayload(context: OrderNotificationContext) 
       )
       .eq('id', context.orderId)
       .single(),
-    (supabase as any)
+    db
       .from('Settings')
       .select('msgQuotation, msgApproved, msgReady, msgFinished')
       .eq('tenantId', context.tenantId)
@@ -272,7 +313,10 @@ async function buildOrderNotificationPayload(context: OrderNotificationContext) 
     return { error: 'Pedido não encontrado.' }
   }
 
-  return { order, settings: settings as SettingsMessageTemplates }
+  return {
+    order: order as OrderNotificationRecord,
+    settings: (settings ?? null) as SettingsMessageTemplates | null,
+  }
 }
 
 async function buildMessage({
@@ -280,7 +324,7 @@ async function buildMessage({
   settings,
   statusTo,
 }: {
-  order: any
+  order: OrderNotificationRecord
   settings: SettingsMessageTemplates
   statusTo: OrderStatus
 }) {
@@ -288,7 +332,9 @@ async function buildMessage({
   const baseUrl = await getBaseUrl()
   const pdfLink = baseUrl ? `${baseUrl}/pedidos/${order.id}/pdf` : `/pedidos/${order.id}/pdf`
   const itemsSummary =
-    order.items?.map((item: any) => `${item.quantity}x ${item.product?.name}`).join(', ') || ''
+    order.items
+      ?.map((item: OrderNotificationItem) => `${item.quantity}x ${item.product?.name}`)
+      .join(', ') || ''
 
   const messageData = {
     cliente: order.customer?.name || 'Cliente',
@@ -333,10 +379,12 @@ async function insertNotificationLog(params: {
   payload: Record<string, unknown>
 }) {
   const supabase = await createClient()
+  const db = supabase
   const now = new Date().toISOString()
 
-  const { data: logEntry, error: insertError } = await (supabase as any)
+  const { data: logEntry, error: insertError } = await db
     .from('WhatsAppNotificationLog')
+    // @ts-expect-error legacy table typing missing in generated Database type
     .insert({
       tenantId: params.tenantId,
       orderId: params.orderId,
@@ -351,7 +399,7 @@ async function insertNotificationLog(params: {
       status: 'PENDING',
       createdAt: now,
       updatedAt: now,
-    } as any)
+    })
     .select('*')
     .single()
 
@@ -394,7 +442,7 @@ export async function enqueueOrderStatusNotification(context: OrderNotificationC
       statusFrom: context.statusFrom,
       statusTo: context.statusTo,
       totalValue: order.totalValue,
-      items: order.items?.map((item: any) => ({
+      items: order.items?.map(item => ({
         name: item.product?.name,
         quantity: item.quantity,
         price: item.price,
@@ -414,13 +462,14 @@ export async function processPendingWhatsAppNotifications(
   }
 
   const supabase = options.useAdmin ? createAdminClient() : await createClient()
+  const db = supabase
 
   if (!options.useAdmin) {
     const user = await getCurrentUser()
     if (!user) return { processed: 0, sent: 0, failed: 0 }
   }
 
-  let query = (supabase as any)
+  let query = db
     .from('WhatsAppNotificationLog')
     .select('*')
     .in('status', ['PENDING', 'FAILED'])
@@ -438,7 +487,7 @@ export async function processPendingWhatsAppNotifications(
     return { processed: 0, sent: 0, failed: 0 }
   }
 
-  const eligibleLogs = (logs || []).filter((log: any) =>
+  const eligibleLogs = ((logs || []) as NotificationLogRecord[]).filter(log =>
     shouldAttempt(log.attempts || 0, log.lastAttemptAt)
   )
 
@@ -446,47 +495,50 @@ export async function processPendingWhatsAppNotifications(
   let failed = 0
 
   for (const log of eligibleLogs) {
-    if (!(log as any).customerPhone || !(log as any).messageBody) {
-      await (supabase as any)
+    if (!log.customerPhone || !log.messageBody) {
+      await db
         .from('WhatsAppNotificationLog')
+        // @ts-expect-error legacy table typing missing in generated Database type
         .update({
           status: 'GAVE_UP',
           errorMessage: 'Dados insuficientes para reenvio.',
           updatedAt: new Date().toISOString(),
-        } as any)
-        .eq('id', (log as any).id)
+        })
+        .eq('id', log.id)
       failed += 1
       continue
     }
 
-    const formattedPhone = formatPhoneE164((log as any).customerPhone)
+    const formattedPhone = formatPhoneE164(log.customerPhone)
     if (!formattedPhone) {
-      await (supabase as any)
+      await db
         .from('WhatsAppNotificationLog')
+        // @ts-expect-error legacy table typing missing in generated Database type
         .update({
           status: 'GAVE_UP',
           errorMessage: 'Telefone inválido para reenvio.',
           updatedAt: new Date().toISOString(),
-        } as any)
-        .eq('id', (log as any).id)
+        })
+        .eq('id', log.id)
       failed += 1
       continue
     }
 
     const sendResult = await sendWhatsAppTemplateMessage({
       to: formattedPhone,
-      messageBody: (log as any).messageBody,
+      messageBody: log.messageBody,
     })
 
-    const attempts = ((log as any).attempts ?? 0) + 1
+    const attempts = (log.attempts ?? 0) + 1
     const status: NotificationLogStatus = sendResult.success
       ? 'SENT'
       : attempts >= MAX_ATTEMPTS
         ? 'GAVE_UP'
         : 'FAILED'
 
-    await (supabase as any)
+    await db
       .from('WhatsAppNotificationLog')
+      // @ts-expect-error legacy table typing missing in generated Database type
       .update({
         attempts,
         lastAttemptAt: new Date().toISOString(),
@@ -494,8 +546,8 @@ export async function processPendingWhatsAppNotifications(
         errorMessage: sendResult.success ? null : sendResult.errorMessage,
         providerMessageId: sendResult.providerMessageId ?? null,
         updatedAt: new Date().toISOString(),
-      } as any)
-      .eq('id', (log as any).id)
+      })
+      .eq('id', log.id)
 
     if (sendResult.success) {
       sent += 1
@@ -584,9 +636,10 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   }
 
   const supabase = await createClient()
+  const db = supabase
 
   // 1. Buscar pedido com customer e items
-  const { data: order, error: orderError } = await (supabase as any)
+  const { data: order, error: orderError } = await db
     .from('Order')
     .select(
       `
@@ -605,27 +658,28 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
     .eq('id', orderId)
     .eq('tenantId', user.tenantId)
     .single()
+  const orderRecord = order as NotifyOrderRecord | null
 
-  if (orderError || !order) {
+  if (orderError || !orderRecord) {
     return { success: false, error: 'Pedido não encontrado' }
   }
 
   // 2. Validar telefone do cliente
   const { isValidWhatsAppPhone } = await import('./utils')
 
-  if (!isValidWhatsAppPhone(order.customer?.phone)) {
+  if (!isValidWhatsAppPhone(orderRecord.customer?.phone)) {
     return { success: false, error: 'Cliente não possui telefone válido cadastrado' }
   }
 
   // 3. Buscar templates de mensagem
-  const { data: settings } = await (supabase as any)
+  const { data: settings } = await db
     .from('Settings')
     .select('msgQuotation, msgApproved, msgReady, msgFinished')
     .eq('tenantId', user.tenantId)
     .single()
 
-  const s = settings as any
-  const normalizedStatus = (order.status || '').toUpperCase()
+  const s = (settings ?? null) as SettingsMessageTemplates | null
+  const normalizedStatus = (orderRecord.status || '').toUpperCase()
 
   // Prioridade de templates:
   // 1. Template específico por status (Mensagens 1 a 4)
@@ -664,28 +718,28 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   }
 
   // 5. Buscar o slug do tenant para o link público
-  const { data: tenant } = await (supabase as any)
-    .from('Tenant')
-    .select('slug')
-    .eq('id', user.tenantId)
-    .single()
+  const { data: tenant } = await db.from('Tenant').select('slug').eq('id', user.tenantId).single()
+  const tenantRecord = tenant as { slug?: string | null } | null
 
-  const publicId = order.publicId || order.id
+  const publicId = orderRecord.publicId || orderRecord.id
   const baseUrl = await getBaseUrl()
 
   // Link amigável: /orcamento/[slug]/[orderNumber]?p=[publicId]
-  const friendlyPath = `/orcamento/${tenant?.slug || 'atelis'}/${order.orderNumber || order.id.slice(0, 8)}?p=${publicId}`
+  const friendlyPath = `/orcamento/${tenantRecord?.slug || 'atelis'}/${orderRecord.orderNumber || orderRecord.id.slice(0, 8)}?p=${publicId}`
 
   const publicLink = baseUrl ? `${baseUrl}${friendlyPath}` : friendlyPath
 
   const itemsSummary =
-    order.items?.map((item: any) => `${item.quantity}x ${item.product?.name}`).join(', ') || ''
+    orderRecord.items
+      ?.map((item: OrderNotificationItem) => `${item.quantity}x ${item.product?.name}`)
+      .join(', ') || ''
 
   let message = interpolateMessage(template, {
-    cliente: order.customer?.name || 'Cliente',
-    numero: order.orderNumber?.toString() || order.publicId || order.id.slice(0, 5),
+    cliente: orderRecord.customer?.name || 'Cliente',
+    numero:
+      orderRecord.orderNumber?.toString() || orderRecord.publicId || orderRecord.id.slice(0, 5),
     status: statusLabels[normalizedStatus] || normalizedStatus.toLowerCase(),
-    valor: formatCurrency(order.totalValue),
+    valor: formatCurrency(orderRecord.totalValue),
     itens: itemsSummary,
     link_publico: publicLink,
   })
@@ -695,35 +749,39 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
     message = `${message}\n\nLink do orçamento: ${publicLink}`
   }
 
-  // 5. Gerar link wa.me
-  const link = generateWhatsAppLink(order.customer.phone, message)
+  // 6. Gerar link wa.me
+  const link = generateWhatsAppLink(orderRecord.customer.phone || '', message)
 
-  // 6. Registrar log de notificação manual
-  await (supabase as any).from('WhatsAppNotificationLog').insert({
-    tenantId: user.tenantId,
-    orderId: order.id,
-    customerPhone: order.customer.phone,
-    statusFrom: null,
-    statusTo: order.status,
-    messageType: 'MANUAL_BUTTON',
-    templateKey: 'whatsappNotifyTemplate',
-    messageBody: message,
-    payload: {
-      customerName: order.customer.name,
-      orderShortId: order.orderNumber?.toString() || order.publicId || order.id.slice(0, 5),
-      totalValue: order.totalValue,
-      generatedLink: link,
-    },
-    attempts: 0,
-    status: 'SENT', // Link foi gerado, consideramos "enviado"
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  } as any)
+  // 7. Registrar log de notificação manual
+  await db
+    .from('WhatsAppNotificationLog')
+    // @ts-expect-error legacy table typing missing in generated Database type
+    .insert({
+      tenantId: user.tenantId,
+      orderId: orderRecord.id,
+      customerPhone: orderRecord.customer.phone,
+      statusFrom: null,
+      statusTo: orderRecord.status,
+      messageType: 'MANUAL_BUTTON',
+      templateKey: 'whatsappNotifyTemplate',
+      messageBody: message,
+      payload: {
+        customerName: orderRecord.customer.name,
+        orderShortId:
+          orderRecord.orderNumber?.toString() || orderRecord.publicId || orderRecord.id.slice(0, 5),
+        totalValue: orderRecord.totalValue,
+        generatedLink: link,
+      },
+      attempts: 0,
+      status: 'SENT',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
 
   return {
     success: true,
     link,
     message,
-    customerName: order.customer.name,
+    customerName: orderRecord.customer.name,
   }
 }
