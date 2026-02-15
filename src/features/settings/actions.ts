@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
@@ -7,6 +7,21 @@ import { DEFAULT_THEME } from '@/lib/theme-tokens'
 import { validateCSRF } from '@/lib/security'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
+
+type FixedCostItem = { id?: string; name?: string; value?: number }
+type SettingsRecord = {
+  [key: string]: unknown
+  hourlyRate?: number | string
+  whatsappPhoneNumberId?: string
+  whatsappAccessToken?: string
+  whatsappConfigVerified?: boolean
+  financialDisplayMode?: string
+  marginThresholdWarning?: number | string
+  marginThresholdOptimal?: number | string
+  taxRate?: number | string
+  cardFeeRate?: number | string
+  targetMonthlyProfit?: number | string
+}
 
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
@@ -66,7 +81,18 @@ const SettingsSchema = z.object({
   marginThresholdOptimal: z.coerce.number().optional(),
 })
 
-export async function updateProfile(prevState: any, formData: FormData) {
+function parseFixedCosts(jsonValue?: string): FixedCostItem[] {
+  if (!jsonValue) return []
+  try {
+    const parsed = JSON.parse(jsonValue)
+    return Array.isArray(parsed) ? (parsed as FixedCostItem[]) : []
+  } catch (error) {
+    console.error('Failed to parse fixed costs', error)
+    return []
+  }
+}
+
+export async function updateProfile(_prevState: unknown, formData: FormData) {
   const csrfError = await assertCSRFValid()
   if (csrfError) return csrfError
 
@@ -80,12 +106,13 @@ export async function updateProfile(prevState: any, formData: FormData) {
     })
 
     const supabase = await createClient()
-    const { error } = await supabase
+    const db = supabase as any
+    const { error } = await db
       .from('User')
       .update({
         name: data.name,
         email: data.email,
-      } as any as never)
+      })
       .eq('id', user.id)
 
     if (error) throw error
@@ -101,7 +128,7 @@ export async function updateProfile(prevState: any, formData: FormData) {
   }
 }
 
-export async function updatePassword(prevState: any, formData: FormData) {
+export async function updatePassword(_prevState: unknown, formData: FormData) {
   const csrfError = await assertCSRFValid()
   if (csrfError) return csrfError
 
@@ -125,12 +152,13 @@ export async function updatePassword(prevState: any, formData: FormData) {
 
     if (error) throw error
     return actionSuccess('Senha atualizada com sucesso!')
-  } catch (error: any) {
-    return actionError(error.message || 'Erro ao atualizar senha')
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erro ao atualizar senha'
+    return actionError(message)
   }
 }
 
-export async function updateSettings(prevState: any, formData: FormData) {
+export async function updateSettings(_prevState: unknown, formData: FormData) {
   const csrfError = await assertCSRFValid()
   if (csrfError) return csrfError
 
@@ -177,15 +205,10 @@ export async function updateSettings(prevState: any, formData: FormData) {
     })
 
     const supabase = await createClient()
+    const db = supabase as any
+    const fixedCosts = parseFixedCosts(data.monthlyFixedCosts)
 
-    let fixedCosts = []
-    try {
-      fixedCosts = data.monthlyFixedCosts ? JSON.parse(data.monthlyFixedCosts) : []
-    } catch (error) {
-      console.error('Failed to parse fixed costs', error)
-    }
-
-    const { error } = await (supabase as any).from('Settings').upsert(
+    const { error } = await db.from('Settings').upsert(
       {
         tenantId,
         storeName: data.storeName,
@@ -221,7 +244,7 @@ export async function updateSettings(prevState: any, formData: FormData) {
         marginThresholdWarning: data.marginThresholdWarning ?? 20,
         marginThresholdOptimal: data.marginThresholdOptimal ?? 40,
         updatedAt: new Date().toISOString(),
-      } as any,
+      },
       { onConflict: 'tenantId' }
     )
 
@@ -280,7 +303,8 @@ export async function getSettings() {
   if (!user) return defaultSettings
 
   const supabase = await createClient()
-  const { data: settings } = await (supabase as any)
+  const db = supabase as any
+  const { data: settings } = await db
     .from('Settings')
     .select('*')
     .eq('tenantId', user.tenantId)
@@ -288,18 +312,20 @@ export async function getSettings() {
 
   if (!settings) return defaultSettings
 
+  const settingsData = settings as SettingsRecord
+
   return {
     ...defaultSettings,
-    ...(settings as any),
-    hourlyRate: Number((settings as any).hourlyRate),
-    whatsappPhoneNumberId: (settings as any).whatsappPhoneNumberId || '',
-    whatsappAccessToken: (settings as any).whatsappAccessToken || '',
-    whatsappConfigVerified: (settings as any).whatsappConfigVerified || false,
-    financialDisplayMode: (settings as any).financialDisplayMode || 'simple',
-    marginThresholdWarning: Number((settings as any).marginThresholdWarning) || 20,
-    marginThresholdOptimal: Number((settings as any).marginThresholdOptimal) || 40,
-    taxRate: Number((settings as any).taxRate) || 0,
-    cardFeeRate: Number((settings as any).cardFeeRate) || 0,
-    targetMonthlyProfit: Number((settings as any).targetMonthlyProfit) || 0,
+    ...settingsData,
+    hourlyRate: Number(settingsData.hourlyRate),
+    whatsappPhoneNumberId: settingsData.whatsappPhoneNumberId || '',
+    whatsappAccessToken: settingsData.whatsappAccessToken || '',
+    whatsappConfigVerified: settingsData.whatsappConfigVerified || false,
+    financialDisplayMode: settingsData.financialDisplayMode || 'simple',
+    marginThresholdWarning: Number(settingsData.marginThresholdWarning) || 20,
+    marginThresholdOptimal: Number(settingsData.marginThresholdOptimal) || 40,
+    taxRate: Number(settingsData.taxRate) || 0,
+    cardFeeRate: Number(settingsData.cardFeeRate) || 0,
+    targetMonthlyProfit: Number(settingsData.targetMonthlyProfit) || 0,
   }
 }
