@@ -4,12 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { SupplierSchema } from '@/lib/schemas'
 import { getCurrentUser } from '@/lib/auth'
-
-export type ActionResponse = {
-  success: boolean
-  message: string
-  errors?: any
-}
+import type { ActionResponse } from '@/lib/types'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
 
 export async function getSuppliers() {
   const user = await getCurrentUser()
@@ -27,16 +24,11 @@ export async function getSuppliers() {
 
 export async function createSupplier(data: any): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   const validatedFields = SupplierSchema.safeParse(data)
-
   if (!validatedFields.success) {
-    return {
-      success: false,
-      message: 'Erro de validação',
-      errors: validatedFields.error.flatten().fieldErrors,
-    }
+    return actionError('Erro de validação', validatedFields.error.flatten().fieldErrors)
   }
 
   try {
@@ -48,31 +40,26 @@ export async function createSupplier(data: any): Promise<ActionResponse> {
 
     if (error) throw error
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/fornecedores`)
-    revalidatePath(`/${slug}/app/estoque`)
-    return { success: true, message: 'Fornecedor criado com sucesso!' }
+    const slug = user.tenant?.slug
+    if (slug) {
+      for (const path of buildWorkspaceAppPaths(slug, ['/fornecedores', '/estoque'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Fornecedor criado com sucesso!')
   } catch (error) {
     console.error('Database Error:', error)
-    return {
-      success: false,
-      message: 'Erro ao criar fornecedor.',
-    }
+    return actionError('Erro ao criar fornecedor.')
   }
 }
 
 export async function updateSupplier(id: string, data: any): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   const validatedFields = SupplierSchema.safeParse(data)
-
   if (!validatedFields.success) {
-    return {
-      success: false,
-      message: 'Erro de validação',
-      errors: validatedFields.error.flatten().fieldErrors,
-    }
+    return actionError('Erro de validação', validatedFields.error.flatten().fieldErrors)
   }
 
   try {
@@ -84,38 +71,37 @@ export async function updateSupplier(id: string, data: any): Promise<ActionRespo
 
     if (error) throw error
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/fornecedores`)
-    revalidatePath(`/${slug}/app/estoque`)
-    return { success: true, message: 'Fornecedor atualizado com sucesso!' }
+    const slug = user.tenant?.slug
+    if (slug) {
+      for (const path of buildWorkspaceAppPaths(slug, ['/fornecedores', '/estoque'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Fornecedor atualizado com sucesso!')
   } catch (error) {
     console.error('Database Error:', error)
-    return {
-      success: false,
-      message: 'Erro ao atualizar fornecedor.',
-    }
+    return actionError('Erro ao atualizar fornecedor.')
   }
 }
 
 export async function deleteSupplier(id: string): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const supabase = await createClient()
     const { error } = await supabase.from('Supplier').delete().eq('id', id)
-
     if (error) throw error
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/fornecedores`)
-    revalidatePath(`/${slug}/app/estoque`)
-    return { success: true, message: 'Fornecedor excluído com sucesso!' }
+    const slug = user.tenant?.slug
+    if (slug) {
+      for (const path of buildWorkspaceAppPaths(slug, ['/fornecedores', '/estoque'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Fornecedor excluído com sucesso!')
   } catch (error) {
     console.error('Database Error:', error)
-    return {
-      success: false,
-      message: 'Erro ao excluir fornecedor. Verifique se existem materiais vinculados.',
-    }
+    return actionError('Erro ao excluir fornecedor. Verifique se existem materiais vinculados.')
   }
 }

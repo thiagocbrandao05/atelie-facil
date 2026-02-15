@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { headers } from 'next/headers'
 
@@ -11,27 +11,29 @@ import { formatCurrency } from '@/lib/formatters'
 import { getCurrentUser } from '@/lib/auth'
 import type { OrderStatus } from '@/lib/types'
 import { validateCSRF } from '@/lib/security'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
 
 // ==============================================================================
 // CONFIGURATION ACTIONS
 // ==============================================================================
 
 const WhatsAppSettingsSchema = z.object({
-  whatsappPhoneNumberId: z.string().min(1, 'Phone Number ID é obrigatório'),
-  whatsappAccessToken: z.string().min(1, 'Access Token é obrigatório'),
+  whatsappPhoneNumberId: z.string().min(1, 'Phone Number ID Ã© obrigatÃ³rio'),
+  whatsappAccessToken: z.string().min(1, 'Access Token Ã© obrigatÃ³rio'),
 })
 
 export async function saveWhatsAppCredentials(prevState: any, formData: FormData) {
   console.log('[WHATSAPP] Saving credentials')
   const csrf = await validateCSRF()
   if (!csrf.valid) {
-    return { success: false, message: csrf.error || 'CSRF inválido.' }
+    return actionError(csrf.error || 'CSRF inválido.')
   }
 
   const user = await getCurrentUser()
   const tenantId = user?.tenantId
   if (!tenantId) {
-    return { success: false, message: 'Não autorizado.' }
+    return unauthorizedAction()
   }
 
   try {
@@ -57,15 +59,19 @@ export async function saveWhatsAppCredentials(prevState: any, formData: FormData
       throw error
     }
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/configuracoes`)
-    return { success: true, message: 'Credenciais do WhatsApp salvas com sucesso!' }
+    const slug = user?.tenant?.slug
+    if (slug) {
+      for (const path of buildWorkspaceAppPaths(slug, ['/configuracoes'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Credenciais do WhatsApp salvas com sucesso!')
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, message: error.issues[0]?.message || 'Dados invalidos' }
+      return actionError(error.issues[0]?.message || 'Dados inválidos')
     }
     console.error('[WHATSAPP] Unexpected error:', error)
-    return { success: false, message: 'Erro ao salvar credenciais. Tente novamente.' }
+    return actionError('Erro ao salvar credenciais. Tente novamente.')
   }
 }
 
@@ -74,13 +80,13 @@ export async function validateWhatsAppCredentials() {
   const user = await getCurrentUser()
   const tenantId = user?.tenantId
   if (!tenantId) {
-    return { success: false, message: 'Não autorizado.' }
+    return unauthorizedAction()
   }
 
   try {
     await import('./limits').then(m => m.ensureCanSendTestMessage(tenantId))
   } catch (error: any) {
-    return { success: false, message: error.message }
+    return actionError(error.message)
   }
 
   const supabase = await createClient()
@@ -95,7 +101,7 @@ export async function validateWhatsAppCredentials() {
     !(settings as any)?.whatsappPhoneNumberId ||
     !(settings as any)?.whatsappAccessToken
   ) {
-    return { success: false, message: 'Credenciais não encontradas. Salve antes de validar.' }
+    return actionError('Credenciais não encontradas. Salve antes de validar.')
   }
 
   try {
@@ -109,11 +115,11 @@ export async function validateWhatsAppCredentials() {
     if (!response.ok) {
       console.error('[WHATSAPP] API Validation Error:', data)
       const errorMsg = data.error?.message || 'Erro desconhecido na API do WhatsApp'
-      return { success: false, message: `Falha na validação: ${errorMsg}` }
+      return actionError(`Falha na validação: ${errorMsg}`)
     }
 
     if (data.id !== (settings as any).whatsappPhoneNumberId) {
-      return { success: false, message: 'ID retornado pela API não corresponde ao ID salvo.' }
+      return actionError('ID retornado pela API não corresponde ao ID salvo.')
     }
 
     // Successfully validated
@@ -128,16 +134,10 @@ export async function validateWhatsAppCredentials() {
     // Increment usage
     await import('./limits').then(m => m.incrementWhatsAppUsage(tenantId, 'test', 1))
 
-    return {
-      success: true,
-      message: `Conexão validada com sucesso! Conta: ${verifiedName}`,
-    }
+    return actionSuccess(`Conexão validada com sucesso! Conta: ${verifiedName}`)
   } catch (error) {
     console.error('[WHATSAPP] Connection Error:', error)
-    return {
-      success: false,
-      message: 'Erro de conexão com a API do WhatsApp. Verifique sua internet.',
-    }
+    return actionError('Erro de conexão com a API do WhatsApp. Verifique sua internet.')
   }
 }
 
@@ -157,11 +157,12 @@ const STATUS_TEMPLATE_KEYS: Partial<Record<OrderStatus, keyof SettingsMessageTem
 }
 
 const STATUS_FALLBACK_MESSAGES: Partial<Record<OrderStatus, string>> = {
-  PENDING: 'Olá {cliente}, seu pedido #{pedido} foi aprovado e está na fila de produção!',
-  PRODUCING: 'Olá {cliente}, seu pedido #{pedido} acaba de entrar em produção! 🎨',
-  READY: 'Olá {cliente}, boas notícias! Seu pedido #{pedido} está pronto para retirada! ✨',
-  DELIVERED: 'Olá {cliente}, seu pedido #{pedido} foi entregue. Muito obrigado pela confiança! ❤️',
-  QUOTATION: 'Olá {cliente}, aqui está o orçamento dos seus produtos.',
+  PENDING: 'OlÃ¡ {cliente}, seu pedido #{pedido} foi aprovado e estÃ¡ na fila de produÃ§Ã£o!',
+  PRODUCING: 'OlÃ¡ {cliente}, seu pedido #{pedido} acaba de entrar em produÃ§Ã£o! ðŸŽ¨',
+  READY: 'OlÃ¡ {cliente}, boas notÃ­cias! Seu pedido #{pedido} estÃ¡ pronto para retirada! âœ¨',
+  DELIVERED:
+    'OlÃ¡ {cliente}, seu pedido #{pedido} foi entregue. Muito obrigado pela confianÃ§a! â¤ï¸',
+  QUOTATION: 'OlÃ¡ {cliente}, aqui estÃ¡ o orÃ§amento dos seus produtos.',
 }
 
 type SettingsMessageTemplates = {
@@ -272,7 +273,7 @@ async function buildOrderNotificationPayload(context: OrderNotificationContext) 
   ])
 
   if (orderError || !order) {
-    return { error: 'Pedido não encontrado.' }
+    return { error: 'Pedido nÃ£o encontrado.' }
   }
 
   return { order, settings: settings as SettingsMessageTemplates }
@@ -307,7 +308,7 @@ async function buildMessage({
   }
 
   const shouldAppendLink = statusTo === 'QUOTATION'
-  const linkLabel = statusTo === 'QUOTATION' ? 'Link do orçamento' : 'Link do pedido'
+  const linkLabel = statusTo === 'QUOTATION' ? 'Link do orÃ§amento' : 'Link do pedido'
 
   if (shouldAppendLink && !messageBody.includes(pdfLink)) {
     messageBody = `${messageBody}\n\n${linkLabel}: ${pdfLink}`
@@ -367,11 +368,11 @@ async function insertNotificationLog(params: {
 
 export async function enqueueOrderStatusNotification(context: OrderNotificationContext) {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado.' }
+  if (!user) return unauthorizedAction()
 
   const { order, settings, error } = await buildOrderNotificationPayload(context)
   if (error || !order) {
-    return { success: false, message: error || 'Pedido não encontrado.' }
+    return actionError(error || 'Pedido não encontrado.')
   }
 
   const { messageBody, templateKey, pdfLink } = await buildMessage({
@@ -468,7 +469,7 @@ export async function processPendingWhatsAppNotifications(
         .from('WhatsAppNotificationLog')
         .update({
           status: 'GAVE_UP',
-          errorMessage: 'Telefone inválido para reenvio.',
+          errorMessage: 'Telefone invÃ¡lido para reenvio.',
           updatedAt: new Date().toISOString(),
         } as any)
         .eq('id', (log as any).id)
@@ -533,20 +534,18 @@ export async function sendWhatsAppMessage({
   imageUrl?: string
 }) {
   const user = await getCurrentUser()
-  if (!user?.tenantId) return { success: false, message: 'Não autorizado' }
+  if (!user?.tenantId) return unauthorizedAction()
 
-  // Validar se o plano do tenant tem acesso à API WhatsApp
+  // Validar se o plano do tenant tem acesso Ã  API WhatsApp
   const { hasWhatsAppAPI } = await import('@/features/subscription/utils')
   const { getCurrentTenantPlan } = await import('@/features/subscription/actions')
 
   const tenantPlan = await getCurrentTenantPlan()
 
   if (!tenantPlan || !hasWhatsAppAPI(tenantPlan.plan)) {
-    return {
-      success: false,
-      message:
-        'API WhatsApp disponível apenas no plano Premium. Use o botão de notificação manual.',
-    }
+    return actionError(
+      'API WhatsApp disponível apenas no plano Premium. Use o botão de notificação manual.'
+    )
   }
 
   // Check limits (Transactional? Or is this generic?)
@@ -562,16 +561,22 @@ export async function sendWhatsAppMessage({
     messageBody: message,
   })
 
+  if (!result.success) {
+    return {
+      ...actionError(result.errorMessage || 'Falha'),
+      providerMessageId: result.providerMessageId,
+    }
+  }
+
   return {
-    success: result.success,
-    message: result.errorMessage || (result.success ? 'Enviado' : 'Falha'),
+    ...actionSuccess('Enviado'),
     providerMessageId: result.providerMessageId,
   }
 }
 
 /**
- * Gera link WhatsApp para notificação manual (botão)
- * Disponível para todos os planos (Start, Pro, Premium)
+ * Gera link WhatsApp para notificaÃ§Ã£o manual (botÃ£o)
+ * DisponÃ­vel para todos os planos (Start, Pro, Premium)
  *
  * @param orderId - ID do pedido
  * @returns Link wa.me com mensagem interpolada
@@ -579,7 +584,7 @@ export async function sendWhatsAppMessage({
 export async function generateWhatsAppNotifyLink(orderId: string) {
   const user = await getCurrentUser()
   if (!user?.tenantId) {
-    return { success: false, error: 'Não autorizado' }
+    return { success: false, error: 'NÃ£o autorizado' }
   }
 
   const supabase = await createClient()
@@ -606,14 +611,14 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
     .single()
 
   if (orderError || !order) {
-    return { success: false, error: 'Pedido não encontrado' }
+    return { success: false, error: 'Pedido nÃ£o encontrado' }
   }
 
   // 2. Validar telefone do cliente
   const { isValidWhatsAppPhone } = await import('./utils')
 
   if (!isValidWhatsAppPhone(order.customer?.phone)) {
-    return { success: false, error: 'Cliente não possui telefone válido cadastrado' }
+    return { success: false, error: 'Cliente nÃ£o possui telefone vÃ¡lido cadastrado' }
   }
 
   // 3. Buscar templates de mensagem
@@ -627,7 +632,7 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   const normalizedStatus = (order.status || '').toUpperCase()
 
   // Prioridade de templates:
-  // 1. Template específico por status (Mensagens 1 a 4)
+  // 1. Template especÃ­fico por status (Mensagens 1 a 4)
   // 2. Fallback fixo do sistema
   let template = null
 
@@ -646,23 +651,23 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   }
 
   if (!template) {
-    template = 'Olá {cliente}, seu pedido #{numero} está {status}!'
+    template = 'OlÃ¡ {cliente}, seu pedido #{numero} estÃ¡ {status}!'
   }
 
-  // 4. Interpolar variáveis
+  // 4. Interpolar variÃ¡veis
   const { interpolateMessage, generateWhatsAppLink } = await import('./utils')
 
   const statusLabels: Record<string, string> = {
-    QUOTATION: 'em orçamento',
-    PENDING: 'aguardando aprovação',
+    QUOTATION: 'em orÃ§amento',
+    PENDING: 'aguardando aprovaÃ§Ã£o',
     APPROVED: 'aprovado',
-    PRODUCING: 'em produção',
+    PRODUCING: 'em produÃ§Ã£o',
     READY: 'pronto para retirada',
     DELIVERED: 'entregue',
     CANCELLED: 'cancelado',
   }
 
-  // 5. Buscar o slug do tenant para o link público
+  // 5. Buscar o slug do tenant para o link pÃºblico
   const { data: tenant } = await (supabase as any)
     .from('Tenant')
     .select('slug')
@@ -672,7 +677,7 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   const publicId = order.publicId || order.id
   const baseUrl = await getBaseUrl()
 
-  // Link amigável: /orcamento/[slug]/[orderNumber]?p=[publicId]
+  // Link amigÃ¡vel: /orcamento/[slug]/[orderNumber]?p=[publicId]
   const friendlyPath = `/orcamento/${tenant?.slug || 'atelis'}/${order.orderNumber || order.id.slice(0, 8)}?p=${publicId}`
 
   const publicLink = baseUrl ? `${baseUrl}${friendlyPath}` : friendlyPath
@@ -689,15 +694,15 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
     link_publico: publicLink,
   })
 
-  // Garantir que o link público está na mensagem se for orçamento e o template não o incluiu
+  // Garantir que o link pÃºblico estÃ¡ na mensagem se for orÃ§amento e o template nÃ£o o incluiu
   if (normalizedStatus === 'QUOTATION' && !message.includes(publicLink)) {
-    message = `${message}\n\nLink do orçamento: ${publicLink}`
+    message = `${message}\n\nLink do orÃ§amento: ${publicLink}`
   }
 
   // 5. Gerar link wa.me
   const link = generateWhatsAppLink(order.customer.phone, message)
 
-  // 6. Registrar log de notificação manual
+  // 6. Registrar log de notificaÃ§Ã£o manual
   await (supabase as any).from('WhatsAppNotificationLog').insert({
     tenantId: user.tenantId,
     orderId: order.id,

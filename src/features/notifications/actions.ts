@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/auth'
 import type { ActionResponse } from '@/lib/types'
 import { createClient } from '@/lib/supabase/server'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
 
 export async function getNotifications(unreadOnly: boolean = false) {
   const user = await getCurrentUser()
@@ -27,7 +29,7 @@ export async function getNotifications(unreadOnly: boolean = false) {
 
 export async function markAsRead(id: string): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Nao autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const supabase = await createClient()
@@ -42,17 +44,21 @@ export async function markAsRead(id: string): Promise<ActionResponse> {
 
     if (error) throw error
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(slug ? `/${slug}/app/dashboard` : '/')
-    return { success: true, message: 'Notificacao marcada como lida' }
+    const slug = user.tenant?.slug
+    if (slug) {
+      for (const path of buildWorkspaceAppPaths(slug, ['/dashboard'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Notificação marcada como lida')
   } catch {
-    return { success: false, message: 'Erro ao marcar notificacao' }
+    return actionError('Erro ao marcar notificação')
   }
 }
 
 export async function markAllAsRead(): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Nao autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const supabase = await createClient()
@@ -67,11 +73,15 @@ export async function markAllAsRead(): Promise<ActionResponse> {
 
     if (error) throw error
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(slug ? `/${slug}/app/dashboard` : '/')
-    return { success: true, message: 'Todas as notificacoes foram marcadas como lidas' }
+    const slug = user.tenant?.slug
+    if (slug) {
+      for (const path of buildWorkspaceAppPaths(slug, ['/dashboard'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Todas as notificações foram marcadas como lidas')
   } catch {
-    return { success: false, message: 'Erro ao marcar notificacoes' }
+    return actionError('Erro ao marcar notificações')
   }
 }
 

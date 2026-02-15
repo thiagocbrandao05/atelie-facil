@@ -3,15 +3,17 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { CustomerSchema } from '@/lib/schemas'
-import type { ActionResponse, Customer } from '@/lib/types'
+import type { ActionResponse } from '@/lib/types'
 import { getCurrentUser } from '@/lib/auth'
 import { logAction } from '@/lib/audit'
 import { validateCSRF } from '@/lib/security'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
 
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
   if (!csrf.valid) {
-    return { success: false, message: csrf.error || 'CSRF inválido.' }
+    return actionError(csrf.error || 'CSRF inválido.')
   }
   return null
 }
@@ -38,7 +40,7 @@ export async function createCustomer(
   if (csrfError) return csrfError
 
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   const data = {
     name: formData.get('name'),
@@ -51,15 +53,12 @@ export async function createCustomer(
   const validatedFields = CustomerSchema.safeParse(data)
 
   if (!validatedFields.success) {
-    return {
-      success: false,
-      message: 'Dados inválidos.',
-      errors: validatedFields.error.flatten().fieldErrors,
-    }
+    return actionError('Dados inválidos.', validatedFields.error.flatten().fieldErrors)
   }
 
   try {
     const supabase = await createClient()
+    const workspaceSlug = user.tenant?.slug
     const { data: customer, error } = await (supabase as any)
       .from('Customer')
       .insert({
@@ -71,17 +70,20 @@ export async function createCustomer(
 
     if (error) throw error
 
-    // Audit log (TODO: Audit log via Supabase directly or refactor logAction)
     await logAction(user.tenantId, user.id, 'CREATE', 'Customer', customer.id, {
       name: validatedFields.data.name,
       email: validatedFields.data.email,
     })
 
-    revalidatePath('/clientes')
-    return { success: true, message: 'Cliente cadastrado!', data: customer }
-  } catch (e: any) {
-    console.error('Failed to create customer:', e)
-    return { success: false, message: 'Erro ao cadastrar cliente.' }
+    if (workspaceSlug) {
+      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/clientes'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Cliente cadastrado!', customer)
+  } catch (error) {
+    console.error('Failed to create customer:', error)
+    return actionError('Erro ao cadastrar cliente.')
   }
 }
 
@@ -90,24 +92,24 @@ export async function deleteCustomer(id: string): Promise<ActionResponse> {
   if (csrfError) return csrfError
 
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const supabase = await createClient()
+    const workspaceSlug = user.tenant?.slug
     const { error } = await (supabase as any).from('Customer').delete().eq('id', id)
-    // RLS ensures tenant isolation, but eq id is enough
-
     if (error) throw error
 
-    // Audit log
     await logAction(user.tenantId, user.id, 'DELETE', 'Customer', id)
 
-    revalidatePath('/clientes')
-    // Using redirect in client component instead of here for deletions usually,
-    // but ActionResponse message handles it.
-    return { success: true, message: 'Cliente removido!' }
-  } catch (e) {
-    return { success: false, message: 'Erro ao remover cliente. Verifique se ele possui pedidos.' }
+    if (workspaceSlug) {
+      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/clientes'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Cliente removido!')
+  } catch {
+    return actionError('Erro ao remover cliente. Verifique se ele possui pedidos.')
   }
 }
 
@@ -120,7 +122,7 @@ export async function updateCustomer(
   if (csrfError) return csrfError
 
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   const data = {
     name: formData.get('name'),
@@ -133,31 +135,30 @@ export async function updateCustomer(
   const validatedFields = CustomerSchema.safeParse(data)
 
   if (!validatedFields.success) {
-    return {
-      success: false,
-      message: 'Dados inválidos.',
-      errors: validatedFields.error.flatten().fieldErrors,
-    }
+    return actionError('Dados inválidos.', validatedFields.error.flatten().fieldErrors)
   }
 
   try {
     const supabase = await createClient()
+    const workspaceSlug = user.tenant?.slug
     const { error } = await (supabase as any)
       .from('Customer')
       .update(validatedFields.data as any as never)
       .eq('id', id)
-    // RLS handles tenant protection
 
     if (error) throw error
 
-    // Audit log
     await logAction(user.tenantId, user.id, 'UPDATE', 'Customer', id, validatedFields.data)
 
-    revalidatePath('/clientes')
-    return { success: true, message: 'Cliente atualizado!' }
-  } catch (e) {
-    console.error('Failed to update customer:', e)
-    return { success: false, message: 'Erro ao atualizar cliente.' }
+    if (workspaceSlug) {
+      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/clientes'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Cliente atualizado!')
+  } catch (error) {
+    console.error('Failed to update customer:', error)
+    return actionError('Erro ao atualizar cliente.')
   }
 }
 

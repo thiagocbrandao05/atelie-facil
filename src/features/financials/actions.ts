@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { getCurrentUser } from '@/lib/auth'
+import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
 
 export const TransactionSchema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória'),
@@ -66,6 +68,8 @@ export async function getTransactions(month: number, year: number) {
 export async function createTransaction(input: TransactionInput) {
   const supabase = (await createClient()) as any
   const tenantId = await getTenantId()
+  const user = await getCurrentUser()
+  const workspaceSlug = user?.tenant?.slug
 
   if (!tenantId) throw new Error('Unauthorized')
 
@@ -83,12 +87,18 @@ export async function createTransaction(input: TransactionInput) {
     throw new Error('Failed to create transaction')
   }
 
-  revalidatePath('/[workspaceSlug]/app/financeiro')
+  if (workspaceSlug) {
+    for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/financeiro'])) {
+      revalidatePath(path)
+    }
+  }
   return data
 }
 
 export async function updateTransaction(id: string, input: Partial<TransactionInput>) {
   const supabase = (await createClient()) as any
+  const user = await getCurrentUser()
+  const workspaceSlug = user?.tenant?.slug
 
   const { data, error } = await supabase
     .from('financial_transactions')
@@ -102,12 +112,18 @@ export async function updateTransaction(id: string, input: Partial<TransactionIn
     throw new Error('Failed to update transaction')
   }
 
-  revalidatePath('/[workspaceSlug]/app/financeiro')
+  if (workspaceSlug) {
+    for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/financeiro'])) {
+      revalidatePath(path)
+    }
+  }
   return data
 }
 
 export async function deleteTransaction(id: string) {
   const supabase = (await createClient()) as any
+  const user = await getCurrentUser()
+  const workspaceSlug = user?.tenant?.slug
 
   const { error } = await supabase.from('financial_transactions').delete().eq('id', id)
 
@@ -116,7 +132,11 @@ export async function deleteTransaction(id: string) {
     throw new Error('Failed to delete transaction')
   }
 
-  revalidatePath('/[workspaceSlug]/app/financeiro')
+  if (workspaceSlug) {
+    for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/financeiro'])) {
+      revalidatePath(path)
+    }
+  }
 }
 
 export async function getCategories() {

@@ -10,10 +10,9 @@ import type {
   ProductQueryResponse,
 } from '@/lib/types'
 import { getCurrentUser } from '@/lib/auth'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
 
-/**
- * Get products with pagination support
- */
 export async function getProductsPaginated(
   page: number = 1,
   pageSize: number = 20
@@ -49,10 +48,7 @@ export async function getProductsPaginated(
     return { data: [], total: 0, page, pageSize, totalPages: 0 }
   }
 
-  // Cast seguro para a estrutura que vem do banco (com joins e views aninhadas)
   const rawData = data as unknown as ProductQueryResponse[]
-
-  // Mapeamento para o tipo de domínio
   const formattedData: ProductWithMaterials[] = rawData.map(product => ({
     ...product,
     cost: product.cost || 0,
@@ -74,9 +70,6 @@ export async function getProductsPaginated(
   }
 }
 
-/**
- * Get all products (for backward compatibility)
- */
 export async function getProducts() {
   const user = await getCurrentUser()
   if (!user) return []
@@ -123,19 +116,15 @@ export async function createProduct(
   formData: FormData
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const materialsJson = formData.get('materials') as string
     const materials = JSON.parse(materialsJson || '[]')
 
-    // Validate material IDs
     for (const material of materials) {
       if (!material.id || material.id.trim() === '') {
-        return {
-          success: false,
-          message: 'Erro: Material sem ID válido encontrado.',
-        }
+        return actionError('Erro: Material sem ID válido encontrado.')
       }
     }
 
@@ -153,16 +142,15 @@ export async function createProduct(
     }
 
     const validatedFields = ProductSchema.safeParse(data)
-
     if (!validatedFields.success) {
-      return {
-        success: false,
-        message: 'Dados inválidos. Verifique os campos.',
-        errors: validatedFields.error.flatten().fieldErrors,
-      }
+      return actionError(
+        'Dados inválidos. Verifique os campos.',
+        validatedFields.error.flatten().fieldErrors
+      )
     }
 
     const supabase = await createClient()
+    const workspaceSlug = user.tenant?.slug
 
     const { error } = await (supabase as any).rpc('create_product_with_materials', {
       p_tenant_id: user.tenantId,
@@ -182,14 +170,15 @@ export async function createProduct(
 
     if (error) throw error
 
-    revalidatePath('/produtos')
-    return { success: true, message: 'Produto cadastrado com sucesso!' }
-  } catch (e: any) {
-    console.error('Failed to create product:', e)
-    return {
-      success: false,
-      message: 'Erro ao cadastrar produto: ' + (e.message || 'Erro desconhecido'),
+    if (workspaceSlug) {
+      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/produtos'])) {
+        revalidatePath(path)
+      }
     }
+    return actionSuccess('Produto cadastrado com sucesso!')
+  } catch (error: any) {
+    console.error('Failed to create product:', error)
+    return actionError('Erro ao cadastrar produto: ' + (error.message || 'Erro desconhecido'))
   }
 }
 
@@ -199,7 +188,7 @@ export async function updateProduct(
   formData: FormData
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   const materialsJson = formData.get('materials') as string
   const materials = JSON.parse(materialsJson || '[]')
@@ -218,17 +207,13 @@ export async function updateProduct(
   }
 
   const validatedFields = ProductSchema.safeParse(data)
-
   if (!validatedFields.success) {
-    return {
-      success: false,
-      message: 'Dados inválidos.',
-      errors: validatedFields.error.flatten().fieldErrors,
-    }
+    return actionError('Dados inválidos.', validatedFields.error.flatten().fieldErrors)
   }
 
   try {
     const supabase = await createClient()
+    const workspaceSlug = user.tenant?.slug
 
     const { error } = await (supabase as any).rpc('update_product_with_materials', {
       p_product_id: id,
@@ -249,23 +234,25 @@ export async function updateProduct(
 
     if (error) throw error
 
-    revalidatePath('/produtos')
-    return { success: true, message: 'Produto atualizado!' }
-  } catch (e: any) {
-    console.error('Failed to update product:', e)
-    return {
-      success: false,
-      message: 'Erro ao atualizar produto: ' + (e.message || 'Erro desconhecido'),
+    if (workspaceSlug) {
+      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/produtos'])) {
+        revalidatePath(path)
+      }
     }
+    return actionSuccess('Produto atualizado!')
+  } catch (error: any) {
+    console.error('Failed to update product:', error)
+    return actionError('Erro ao atualizar produto: ' + (error.message || 'Erro desconhecido'))
   }
 }
 
 export async function deleteProduct(id: string): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const supabase = await createClient()
+    const workspaceSlug = user.tenant?.slug
 
     const { error } = await (supabase as any).rpc('delete_product', {
       p_product_id: id,
@@ -274,9 +261,13 @@ export async function deleteProduct(id: string): Promise<ActionResponse> {
 
     if (error) throw error
 
-    revalidatePath('/produtos')
-    return { success: true, message: 'Produto removido!' }
-  } catch (e) {
-    return { success: false, message: 'Erro ao remover produto. Verifique se ele está em pedidos.' }
+    if (workspaceSlug) {
+      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/produtos'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Produto removido!')
+  } catch {
+    return actionError('Erro ao remover produto. Verifique se ele está em pedidos.')
   }
 }

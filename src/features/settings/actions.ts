@@ -6,11 +6,13 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
 import { DEFAULT_THEME } from '@/lib/theme-tokens'
 import { validateCSRF } from '@/lib/security'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
 
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
   if (!csrf.valid) {
-    return { success: false, message: csrf.error || 'CSRF inválido.' }
+    return actionError(csrf.error || 'CSRF inválido.')
   }
   return null
 }
@@ -50,10 +52,9 @@ const SettingsSchema = z.object({
   addressCity: z.string().optional(),
   addressState: z.string().optional(),
   addressZip: z.string().optional(),
-  // Redesign specific fields
   quotationValidityDays: z.coerce.number().optional(),
   defaultQuotationNotes: z.string().optional(),
-  monthlyFixedCosts: z.string().optional(), // Expected as JSON string from form
+  monthlyFixedCosts: z.string().optional(),
   desirableSalary: z.coerce.number().optional(),
   workingHoursPerMonth: z.coerce.number().optional(),
   defaultProfitMargin: z.coerce.number().optional(),
@@ -72,7 +73,7 @@ export async function updateProfile(prevState: any, formData: FormData) {
 
   try {
     const user = await getCurrentUser()
-    if (!user) return { success: false, message: 'Não autorizado' }
+    if (!user) return unauthorizedAction()
 
     const data = ProfileSchema.parse({
       name: formData.get('name'),
@@ -90,11 +91,16 @@ export async function updateProfile(prevState: any, formData: FormData) {
 
     if (error) throw error
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/perfil`)
-    return { success: true, message: 'Perfil atualizado com sucesso!' }
+    const slug = user.tenant?.slug
+    if (slug) {
+      for (const path of buildWorkspaceAppPaths(slug, ['/perfil'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Perfil atualizado com sucesso!')
   } catch (error) {
-    return { success: false, message: 'Erro ao atualizar perfil' }
+    console.error('updateProfile error:', error)
+    return actionError('Erro ao atualizar perfil')
   }
 }
 
@@ -104,21 +110,15 @@ export async function updatePassword(prevState: any, formData: FormData) {
 
   try {
     const user = await getCurrentUser()
-    if (!user) return { success: false, message: 'Não autorizado' }
-
-    const password = formData.get('password')
-    const confirmPassword = formData.get('confirmPassword')
+    if (!user) return unauthorizedAction()
 
     const validation = PasswordSchema.safeParse({
-      password,
-      confirmPassword,
+      password: formData.get('password'),
+      confirmPassword: formData.get('confirmPassword'),
     })
 
     if (!validation.success) {
-      return {
-        success: false,
-        message: validation.error.issues[0]?.message || 'Dados invalidos',
-      }
+      return actionError(validation.error.issues[0]?.message || 'Dados inválidos')
     }
 
     const supabase = await createClient()
@@ -127,10 +127,9 @@ export async function updatePassword(prevState: any, formData: FormData) {
     })
 
     if (error) throw error
-
-    return { success: true, message: 'Senha atualizada com sucesso!' }
+    return actionSuccess('Senha atualizada com sucesso!')
   } catch (error: any) {
-    return { success: false, message: error.message || 'Erro ao atualizar senha' }
+    return actionError(error.message || 'Erro ao atualizar senha')
   }
 }
 
@@ -139,11 +138,11 @@ export async function updateSettings(prevState: any, formData: FormData) {
   if (csrfError) return csrfError
 
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado.' }
+  if (!user) return unauthorizedAction()
 
   try {
     const tenantId = user.tenantId
-    const slug = (user as any).tenant?.slug
+    const slug = user.tenant?.slug
 
     const data = SettingsSchema.parse({
       storeName: formData.get('storeName'),
@@ -182,18 +181,16 @@ export async function updateSettings(prevState: any, formData: FormData) {
 
     const supabase = await createClient()
 
-    // Parse fixed costs JSON
     let fixedCosts = []
     try {
       fixedCosts = data.monthlyFixedCosts ? JSON.parse(data.monthlyFixedCosts) : []
-    } catch (e) {
-      console.error('Failed to parse fixed costs', e)
+    } catch (error) {
+      console.error('Failed to parse fixed costs', error)
     }
 
-    // Upsert settings using onConflict tenantId
     const { error } = await (supabase as any).from('Settings').upsert(
       {
-        tenantId: tenantId,
+        tenantId,
         storeName: data.storeName,
         hourlyRate: data.hourlyRate,
         phone: data.phone || null,
@@ -233,11 +230,15 @@ export async function updateSettings(prevState: any, formData: FormData) {
 
     if (error) throw error
 
-    revalidatePath(`/${slug}/app/configuracoes`)
-    return { success: true, message: 'Configurações salvas com sucesso!' }
+    if (slug) {
+      for (const path of buildWorkspaceAppPaths(slug, ['/configuracoes'])) {
+        revalidatePath(path)
+      }
+    }
+    return actionSuccess('Configurações salvas com sucesso!')
   } catch (error) {
     console.error(error)
-    return { success: false, message: 'Erro ao salvar configurações' }
+    return actionError('Erro ao salvar configurações')
   }
 }
 
