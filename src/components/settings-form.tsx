@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useActionState, useState, useEffect, useMemo } from 'react'
 import { updateSettings } from '@/features/settings/actions'
