@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { CustomerSchema } from '@/lib/schemas'
@@ -8,6 +8,16 @@ import { logAction } from '@/lib/audit'
 import { validateCSRF } from '@/lib/security'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
+import type { Database } from '@/lib/supabase/types'
+
+type CustomerInsert = Database['public']['Tables']['Customer']['Insert']
+type CustomerUpdate = Database['public']['Tables']['Customer']['Update']
+
+function toNullableIsoDate(value?: Date | null): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return null
+  return value.toISOString()
+}
 
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
@@ -22,17 +32,17 @@ export async function getCustomers() {
   if (!user) return []
 
   const supabase = await createClient()
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from('Customer')
     .select('*')
     .eq('tenantId', user.tenantId)
     .order('name', { ascending: true })
 
-  return (data as any[]) || []
+  return data ?? []
 }
 
 export async function createCustomer(
-  prevState: ActionResponse,
+  _prevState: ActionResponse,
   formData: FormData
 ): Promise<ActionResponse> {
   const csrfError = await assertCSRFValid()
@@ -41,7 +51,7 @@ export async function createCustomer(
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
-  const data = {
+  const rawData = {
     name: formData.get('name'),
     phone: formData.get('phone') || undefined,
     email: formData.get('email') || undefined,
@@ -49,7 +59,7 @@ export async function createCustomer(
     notes: formData.get('notes') || undefined,
     birthday: formData.get('birthday') || undefined,
   }
-  const validatedFields = CustomerSchema.safeParse(data)
+  const validatedFields = CustomerSchema.safeParse(rawData)
 
   if (!validatedFields.success) {
     return actionError('Dados inválidos.', validatedFields.error.flatten().fieldErrors)
@@ -57,13 +67,17 @@ export async function createCustomer(
 
   try {
     const supabase = await createClient()
+    const db = supabase as any
     const workspaceSlug = user.tenant?.slug
-    const { data: customer, error } = await (supabase as any)
+    const customerPayload: CustomerInsert = {
+      ...validatedFields.data,
+      birthday: toNullableIsoDate(validatedFields.data.birthday),
+      tenantId: user.tenantId,
+    }
+
+    const { data: customer, error } = await db
       .from('Customer')
-      .insert({
-        ...validatedFields.data,
-        tenantId: user.tenantId,
-      } as any)
+      .insert(customerPayload)
       .select()
       .single()
 
@@ -93,8 +107,9 @@ export async function deleteCustomer(id: string): Promise<ActionResponse> {
 
   try {
     const supabase = await createClient()
+    const db = supabase as any
     const workspaceSlug = user.tenant?.slug
-    const { error } = await (supabase as any).from('Customer').delete().eq('id', id)
+    const { error } = await db.from('Customer').delete().eq('id', id)
     if (error) throw error
 
     await logAction(user.tenantId, user.id, 'DELETE', 'Customer', id)
@@ -110,7 +125,7 @@ export async function deleteCustomer(id: string): Promise<ActionResponse> {
 
 export async function updateCustomer(
   id: string,
-  prevState: ActionResponse,
+  _prevState: ActionResponse,
   formData: FormData
 ): Promise<ActionResponse> {
   const csrfError = await assertCSRFValid()
@@ -119,7 +134,7 @@ export async function updateCustomer(
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
-  const data = {
+  const rawData = {
     name: formData.get('name'),
     phone: formData.get('phone') || undefined,
     email: formData.get('email') || undefined,
@@ -127,7 +142,7 @@ export async function updateCustomer(
     notes: formData.get('notes') || undefined,
     birthday: formData.get('birthday') || undefined,
   }
-  const validatedFields = CustomerSchema.safeParse(data)
+  const validatedFields = CustomerSchema.safeParse(rawData)
 
   if (!validatedFields.success) {
     return actionError('Dados inválidos.', validatedFields.error.flatten().fieldErrors)
@@ -135,11 +150,14 @@ export async function updateCustomer(
 
   try {
     const supabase = await createClient()
+    const db = supabase as any
     const workspaceSlug = user.tenant?.slug
-    const { error } = await (supabase as any)
-      .from('Customer')
-      .update(validatedFields.data as any as never)
-      .eq('id', id)
+    const customerPayload: CustomerUpdate = {
+      ...validatedFields.data,
+      birthday: toNullableIsoDate(validatedFields.data.birthday),
+    }
+
+    const { error } = await db.from('Customer').update(customerPayload).eq('id', id)
 
     if (error) throw error
 
@@ -160,7 +178,7 @@ export async function getCustomerOrders(customerId: string) {
   if (!user) return []
 
   const supabase = await createClient()
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('Order')
     .select(
       `
@@ -184,5 +202,5 @@ export async function getCustomerOrders(customerId: string) {
     return []
   }
 
-  return (data as any[]) || []
+  return data ?? []
 }

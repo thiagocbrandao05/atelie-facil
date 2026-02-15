@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { SupplierSchema } from '@/lib/schemas'
@@ -6,6 +6,10 @@ import { getCurrentUser } from '@/lib/auth'
 import type { ActionResponse } from '@/lib/types'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
+import type { Database } from '@/lib/supabase/types'
+
+type SupplierInsert = Database['public']['Tables']['Supplier']['Insert']
+type SupplierUpdate = Database['public']['Tables']['Supplier']['Update']
 
 export async function getSuppliers() {
   const user = await getCurrentUser()
@@ -18,24 +22,27 @@ export async function getSuppliers() {
     .eq('tenantId', user.tenantId)
     .order('name', { ascending: true })
 
-  return (data as any[]) || []
+  return data ?? []
 }
 
-export async function createSupplier(data: any): Promise<ActionResponse> {
+export async function createSupplier(input: unknown): Promise<ActionResponse> {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
-  const validatedFields = SupplierSchema.safeParse(data)
+  const validatedFields = SupplierSchema.safeParse(input)
   if (!validatedFields.success) {
     return actionError('Erro de validação', validatedFields.error.flatten().fieldErrors)
   }
 
   try {
     const supabase = await createClient()
-    const { error } = await supabase.from('Supplier').insert({
+    const db = supabase as any
+    const supplierPayload: SupplierInsert = {
       ...validatedFields.data,
       tenantId: user.tenantId,
-    } as any)
+    }
+
+    const { error } = await db.from('Supplier').insert(supplierPayload)
 
     if (error) throw error
 
@@ -50,21 +57,21 @@ export async function createSupplier(data: any): Promise<ActionResponse> {
   }
 }
 
-export async function updateSupplier(id: string, data: any): Promise<ActionResponse> {
+export async function updateSupplier(id: string, input: unknown): Promise<ActionResponse> {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
-  const validatedFields = SupplierSchema.safeParse(data)
+  const validatedFields = SupplierSchema.safeParse(input)
   if (!validatedFields.success) {
     return actionError('Erro de validação', validatedFields.error.flatten().fieldErrors)
   }
 
   try {
     const supabase = await createClient()
-    const { error } = await supabase
-      .from('Supplier')
-      .update(validatedFields.data as any as never)
-      .eq('id', id)
+    const db = supabase as any
+    const supplierPayload: SupplierUpdate = validatedFields.data
+
+    const { error } = await db.from('Supplier').update(supplierPayload).eq('id', id)
 
     if (error) throw error
 

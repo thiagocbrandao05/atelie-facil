@@ -1,10 +1,13 @@
-'use server'
+﻿'use server'
 
 import { getCurrentUser } from '@/lib/auth'
 import type { ActionResponse } from '@/lib/types'
 import { createClient } from '@/lib/supabase/server'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
+import type { Database } from '@/lib/supabase/types'
+
+type NotificationUpdate = Database['public']['Tables']['Notification']['Update']
 
 export async function getNotifications(unreadOnly: boolean = false) {
   const user = await getCurrentUser()
@@ -23,7 +26,7 @@ export async function getNotifications(unreadOnly: boolean = false) {
   }
 
   const { data } = await query
-  return (data as any[]) || []
+  return data ?? []
 }
 
 export async function markAsRead(id: string): Promise<ActionResponse> {
@@ -32,12 +35,15 @@ export async function markAsRead(id: string): Promise<ActionResponse> {
 
   try {
     const supabase = await createClient()
-    const { error } = await supabase
+    const db = supabase as any
+    const updatePayload: NotificationUpdate = {
+      read: true,
+      readAt: new Date().toISOString(),
+    }
+
+    const { error } = await db
       .from('Notification')
-      .update({
-        read: true,
-        readAt: new Date().toISOString(),
-      } as any as never)
+      .update(updatePayload)
       .eq('id', id)
       .eq('tenantId', user.tenantId)
 
@@ -59,12 +65,15 @@ export async function markAllAsRead(): Promise<ActionResponse> {
 
   try {
     const supabase = await createClient()
-    const { error } = await supabase
+    const db = supabase as any
+    const updatePayload: NotificationUpdate = {
+      read: true,
+      readAt: new Date().toISOString(),
+    }
+
+    const { error } = await db
       .from('Notification')
-      .update({
-        read: true,
-        readAt: new Date().toISOString(),
-      } as any as never)
+      .update(updatePayload)
       .eq('tenantId', user.tenantId)
       .eq('read', false)
 

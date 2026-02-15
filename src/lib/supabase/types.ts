@@ -76,6 +76,7 @@ export interface Database {
           email: string | null
           address: string | null
           notes: string | null
+          birthday: string | null
           createdAt: string
           updatedAt: string
         }
@@ -87,6 +88,7 @@ export interface Database {
           email?: string | null
           address?: string | null
           notes?: string | null
+          birthday?: string | null
           createdAt?: string
           updatedAt?: string
         }
@@ -98,6 +100,7 @@ export interface Database {
           email?: string | null
           address?: string | null
           notes?: string | null
+          birthday?: string | null
           createdAt?: string
           updatedAt?: string
         }
