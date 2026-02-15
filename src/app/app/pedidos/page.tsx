@@ -146,6 +146,9 @@ export default async function PedidosPage(props: {
                             <DeleteButton
                               id={order.id}
                               onDelete={deleteOrder}
+                              confirmTitle="Cancelar pedido?"
+                              confirmDescription="O pedido sera marcado como cancelado para preservar historico e numeracao."
+                              confirmActionLabel="Confirmar cancelamento"
                               className="h-10 w-10 md:h-8 md:w-8"
                             />
                           </div>

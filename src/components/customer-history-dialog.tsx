@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { History, Package, Calendar, Tag, ChevronRight } from 'lucide-react'
+import { History, Package, Calendar } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { getCustomerOrders } from '@/features/customers/actions'
+import { getCustomerOrders, getCustomerLtv } from '@/features/customers/actions'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -29,16 +29,26 @@ type CustomerOrderHistory = {
   }>
 }
 
+type CustomerLtvSummary = {
+  deliveredOrders: number
+  lifetimeValue: number
+}
+
 export function CustomerHistoryDialog({ customer }: { customer: Customer }) {
   const [open, setOpen] = useState(false)
   const [orders, setOrders] = useState<CustomerOrderHistory[]>([])
+  const [ltv, setLtv] = useState<CustomerLtvSummary>({ deliveredOrders: 0, lifetimeValue: 0 })
   const [isLoading, setIsLoading] = useState(false)
 
   const loadOrders = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await getCustomerOrders(customer.id)
-      setOrders(data as CustomerOrderHistory[])
+      const [ordersData, ltvData] = await Promise.all([
+        getCustomerOrders(customer.id),
+        getCustomerLtv(customer.id),
+      ])
+      setOrders(ordersData as CustomerOrderHistory[])
+      setLtv(ltvData as CustomerLtvSummary)
     } catch (error) {
       console.error(error)
     } finally {
@@ -55,12 +65,12 @@ export function CustomerHistoryDialog({ customer }: { customer: Customer }) {
   const getStatusLabel = (status: string) => {
     const statuses: Record<string, { label: string; color: string }> = {
       PENDING: { label: 'Pendente', color: 'bg-warning/10 text-warning border-warning/20' },
-      PRODUCING: { label: 'Em Produção', color: 'bg-info/10 text-info border-info/20' },
-      COMPLETED: { label: 'Concluído', color: 'bg-success/10 text-success border-success/20' },
+      PRODUCING: { label: 'Em producao', color: 'bg-info/10 text-info border-info/20' },
+      COMPLETED: { label: 'Concluido', color: 'bg-success/10 text-success border-success/20' },
       DELIVERED: { label: 'Entregue', color: 'bg-primary/10 text-primary border-primary/20' },
       CANCELLED: { label: 'Cancelado', color: 'bg-danger/10 text-danger border-danger/20' },
       QUOTATION: {
-        label: 'Orçamento',
+        label: 'Orcamento',
         color: 'bg-muted/40 text-muted-foreground border-border/40',
       },
     }
@@ -92,11 +102,19 @@ export function CustomerHistoryDialog({ customer }: { customer: Customer }) {
               </div>
               <div>
                 <DialogTitle className="font-serif text-xl italic">
-                  Histórico de Pedidos
+                  Historico de pedidos
                 </DialogTitle>
                 <DialogDescription className="text-xs">
-                  {customer.name} • {orders.length} pedido(s) encontrado(s)
+                  {customer.name} - {orders.length} pedido(s) encontrado(s)
                 </DialogDescription>
+                <p className="text-muted-foreground mt-1 text-[11px] font-semibold">
+                  LTV (entregues):{' '}
+                  {ltv.lifetimeValue.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}{' '}
+                  em {ltv.deliveredOrders} pedido(s)
+                </p>
               </div>
             </div>
           </DialogHeader>
@@ -106,7 +124,7 @@ export function CustomerHistoryDialog({ customer }: { customer: Customer }) {
               <div className="flex flex-col items-center justify-center space-y-4 py-12">
                 <div className="border-primary/30 border-t-primary h-8 w-8 animate-spin rounded-full border-4" />
                 <p className="text-muted-foreground animate-pulse text-xs font-bold tracking-widest uppercase">
-                  Carregando histórico...
+                  Carregando historico...
                 </p>
               </div>
             ) : orders.length === 0 ? (
@@ -114,7 +132,7 @@ export function CustomerHistoryDialog({ customer }: { customer: Customer }) {
                 <Package className="text-muted-foreground/30 h-12 w-12" />
                 <div className="space-y-1">
                   <p className="text-sm font-bold">Nenhum pedido encontrado</p>
-                  <p className="text-xs">Este cliente ainda não realizou pedidos no sistema.</p>
+                  <p className="text-xs">Este cliente ainda nao realizou pedidos no sistema.</p>
                 </div>
               </div>
             ) : (
@@ -156,14 +174,17 @@ export function CustomerHistoryDialog({ customer }: { customer: Customer }) {
 
                       <div className="flex items-center justify-between gap-1 border-t pt-3 md:flex-col md:items-end md:border-t-0 md:pt-0">
                         <span className="text-muted-foreground text-[10px] font-black tracking-widest uppercase md:hidden">
-                          Valor Total
+                          Valor total
                         </span>
                         <div className="flex flex-col items-end">
                           <span className="text-muted-foreground mb-1 hidden text-xs leading-none font-bold tracking-tighter uppercase md:block">
                             Total
                           </span>
                           <span className="text-primary text-lg font-black tabular-nums">
-                            R$ {Number(order.totalValue).toFixed(2)}
+                            {Number(order.totalValue).toLocaleString('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            })}
                           </span>
                         </div>
                       </div>

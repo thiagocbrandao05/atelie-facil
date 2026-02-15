@@ -208,3 +208,34 @@ export async function getCustomerOrders(customerId: string) {
 
   return data ?? []
 }
+
+export async function getCustomerLtv(customerId: string) {
+  const user = await getCurrentUser()
+  if (!user) {
+    return { deliveredOrders: 0, lifetimeValue: 0 }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('Order')
+    .select('totalValue')
+    .eq('tenantId', user.tenantId)
+    .eq('customerId', customerId)
+    .eq('status', 'DELIVERED')
+
+  if (error || !data) {
+    console.error('Error fetching customer LTV:', error)
+    return { deliveredOrders: 0, lifetimeValue: 0 }
+  }
+
+  const deliveredOrders = data as Array<{ totalValue: number | string | null }>
+  const lifetimeValue = deliveredOrders.reduce(
+    (sum, order) => sum + Number(order.totalValue || 0),
+    0
+  )
+
+  return {
+    deliveredOrders: deliveredOrders.length,
+    lifetimeValue,
+  }
+}

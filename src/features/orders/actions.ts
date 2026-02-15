@@ -26,6 +26,7 @@ import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-res
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 type CreateOrderRpcResult = { id: string }
+type DeleteOrderRpcResult = { success?: boolean; message?: string; status?: string }
 type NotificationResult = { success?: boolean; message?: string; error?: string }
 
 function notificationErrorMessage(result: unknown, fallback: string): string {
@@ -314,20 +315,24 @@ export async function deleteOrder(id: string): Promise<ActionResponse> {
 
   try {
     // @ts-expect-error legacy schema not fully represented in generated DB types
-    const { error } = await db.rpc('delete_order', {
+    const { data, error } = await db.rpc('delete_order', {
       p_order_id: id,
       p_tenant_id: user.tenantId,
     })
 
     if (error) throw error
+    const result = data as DeleteOrderRpcResult | null
+    if (result && result.success === false) {
+      return actionError(result.message || 'Não foi possível cancelar o pedido.')
+    }
 
     if (workspaceSlug) {
       revalidateWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])
     }
-    return actionSuccess('Pedido excluído com sucesso!')
+    return actionSuccess('Pedido cancelado com sucesso!')
   } catch (error: unknown) {
     console.error('Failed to delete order:', error)
-    const message = error instanceof Error ? error.message : 'Erro ao excluir pedido.'
+    const message = error instanceof Error ? error.message : 'Erro ao cancelar pedido.'
     return actionError(message)
   }
 }
