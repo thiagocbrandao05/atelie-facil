@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+﻿import { expect, test } from '@playwright/test'
 import { loginViaUI } from '../helpers/playwright'
 
 test.describe('WhatsApp Plan Feature Gating', () => {
@@ -12,7 +12,7 @@ test.describe('WhatsApp Plan Feature Gating', () => {
     await page.goto(`/${workspaceSlug}/app/pedidos`)
 
     const manualCount = await page.getByRole('button', { name: /notificar via whatsapp/i }).count()
-    const automationCount = await page.getByText(/automacao ativa|automa��o ativa/i).count()
+    const automationCount = await page.getByText(/automacao ativa|automação ativa/i).count()
 
     if (manualCount > 0) {
       await expect(
@@ -22,7 +22,7 @@ test.describe('WhatsApp Plan Feature Gating', () => {
     }
 
     if (automationCount > 0) {
-      await expect(page.getByText(/automacao ativa|automa��o ativa/i).first()).toBeVisible()
+      await expect(page.getByText(/automacao ativa|automação ativa/i).first()).toBeVisible()
       return
     }
 
