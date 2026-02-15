@@ -62,7 +62,7 @@ export async function saveWhatsAppCredentials(prevState: any, formData: FormData
     return { success: true, message: 'Credenciais do WhatsApp salvas com sucesso!' }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, message: error.errors[0].message }
+      return { success: false, message: error.issues[0]?.message || 'Dados invalidos' }
     }
     console.error('[WHATSAPP] Unexpected error:', error)
     return { success: false, message: 'Erro ao salvar credenciais. Tente novamente.' }
