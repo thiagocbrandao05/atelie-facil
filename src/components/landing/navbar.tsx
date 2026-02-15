@@ -100,6 +100,7 @@ export function LandingNavbar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
+                aria-label="Abrir menu"
                 className={cn(
                   'rounded-lg p-2 transition-colors',
                   scrolled

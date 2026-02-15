@@ -1,6 +1,8 @@
-﻿'use server'
+'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getCustomers } from '@/features/customers/actions'
+import { getProducts } from '@/features/products/actions'
 import type {
   ActionResponse,
   PaginatedResponse,
@@ -148,6 +150,21 @@ export async function getOrdersForKanban() {
     .order('createdAt', { ascending: false })
 
   return data ?? []
+}
+
+export async function getOrderDialogData() {
+  const [products, customers] = await Promise.all([getProducts(), getCustomers()])
+  const customerOptions = (customers as Array<{ id: string; name: string | null }>).map(
+    customer => ({
+      id: customer.id,
+      name: customer.name ?? 'Cliente sem nome',
+    })
+  )
+
+  return {
+    products,
+    customers: customerOptions,
+  }
 }
 
 export async function createOrder(data: OrderInput): Promise<ActionResponse> {

@@ -38,6 +38,7 @@ export function StockAlertBanner({ lowStockItems }: { lowStockItems: LowStockIte
           </div>
           <button
             onClick={() => setIsVisible(false)}
+            aria-label="Fechar alerta de estoque"
             className="text-warning/70 hover:text-warning"
           >
             <X size={18} />

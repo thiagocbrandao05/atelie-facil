@@ -28,6 +28,7 @@ import { applyPsychologicalPricing, type PsychologicalPattern } from '@/lib/fina
 import { useFormHandler } from '@/hooks/use-form-handler'
 import { calculateMaterialCost, calculateSuggestedPrice, ProductWithMaterials } from '@/lib/logic'
 import { UNITS } from '@/lib/units'
+import { toast } from 'sonner'
 
 type MaterialItem = {
   id: string
@@ -118,19 +119,19 @@ export function ProductForm({
 
   const addMaterial = () => {
     if (!currentMaterialId || !currentQuantity || !currentUnit) {
-      alert('Por favor, preencha todos os campos do material.')
+      toast.error('Preencha todos os campos do material.')
       return
     }
 
     const exists = selectedMaterials.find(m => m.id === currentMaterialId)
     if (exists) {
-      alert('Este material já foi adicionado.')
+      toast.error('Este material já foi adicionado.')
       return
     }
 
     const quantity = parseFloat(currentQuantity)
     if (isNaN(quantity) || quantity <= 0) {
-      alert('Quantidade deve ser um número maior que zero.')
+      toast.error('Quantidade deve ser maior que zero.')
       return
     }
 
@@ -179,6 +180,7 @@ export function ProductForm({
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Editar produto"
             className="text-muted-foreground hover:text-primary h-8 w-8"
           >
             <Pencil className="h-4 w-4" />
@@ -194,7 +196,7 @@ export function ProductForm({
           onSubmit={e => {
             if (!isReseller(tenantPlan) && selectedMaterials.length === 0) {
               e.preventDefault()
-              alert('Adicione pelo menos um material ao produto.')
+              toast.error('Adicione pelo menos um material ao produto.')
               return
             }
           }}
@@ -435,6 +437,7 @@ export function ProductForm({
                             <Button
                               type="button"
                               size="icon"
+                              aria-label="Adicionar material"
                               onClick={addMaterial}
                               className="h-10 w-full shadow-sm transition-all active:scale-95"
                             >
@@ -473,6 +476,7 @@ export function ProductForm({
                                     type="button"
                                     size="sm"
                                     variant="ghost"
+                                    aria-label={`Remover material ${mat?.name || ''}`.trim()}
                                     onClick={() => removeMaterial(item.id)}
                                     className="text-destructive h-6 w-6 p-0"
                                   >

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * WhatsApp Link Generation and Message Interpolation Utilities
  */
 

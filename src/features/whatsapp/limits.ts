@@ -1,4 +1,4 @@
-﻿import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { WhatsAppLimits, UsageSummary, PlanType } from '../subscription/types'
 import { FALLBACK_LIMITS } from '../subscription/constants'
 

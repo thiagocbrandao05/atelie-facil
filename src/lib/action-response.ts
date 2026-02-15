@@ -1,4 +1,4 @@
-﻿import type { ActionResponse } from '@/lib/types'
+import type { ActionResponse } from '@/lib/types'
 
 export function actionSuccess<T = unknown>(message: string, data?: T): ActionResponse<T> {
   return { success: true, message, data }

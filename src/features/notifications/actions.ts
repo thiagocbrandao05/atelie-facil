@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { getCurrentUser } from '@/lib/auth'
 import type { ActionResponse } from '@/lib/types'

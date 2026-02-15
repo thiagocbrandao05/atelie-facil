@@ -43,7 +43,7 @@ export default async function ProdutosPage() {
 
       <FinancialHealthDashboard products={productsList} settings={appSettings} plan={plan} />
 
-      <Tabs defaultValue="catalog" className="space-y-5 sm:space-y-6">
+      <Tabs defaultValue="catalog" keepMounted={false} className="space-y-5 sm:space-y-6">
         <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-white/40 bg-white/50 p-1 md:w-fit">
           <TabsTrigger
             value="catalog"

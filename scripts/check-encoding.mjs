@@ -20,30 +20,8 @@ const ALLOWED_EXTENSIONS = new Set([
   '.sql',
 ])
 
-const badPatterns = [
-  /Ã¡/g,
-  /Ã©/g,
-  /Ãí/g,
-  /Ãó/g,
-  /Ãú/g,
-  /Ã£/g,
-  /Ã§/g,
-  /Ãª/g,
-  /Ã´/g,
-  /Ãµ/g,
-  /Ã�/g,
-  /â€™/g,
-  /â€œ/g,
-  /â€\u009d/g,
-  /â€“/g,
-  /â€”/g,
-  /â€¦/g,
-  /â€¢/g,
-  /âœ¨/g,
-  /â¤/g,
-  /ðŸ/g,
-  /�/g,
-]
+// Common mojibake fragments when UTF-8 text is decoded with a different charset.
+const BAD_PATTERNS = [/Ã./, /â€/, /â€™/, /â€œ/, /â€\u009d/, /â€“/, /â€”/, /â€¦/, /â€¢/, /ðŸ/, /�/]
 
 function shouldScan(filePath) {
   const ext = path.extname(filePath).toLowerCase()
@@ -69,18 +47,25 @@ function walk(dirPath, acc) {
 }
 
 function collectOffenses(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8')
+  const rawContent = fs.readFileSync(filePath)
+  const hasUtf8Bom =
+    rawContent.length >= 3 &&
+    rawContent[0] === 0xef &&
+    rawContent[1] === 0xbb &&
+    rawContent[2] === 0xbf
+
+  const content = rawContent.toString('utf8')
   const lines = content.split(/\r?\n/)
   const offenses = []
 
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i]
-    if (badPatterns.some(pattern => pattern.test(line))) {
+    if (BAD_PATTERNS.some(pattern => pattern.test(line))) {
       offenses.push({ lineNumber: i + 1, line: line.trim() })
     }
   }
 
-  return offenses
+  return { offenses, hasUtf8Bom }
 }
 
 const filesToScan = []
@@ -90,19 +75,23 @@ for (const dir of SCAN_DIRS) {
 
 const findings = []
 for (const filePath of filesToScan) {
-  const offenses = collectOffenses(filePath)
-  if (offenses.length > 0) {
+  const { offenses, hasUtf8Bom } = collectOffenses(filePath)
+  if (offenses.length > 0 || hasUtf8Bom) {
     findings.push({
       filePath: path.relative(ROOT_DIR, filePath).replaceAll('\\', '/'),
       offenses,
+      hasUtf8Bom,
     })
   }
 }
 
 if (findings.length > 0) {
-  console.error('\nEncoding check failed: possible mojibake found.\n')
+  console.error('\nEncoding check failed: possible mojibake or UTF-8 BOM found.\n')
   for (const finding of findings) {
     console.error(`- ${finding.filePath}`)
+    if (finding.hasUtf8Bom) {
+      console.error('  BOM: arquivo em UTF-8 com BOM (salvar como UTF-8 sem BOM).')
+    }
     for (const offense of finding.offenses.slice(0, 5)) {
       console.error(`  L${offense.lineNumber}: ${offense.line}`)
     }

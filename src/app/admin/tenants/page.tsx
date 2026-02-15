@@ -1,4 +1,4 @@
-﻿import { getTenants } from '@/features/admin/actions'
+import { getTenants } from '@/features/admin/actions'
 import {
   Table,
   TableBody,

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useActionState, useState, useEffect, useMemo } from 'react'
 import { updateSettings } from '@/features/settings/actions'
@@ -162,8 +162,8 @@ export function SettingsForm({
         <TabsTrigger value="general" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
           <Store size={16} /> Geral
         </TabsTrigger>
-        <TabsTrigger value="appearance" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
-          <Palette size={16} /> Aparência
+        <TabsTrigger value="financial" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
+          <TrendingUp size={16} /> Financeiro
         </TabsTrigger>
         <TabsTrigger value="notifications" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
           <MessageSquare size={16} /> Mensagens
@@ -171,8 +171,8 @@ export function SettingsForm({
         <TabsTrigger value="whatsapp" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
           <MessageSquare size={16} /> WhatsApp / API
         </TabsTrigger>
-        <TabsTrigger value="financial" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
-          <TrendingUp size={16} /> Financeiro
+        <TabsTrigger value="appearance" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
+          <Palette size={16} /> Aparência
         </TabsTrigger>
         <TabsTrigger
           value="subscription"
@@ -932,15 +932,14 @@ export function SettingsForm({
 
         {/* Actions - Only visible for main tabs */}
         {isMainTab && (
-          <div className="sticky bottom-4 z-10 flex flex-col items-stretch gap-2 pt-4 transition-all duration-300 sm:items-end">
+          <div className="sticky bottom-3 z-10 flex flex-col items-stretch gap-2 pt-4 pb-[max(env(safe-area-inset-bottom),0px)] transition-all duration-300 sm:items-end">
             <Button
               type="submit"
               size="lg"
               className="h-11 w-full shadow-xl sm:w-auto"
               disabled={isPending}
             >
-              <Save className="mr-2 h-5 w-5" />{' '}
-              {isPending ? 'Salvando...' : 'Salvar todas as configurações'}
+              <Save className="mr-2 h-5 w-5" /> {isPending ? 'Salvando...' : 'Salvar alterações'}
             </Button>
           </div>
         )}

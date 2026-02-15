@@ -1,10 +1,10 @@
-import { Menu } from 'lucide-react'
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar'
 import { getCurrentUser } from '@/lib/auth'
 import { getLowStockMaterials } from '@/features/analytics/actions'
 import { StockAlertBanner } from '@/components/ui/stock-alert-banner'
 import { CommandPalette } from '@/components/command-palette'
 import { AppBreadcrumb } from '@/components/dashboard/app-breadcrumb'
+import { AppMobileNav } from '@/components/dashboard/mobile-nav'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
@@ -20,9 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {/* Mobile Header (Hidden on Desktop) */}
         <header className="bg-background/80 sticky top-0 z-10 flex items-center justify-between border-b p-4 backdrop-blur-md md:hidden">
           <div className="text-primary text-xl font-black tracking-tighter">Atelis</div>
-          <button className="hover:bg-secondary rounded-xl p-2 transition-colors">
-            <Menu size={24} />
-          </button>
+          <AppMobileNav user={user} />
         </header>
 
         <StockAlertBanner lowStockItems={lowStockMaterials} />

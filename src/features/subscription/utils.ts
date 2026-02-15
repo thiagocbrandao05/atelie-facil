@@ -1,4 +1,4 @@
-﻿import { PlanType, FeatureId } from './types'
+import { PlanType, FeatureId } from './types'
 
 export function hasWhatsAppAPI(plan: PlanType): boolean {
   return plan === 'premium' || plan === 'premium_creative' || plan === 'premium_reseller'

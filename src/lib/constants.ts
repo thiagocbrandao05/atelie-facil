@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Application-wide constants
  */
 
