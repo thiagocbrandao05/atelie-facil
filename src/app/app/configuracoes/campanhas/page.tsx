@@ -8,9 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getWhatsAppUsage } from '@/features/whatsapp/actions'
 import { WhatsAppUsageCard } from '@/features/whatsapp/components/usage-card'
 
-export default async function CampaignsPage(props: { params: Promise<{ workspaceSlug: string }> }) {
-  const params = await props.params
-  const { workspaceSlug } = params
+export default async function CampaignsPage() {
   const user = await getCurrentUser()
   const supabase = await createClient()
 
@@ -53,13 +51,13 @@ export default async function CampaignsPage(props: { params: Promise<{ workspace
             </TabsContent>
 
             <TabsContent value="list" className="space-y-4">
-              <CampaignList campaigns={campaigns} workspaceSlug={workspaceSlug} />
+              <CampaignList campaigns={campaigns} />
             </TabsContent>
           </Tabs>
         </div>
 
         <div className="col-span-4 space-y-4 lg:col-span-2">
-          <WhatsAppUsageCard summary={usage} workspaceSlug={workspaceSlug} />
+          <WhatsAppUsageCard summary={usage} />
         </div>
       </div>
     </div>

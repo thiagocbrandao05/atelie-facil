@@ -6,7 +6,6 @@ import { MessageCircle } from 'lucide-react'
 
 type Props = {
   params: Promise<{
-    workspaceSlug: string
     campaignToken: string
   }>
 }
@@ -19,7 +18,7 @@ type PublicCampaignRow = {
 }
 
 export default async function PublicCampaignPage({ params }: Props) {
-  const { workspaceSlug, campaignToken } = await params
+  const { campaignToken } = await params
   const supabase = await createClient()
 
   // @ts-expect-error legacy rpc typing missing in generated Database type
@@ -28,10 +27,7 @@ export default async function PublicCampaignPage({ params }: Props) {
   })
   const campaignRows = (campaign || []) as PublicCampaignRow[]
 
-  // No strict slug check here usually needed for campaigns as token is unique,
-  // but good practice to verify context if slug is in URL
   if (error || campaignRows.length === 0) {
-    // || campaign[0].tenantSlug !== workspaceSlug (RPC doesn't return slug currently, added check)
     notFound()
   }
 
@@ -40,7 +36,6 @@ export default async function PublicCampaignPage({ params }: Props) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-black p-0 md:p-4">
       <div className="relative flex min-h-screen w-full max-w-md flex-col overflow-hidden bg-white shadow-2xl md:aspect-[9/16] md:min-h-0 md:rounded-xl">
-        {/* Image Area */}
         <div className="relative aspect-square w-full bg-gray-100">
           {data.imageUrl ? (
             <Image src={data.imageUrl} alt={data.name} fill className="object-cover" priority />
@@ -51,7 +46,6 @@ export default async function PublicCampaignPage({ params }: Props) {
           )}
         </div>
 
-        {/* Content Area */}
         <div className="flex flex-1 flex-col p-6">
           <div className="text-muted-foreground mb-2 text-xs font-bold tracking-widest uppercase">
             {data.tenantName}

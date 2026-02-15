@@ -31,7 +31,7 @@ export function StatusUpdateButton({
       size="sm"
       onClick={handleUpdate}
       disabled={isPending}
-      className="flex min-h-9 items-center gap-1.5 px-3 text-xs md:h-8"
+      className="flex min-h-10 items-center gap-1.5 px-3 text-xs md:min-h-9"
     >
       {isPending ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />

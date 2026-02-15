@@ -4,15 +4,9 @@ import { getCurrentUser } from '@/lib/auth'
 import { getLowStockMaterials } from '@/features/analytics/actions'
 import { StockAlertBanner } from '@/components/ui/stock-alert-banner'
 import { CommandPalette } from '@/components/command-palette'
+import { AppBreadcrumb } from '@/components/dashboard/app-breadcrumb'
 
-export default async function AppLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode
-  params: Promise<{ workspaceSlug: string }>
-}) {
-  const { workspaceSlug } = await params
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
   const lowStockMaterials = await getLowStockMaterials()
 
@@ -34,7 +28,10 @@ export default async function AppLayout({
         <StockAlertBanner lowStockItems={lowStockMaterials} />
 
         <main className="flex-1">
-          <div className="container mx-auto px-6 py-6 md:px-8 lg:px-10">{children}</div>
+          <div className="container mx-auto px-6 py-6 md:px-8 lg:px-10">
+            <AppBreadcrumb />
+            {children}
+          </div>
         </main>
       </div>
       <CommandPalette user={user} />

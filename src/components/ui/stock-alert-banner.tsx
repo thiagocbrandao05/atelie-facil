@@ -3,7 +3,6 @@
 import React from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 
 type LowStockItem = {
@@ -15,8 +14,6 @@ type LowStockItem = {
 
 export function StockAlertBanner({ lowStockItems }: { lowStockItems: LowStockItem[] }) {
   const [isVisible, setIsVisible] = React.useState(true)
-  const params = useParams()
-  const slug = params.workspaceSlug as string
 
   if (!lowStockItems || lowStockItems.length === 0 || !isVisible) return null
 
@@ -33,7 +30,7 @@ export function StockAlertBanner({ lowStockItems }: { lowStockItems: LowStockIte
               {lowStockItems.length} materiais estão com estoque baixo.
             </p>
             <Link
-              href={`/${slug}/app/relatorios`}
+              href="/app/relatorios"
               className="text-warning text-sm font-medium hover:underline"
             >
               Ver detalhes →

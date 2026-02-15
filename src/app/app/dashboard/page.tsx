@@ -36,21 +36,11 @@ interface Order {
   totalValue: number
 }
 
-export default async function DashboardPage({
-  params,
-}: {
-  params: Promise<{ workspaceSlug: string }>
-}) {
-  const { workspaceSlug } = await params
+export default async function DashboardPage() {
   const user = await getCurrentUser()
 
   if (!user) {
     redirect('/login')
-  }
-
-  const userWorkspaceSlug = user.tenant?.slug
-  if (userWorkspaceSlug && userWorkspaceSlug !== workspaceSlug) {
-    redirect(`/${userWorkspaceSlug}/app/dashboard`)
   }
 
   const [lowStockMaterials, orders, orderStats, settings] = await Promise.all([
@@ -96,14 +86,14 @@ export default async function DashboardPage({
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
-            href={`/${workspaceSlug}/app/pedidos`}
+            href="/app/pedidos"
             className="bg-primary text-primary-foreground shadow-primary/10 flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-black shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl active:scale-95"
           >
             <PlusCircle size={18} />
             Novo pedido
           </Link>
           <Link
-            href={`/${workspaceSlug}/app/estoque`}
+            href="/app/estoque"
             className="hover:bg-primary/5 group border-primary/20 hover:border-primary/40 flex items-center gap-2 rounded-xl border bg-white/80 px-6 py-3 text-sm font-black backdrop-blur-md transition-all"
           >
             <PackageIcon
@@ -163,7 +153,7 @@ export default async function DashboardPage({
 
               <div className="mt-auto pt-8">
                 <Link
-                  href={`/${workspaceSlug}/app/pedidos`}
+                  href="/app/pedidos"
                   className="text-primary decoration-primary/30 hover:decoration-primary inline-flex items-center gap-2 text-xs font-black underline underline-offset-4 transition-all"
                 >
                   Ver todos os pedidos ativos <ArrowRight size={14} />
@@ -193,7 +183,7 @@ export default async function DashboardPage({
                     Reponha para não parar a produção.
                   </p>
                   <Link
-                    href={`/${workspaceSlug}/app/estoque`}
+                    href="/app/estoque"
                     className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-2.5 text-xs font-black text-orange-600 shadow-sm transition-transform hover:scale-105 active:scale-95"
                   >
                     Repor agora
@@ -217,14 +207,14 @@ export default async function DashboardPage({
               <p className="text-xs font-bold">Mantenha seus clientes por perto.</p>
               <div className="space-y-2">
                 <Link
-                  href={`/${workspaceSlug}/app/configuracoes`}
+                  href="/app/configuracoes"
                   className="bg-background hover:bg-muted border-border/30 flex items-center justify-between rounded-xl border p-3 text-[11px] font-bold transition-all"
                 >
                   Mensagens WhatsApp
                   <MessageCircle size={14} className="text-primary" />
                 </Link>
                 <Link
-                  href={`/${workspaceSlug}/app/clientes`}
+                  href="/app/clientes"
                   className="bg-background hover:bg-muted border-border/30 flex items-center justify-between rounded-xl border p-3 text-[11px] font-bold transition-all"
                 >
                   Novo cliente

@@ -40,7 +40,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     label: 'Pedidos',
     appPath: '/pedidos',
     icon: ClipboardList,
-    shortcut: '⌘P',
+    shortcut: 'Ctrl+P',
     inCommandPalette: true,
   },
   {
@@ -48,7 +48,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     label: 'Clientes',
     appPath: '/clientes',
     icon: Users,
-    shortcut: '⌘C',
+    shortcut: 'Ctrl+C',
     inCommandPalette: true,
   },
   {
@@ -64,7 +64,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     appPath: '/estoque',
     icon: Package,
     profile: 'CREATIVE',
-    shortcut: '⌘E',
+    shortcut: 'Ctrl+E',
     inCommandPalette: true,
   },
   {
@@ -88,7 +88,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     appPath: '/financeiro',
     icon: Banknote,
     feature: 'FINANCIAL',
-    shortcut: '⌘F',
+    shortcut: 'Ctrl+F',
     inCommandPalette: true,
   },
   {
@@ -110,13 +110,13 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
 ]
 
 export const SETTINGS_NAV_ITEMS = [
-  { id: 'perfil', label: 'Perfil', appPath: '/perfil', icon: User, shortcut: '⌘U' },
+  { id: 'perfil', label: 'Perfil', appPath: '/perfil', icon: User, shortcut: 'Ctrl+U' },
   {
     id: 'configuracoes',
     label: 'Configurações',
     appPath: '/configuracoes',
     icon: Settings,
-    shortcut: '⌘S',
+    shortcut: 'Ctrl+S',
   },
 ] as const
 

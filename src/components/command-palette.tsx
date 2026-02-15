@@ -12,7 +12,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from '@/components/ui/command'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { buildWorkspaceAppPath } from '@/lib/workspace-path'
 import { getVisibleAppNavItems, SETTINGS_NAV_ITEMS } from '@/lib/app-navigation'
@@ -25,8 +25,6 @@ export function CommandPalette({
 }) {
   const [open, setOpen] = React.useState(false)
   const router = useRouter()
-  const params = useParams()
-  const slug = (params.workspaceSlug as string) || 'atelis'
   const supabase = createClient()
   const plan = (user?.tenant?.plan as PlanType) || 'free_creative'
   const navigationItems = getVisibleAppNavItems(plan).filter(item => item.inCommandPalette)
@@ -63,21 +61,19 @@ export function CommandPalette({
 
         <CommandGroup heading="Sugestões">
           <CommandItem
-            onSelect={() => runCommand(() => router.push(buildWorkspaceAppPath(slug, '/pedidos')))}
+            onSelect={() => runCommand(() => router.push(buildWorkspaceAppPath('', '/pedidos')))}
           >
             <Plus className="mr-2 h-4 w-4" />
             <span>Novo pedido</span>
           </CommandItem>
           <CommandItem
-            onSelect={() => runCommand(() => router.push(buildWorkspaceAppPath(slug, '/clientes')))}
+            onSelect={() => runCommand(() => router.push(buildWorkspaceAppPath('', '/clientes')))}
           >
             <User className="mr-2 h-4 w-4" />
             <span>Novo cliente</span>
           </CommandItem>
           <CommandItem
-            onSelect={() =>
-              runCommand(() => router.push(buildWorkspaceAppPath(slug, '/dashboard')))
-            }
+            onSelect={() => runCommand(() => router.push(buildWorkspaceAppPath('', '/dashboard')))}
           >
             <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Dashboard</span>
@@ -91,7 +87,7 @@ export function CommandPalette({
             <CommandItem
               key={item.id}
               onSelect={() =>
-                runCommand(() => router.push(buildWorkspaceAppPath(slug, item.appPath)))
+                runCommand(() => router.push(buildWorkspaceAppPath('', item.appPath)))
               }
             >
               <item.icon className="mr-2 h-4 w-4" />
@@ -108,7 +104,7 @@ export function CommandPalette({
             <CommandItem
               key={item.id}
               onSelect={() =>
-                runCommand(() => router.push(buildWorkspaceAppPath(slug, item.appPath)))
+                runCommand(() => router.push(buildWorkspaceAppPath('', item.appPath)))
               }
             >
               <item.icon className="mr-2 h-4 w-4" />
