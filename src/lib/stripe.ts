@@ -10,7 +10,7 @@ export function getStripe() {
       return null
     }
     stripeInstance = new Stripe(key, {
-      apiVersion: '2025-01-27.acacia' as any,
+      apiVersion: '2026-01-28.clover',
       typescript: true,
     })
   }

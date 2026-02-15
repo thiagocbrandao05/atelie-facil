@@ -9,11 +9,20 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
+type CampaignListItem = {
+  id: string
+  name: string
+  status: 'DRAFT' | 'SENT' | string
+  messageText: string
+  campaignToken: string
+  recipients?: Array<{ count?: number }> | null
+}
+
 export function CampaignList({
   campaigns,
   workspaceSlug,
 }: {
-  campaigns: any[]
+  campaigns: CampaignListItem[]
   workspaceSlug: string
 }) {
   const [sending, setSending] = useState<string | null>(null)

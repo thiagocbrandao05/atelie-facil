@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
@@ -8,12 +8,17 @@ import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-res
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 const StockBalanceSchema = z.object({
-  materialName: z.string().min(1, 'Nome do material é obrigatório'),
+  materialName: z.string().min(1, 'Nome do material e obrigatorio'),
   quantity: z.coerce.number().min(0, 'Quantidade deve ser positiva'),
   reason: z.string().optional().default('Carga inicial em lote'),
 })
 
-export async function importMaterialsAction(data: any[]) {
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return 'Erro desconhecido'
+}
+
+export async function importMaterialsAction(data: unknown[]) {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
@@ -28,29 +33,31 @@ export async function importMaterialsAction(data: any[]) {
       updatedAt: new Date().toISOString(),
     }))
 
-    const { error } = await supabase.from('Material').insert(materialsToInsert as any)
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { error } = await supabase.from('Material').insert(materialsToInsert)
     if (error) throw error
 
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     await supabase.from('AuditLog').insert({
       tenantId,
       userId: user.id,
       action: 'IMPORT',
       entity: 'Material',
       metadata: { count: data.length, status: 'SUCCESS' },
-    } as any)
+    })
 
     const slug = user.tenant?.slug
     if (slug) {
       revalidateWorkspaceAppPaths(slug, ['/estoque'])
     }
     return actionSuccess(`${data.length} materiais importados com sucesso!`)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Bulk Import Materials Error:', error)
-    return actionError(`Erro na importação: ${error.message || 'Erro desconhecido'}`)
+    return actionError(`Erro na importacao: ${getErrorMessage(error)}`)
   }
 }
 
-export async function importStockAction(data: any[]) {
+export async function importStockAction(data: unknown[]) {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
@@ -69,41 +76,45 @@ export async function importStockAction(data: any[]) {
         .eq('tenantId', tenantId)
         .eq('name', item.materialName)
         .single()
+      const materialRow = material as unknown as { id: string; quantity: number } | null
 
-      if (findError || !material) {
-        errors.push(`Material "${item.materialName}" não encontrado.`)
+      if (findError || !materialRow) {
+        errors.push(`Material "${item.materialName}" nao encontrado.`)
         continue
       }
 
-      const { error: updateError } = await (supabase as any)
+      const { error: updateError } = await supabase
         .from('Material')
-        .update({ quantity: item.quantity } as any)
-        .eq('id', (material as any).id)
+        // @ts-expect-error legacy schema not fully represented in generated DB types
+        .update({ quantity: item.quantity })
+        .eq('id', materialRow.id)
 
       if (updateError) {
         errors.push(`Erro ao atualizar "${item.materialName}": ${updateError.message}`)
         continue
       }
 
-      await (supabase as any).from('InventoryMovement').insert({
+      // @ts-expect-error legacy schema not fully represented in generated DB types
+      await supabase.from('InventoryMovement').insert({
         tenantId,
-        materialId: (material as any).id,
+        materialId: materialRow.id,
         type: 'ADJUSTMENT',
         quantity: item.quantity,
         reason: item.reason,
         createdBy: user.name || user.email,
-      } as any)
+      })
 
       successCount++
     }
 
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     await supabase.from('AuditLog').insert({
       tenantId,
       userId: user.id,
       action: 'IMPORT',
       entity: 'StockBalance',
       metadata: { successCount, errorCount: errors.length },
-    } as any)
+    })
 
     const slug = user.tenant?.slug
     if (slug) {
@@ -113,19 +124,19 @@ export async function importStockAction(data: any[]) {
     if (errors.length > 0) {
       return {
         success: successCount > 0,
-        message: `Importação parcial: ${successCount} atualizados. ${errors.length} erros.`,
+        message: `Importacao parcial: ${successCount} atualizados. ${errors.length} erros.`,
         errors,
       }
     }
 
     return actionSuccess(`${successCount} saldos de estoque atualizados!`)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Bulk Import Stock Error:', error)
-    return actionError(`Erro na importação: ${error.message}`)
+    return actionError(`Erro na importacao: ${getErrorMessage(error)}`)
   }
 }
 
-export async function importCustomersAction(data: any[]) {
+export async function importCustomersAction(data: unknown[]) {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
@@ -140,28 +151,30 @@ export async function importCustomersAction(data: any[]) {
       updatedAt: new Date().toISOString(),
     }))
 
-    const { error } = await supabase.from('Customer').insert(toInsert as any)
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { error } = await supabase.from('Customer').insert(toInsert)
     if (error) throw error
 
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     await supabase.from('AuditLog').insert({
       tenantId,
       userId: user.id,
       action: 'IMPORT',
       entity: 'Customer',
       metadata: { count: data.length },
-    } as any)
+    })
 
     const slug = user.tenant?.slug
     if (slug) {
       revalidateWorkspaceAppPaths(slug, ['/clientes'])
     }
     return actionSuccess(`${data.length} clientes importados!`)
-  } catch (error: any) {
-    return actionError(`Erro: ${error.message}`)
+  } catch (error: unknown) {
+    return actionError(`Erro: ${getErrorMessage(error)}`)
   }
 }
 
-export async function importSuppliersAction(data: any[]) {
+export async function importSuppliersAction(data: unknown[]) {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
@@ -176,23 +189,25 @@ export async function importSuppliersAction(data: any[]) {
       updatedAt: new Date().toISOString(),
     }))
 
-    const { error } = await supabase.from('Supplier').insert(toInsert as any)
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { error } = await supabase.from('Supplier').insert(toInsert)
     if (error) throw error
 
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     await supabase.from('AuditLog').insert({
       tenantId,
       userId: user.id,
       action: 'IMPORT',
       entity: 'Supplier',
       metadata: { count: data.length },
-    } as any)
+    })
 
     const slug = user.tenant?.slug
     if (slug) {
       revalidateWorkspaceAppPaths(slug, ['/fornecedores'])
     }
     return actionSuccess(`${data.length} fornecedores importados!`)
-  } catch (error: any) {
-    return actionError(`Erro: ${error.message}`)
+  } catch (error: unknown) {
+    return actionError(`Erro: ${getErrorMessage(error)}`)
   }
 }

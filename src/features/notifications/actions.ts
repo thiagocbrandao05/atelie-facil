@@ -34,8 +34,7 @@ export async function markAsRead(id: string): Promise<ActionResponse> {
   if (!user) return unauthorizedAction()
 
   try {
-    const supabase = await createClient()
-    const db = supabase as any
+    const db = await createClient()
     const updatePayload: NotificationUpdate = {
       read: true,
       readAt: new Date().toISOString(),
@@ -43,6 +42,7 @@ export async function markAsRead(id: string): Promise<ActionResponse> {
 
     const { error } = await db
       .from('Notification')
+      // @ts-expect-error legacy table typing missing in generated Database type
       .update(updatePayload)
       .eq('id', id)
       .eq('tenantId', user.tenantId)
@@ -64,8 +64,7 @@ export async function markAllAsRead(): Promise<ActionResponse> {
   if (!user) return unauthorizedAction()
 
   try {
-    const supabase = await createClient()
-    const db = supabase as any
+    const db = await createClient()
     const updatePayload: NotificationUpdate = {
       read: true,
       readAt: new Date().toISOString(),
@@ -73,6 +72,7 @@ export async function markAllAsRead(): Promise<ActionResponse> {
 
     const { error } = await db
       .from('Notification')
+      // @ts-expect-error legacy table typing missing in generated Database type
       .update(updatePayload)
       .eq('tenantId', user.tenantId)
       .eq('read', false)

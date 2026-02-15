@@ -15,6 +15,15 @@ export type TenantWithUser = {
   } | null
 }
 
+type TenantQueryRow = {
+  id: string
+  name: string
+  slug: string
+  plan: string
+  createdAt: string
+  users?: Array<{ name: string | null; email: string | null; role?: string | null }> | null
+}
+
 export async function getTenants(limit = 50, search?: string) {
   const user = await getCurrentUser()
   if (!user || user.role !== 'SUPER_ADMIN') {
@@ -48,7 +57,7 @@ export async function getTenants(limit = 50, search?: string) {
   // Transform data to easy usage
   // We assume the owner is the first user found or Filter by role if we had granular roles per tenant logic
   // For MVP, we take the first user as "contact"
-  return data.map((tenant: any) => ({
+  return ((data || []) as TenantQueryRow[]).map(tenant => ({
     id: tenant.id,
     name: tenant.name,
     slug: tenant.slug,

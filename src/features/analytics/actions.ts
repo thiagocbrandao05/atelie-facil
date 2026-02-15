@@ -30,7 +30,7 @@ export async function getSalesMetrics(days: number = 30) {
 
   const { start } = getPeriodDates(days)
   const supabase = await createClient()
-  const db = supabase as any
+  const db = supabase
 
   const { data: orders, error } = await db
     .from('Order')
@@ -69,7 +69,7 @@ export async function getInventoryMetrics() {
   if (!user) return null
 
   const supabase = await createClient()
-  const db = supabase as any
+  const db = supabase
 
   const { data: materials, error } = await db
     .from('Material')
@@ -102,7 +102,7 @@ export async function getRecentActivity(limit: number = 10) {
   if (!user) return []
 
   const supabase = await createClient()
-  const db = supabase as any
+  const db = supabase
 
   const { data: logs, error } = await db
     .from('AuditLog')
@@ -127,7 +127,7 @@ export async function getMonthlyRevenue() {
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
   const supabase = await createClient()
-  const db = supabase as any
+  const db = supabase
 
   const { data: orders, error } = await db
     .from('Order')
@@ -158,8 +158,9 @@ export async function getTopProducts(limit: number = 5) {
 
   try {
     const supabase = await createClient()
-    const db = supabase as any
+    const db = supabase
 
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     const { data, error } = await db.rpc('get_top_products', {
       p_tenant_id: user.tenantId,
       p_limit: limit,

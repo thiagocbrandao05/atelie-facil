@@ -132,7 +132,7 @@ export function getDateRangePreset(preset: 'today' | 'week' | 'month' | 'quarter
  */
 export function calculateDashboardMetrics(
   orders: OrderWithDetails[],
-  materials: any[] = []
+  materials: Array<{ quantity?: number | null; minQuantity?: number | null }> = []
 ): DashboardMetrics {
   const financials = summarizeFinancials(orders)
 

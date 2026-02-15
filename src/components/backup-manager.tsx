@@ -8,9 +8,11 @@ import { Download, Upload, Database, AlertTriangle, CheckCircle } from 'lucide-r
 import { generateBackup, restoreBackup, getBackupStats } from '@/features/backup/actions'
 import { useToast } from './notification-provider'
 
+type BackupStats = Awaited<ReturnType<typeof getBackupStats>>
+
 export function BackupManager() {
   const [loading, setLoading] = useState(false)
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<BackupStats | null>(null)
   const toast = useToast()
 
   const loadStats = async () => {

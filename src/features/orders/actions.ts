@@ -97,7 +97,7 @@ export async function getOrders() {
   if (!user) return []
 
   const supabase = await createClient()
-  const db = supabase as any
+  const db = supabase
 
   const { data } = await db
     .from('Order')
@@ -129,7 +129,7 @@ export async function getOrdersForKanban() {
   if (!user) return []
 
   const supabase = await createClient()
-  const db = supabase as any
+  const db = supabase
 
   const { data } = await db
     .from('Order')
@@ -167,10 +167,11 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
   const { customerId, dueDate, items, status, discount } = validatedFields.data
   const totalValue = calculateOrderTotal(items, discount)
   const supabase = await createClient()
-  const db = supabase as any
+  const db = supabase
   const workspaceSlug = user.tenant?.slug
 
   try {
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     const { data: rpcData, error } = await db.rpc('create_order', {
       p_tenant_id: user.tenantId,
       p_customer_id: customerId,
@@ -230,7 +231,7 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
   const supabase = await createClient()
-  const db = supabase as any
+  const db = supabase
   const workspaceSlug = user.tenant?.slug
 
   try {
@@ -240,10 +241,14 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
       .eq('id', id)
       .single()
 
-    if (fetchError || !order) return actionError('Pedido não encontrado.')
-    if (order.status === newStatus) return actionSuccess('Status já estava atualizado.')
+    const currentOrder = order as { status: string } | null
+    if (fetchError || !currentOrder) return actionError('Pedido não encontrado.')
+    if (currentOrder.status === newStatus) return actionSuccess('Status já estava atualizado.')
 
-    if (newStatus === 'PRODUCING' && (order.status === 'PENDING' || order.status === 'QUOTATION')) {
+    if (
+      newStatus === 'PRODUCING' &&
+      (currentOrder.status === 'PENDING' || currentOrder.status === 'QUOTATION')
+    ) {
       const { plan } = await getCurrentTenantPlan()
 
       if (isReseller(plan)) {
@@ -263,6 +268,7 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
       }
     }
 
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     const { error: updateError } = await db.from('Order').update({ status: newStatus }).eq('id', id)
     if (updateError) throw updateError
 
@@ -273,7 +279,7 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
     const notificationResult = await enqueueOrderStatusNotification({
       orderId: id,
       tenantId: user.tenantId,
-      statusFrom: order.status,
+      statusFrom: currentOrder.status,
       statusTo: newStatus as OrderStatus,
     })
 
@@ -284,7 +290,7 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
         ),
         {
           action: 'send_order_status_notification',
-          data: { orderId: id, statusFrom: order.status, statusTo: newStatus },
+          data: { orderId: id, statusFrom: currentOrder.status, statusTo: newStatus },
         }
       )
     }
@@ -303,10 +309,11 @@ export async function deleteOrder(id: string): Promise<ActionResponse> {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
   const supabase = await createClient()
-  const db = supabase as any
+  const db = supabase
   const workspaceSlug = user.tenant?.slug
 
   try {
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     const { error } = await db.rpc('delete_order', {
       p_order_id: id,
       p_tenant_id: user.tenantId,
@@ -330,7 +337,7 @@ export async function getOrdersStats() {
   if (!user) return { activeOrders: 0 }
 
   const supabase = await createClient()
-  const db = supabase as any
+  const db = supabase
 
   const { count, error } = await db
     .from('Order')

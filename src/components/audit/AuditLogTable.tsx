@@ -20,6 +20,8 @@ interface AuditLogTableProps {
   data: PaginatedResponse<AuditLogWithUser>
 }
 
+type AuditLogTableRow = AuditLogWithUser & { status?: string }
+
 const actionColors: Record<string, string> = {
   CREATE: 'bg-success/10 text-success',
   UPDATE: 'bg-info/10 text-info',
@@ -60,7 +62,7 @@ export function AuditLogTable({ data }: AuditLogTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.data.map((log: any) => (
+            {(data.data as AuditLogTableRow[]).map(log => (
               <TableRow key={log.id}>
                 <TableCell className="font-mono text-sm">
                   {formatDistanceToNow(new Date(log.createdAt), {
@@ -88,7 +90,9 @@ export function AuditLogTable({ data }: AuditLogTableProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge className={statusColors[log.status] || ''}>{log.status}</Badge>
+                  <Badge className={statusColors[log.status || ''] || ''}>
+                    {log.status || '-'}
+                  </Badge>
                 </TableCell>
               </TableRow>
             ))}

@@ -3,12 +3,12 @@ export interface BackupData {
   version: string
   timestamp: string
   data: {
-    customers: any[]
-    materials: any[]
-    products: any[]
-    orders: any[]
-    suppliers?: any[]
-    movements?: any[]
+    customers: unknown[]
+    materials: unknown[]
+    products: unknown[]
+    orders: unknown[]
+    suppliers?: unknown[]
+    movements?: unknown[]
   }
 }
 

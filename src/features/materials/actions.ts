@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
@@ -8,8 +8,8 @@ import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-res
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 const materialSchema = z.object({
-  name: z.string().min(1, 'Nome do material é obrigatório'),
-  unit: z.string().min(1, 'Unidade é obrigatória'),
+  name: z.string().min(1, 'Nome do material e obrigatorio'),
+  unit: z.string().min(1, 'Unidade e obrigatoria'),
   minQuantity: z.coerce.number().optional().nullable(),
   supplierId: z.string().optional().nullable(),
   colors: z.string().optional(),
@@ -23,7 +23,10 @@ function parseColors(colors?: string | null) {
     .filter(color => color.length > 0)
 }
 
-export async function createMaterial(prevState: any, formData: FormData): Promise<ActionResponse> {
+export async function createMaterial(
+  _prevState: unknown,
+  formData: FormData
+): Promise<ActionResponse> {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
@@ -37,7 +40,7 @@ export async function createMaterial(prevState: any, formData: FormData): Promis
 
   const validated = materialSchema.safeParse(rawData)
   if (!validated.success) {
-    return actionError('Erro de validação', validated.error.flatten().fieldErrors)
+    return actionError('Erro de validacao', validated.error.flatten().fieldErrors)
   }
 
   const { name, unit, minQuantity, supplierId, colors } = validated.data
@@ -45,7 +48,8 @@ export async function createMaterial(prevState: any, formData: FormData): Promis
   const supabase = await createClient()
 
   try {
-    const { error } = await (supabase as any).from('Material').insert({
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { error } = await supabase.from('Material').insert({
       tenantId: user.tenantId,
       name,
       unit,
@@ -73,7 +77,7 @@ export async function createMaterial(prevState: any, formData: FormData): Promis
 
 export async function updateMaterial(
   id: string,
-  prevState: any,
+  _prevState: unknown,
   formData: FormData
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
@@ -89,15 +93,16 @@ export async function updateMaterial(
 
   const validated = materialSchema.safeParse(rawData)
   if (!validated.success) {
-    return actionError('Erro de validação', validated.error.flatten().fieldErrors)
+    return actionError('Erro de validacao', validated.error.flatten().fieldErrors)
   }
 
   const { name, unit, minQuantity, supplierId, colors } = validated.data
   const colorArray = parseColors(colors)
 
   const supabase = await createClient()
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('Material')
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     .update({
       name,
       unit,
@@ -125,7 +130,7 @@ export async function deleteMaterial(id: string) {
   if (!user) return unauthorizedAction()
 
   const supabase = await createClient()
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('Material')
     .delete()
     .eq('id', id)

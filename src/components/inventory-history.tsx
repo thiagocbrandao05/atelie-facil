@@ -67,6 +67,7 @@ export function InventoryHistory({ movements }: InventoryHistoryProps) {
 
             const type = movement.type || 'UNKNOWN'
             const typeInfo = TYPE_MAP[type] || { label: type, variant: 'outline' }
+            const badgeVariant = typeInfo.variant === 'success' ? 'default' : typeInfo.variant
             const isPositive = ['ENTRADA', 'ENTRADA_AJUSTE'].includes(type)
             // Fix timezone: Server returns UTC, we want to display in America/Sao_Paulo
             const dateObj = new Date(movement.createdAt)
@@ -88,7 +89,7 @@ export function InventoryHistory({ movements }: InventoryHistoryProps) {
                 <TableCell className="text-muted-foreground">{movement.color || '-'}</TableCell>
                 <TableCell>
                   <Badge
-                    variant={(typeInfo.variant === 'success' ? 'default' : typeInfo.variant) as any}
+                    variant={badgeVariant}
                     className={
                       typeInfo.variant === 'success' ? 'bg-green-600 hover:bg-green-700' : ''
                     }

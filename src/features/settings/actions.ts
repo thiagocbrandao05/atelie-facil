@@ -105,10 +105,10 @@ export async function updateProfile(_prevState: unknown, formData: FormData) {
       email: formData.get('email'),
     })
 
-    const supabase = await createClient()
-    const db = supabase as any
+    const db = await createClient()
     const { error } = await db
       .from('User')
+      // @ts-expect-error legacy table typing missing in generated Database type
       .update({
         name: data.name,
         email: data.email,
@@ -204,10 +204,10 @@ export async function updateSettings(_prevState: unknown, formData: FormData) {
       marginThresholdOptimal: formData.get('marginThresholdOptimal'),
     })
 
-    const supabase = await createClient()
-    const db = supabase as any
+    const db = await createClient()
     const fixedCosts = parseFixedCosts(data.monthlyFixedCosts)
 
+    // @ts-expect-error legacy table typing missing in generated Database type
     const { error } = await db.from('Settings').upsert(
       {
         tenantId,
@@ -302,8 +302,7 @@ export async function getSettings() {
 
   if (!user) return defaultSettings
 
-  const supabase = await createClient()
-  const db = supabase as any
+  const db = await createClient()
   const { data: settings } = await db
     .from('Settings')
     .select('*')

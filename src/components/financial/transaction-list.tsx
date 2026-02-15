@@ -16,10 +16,11 @@ import {
   FileText,
   User,
   HelpCircle,
+  type LucideIcon,
 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   'shopping-bag': ShoppingBag,
   scissors: Scissors,
   package: Package,

@@ -17,6 +17,7 @@ import { ProductInventoryHistory } from '@/components/product-inventory-history'
 import { ProductListSimplified } from '@/components/product-list-simplified'
 import { ProductStockEntryForm } from '@/components/product-stock-entry-form'
 import { ProductForm } from '@/components/product-form'
+import type { ProductWithMaterials } from '@/lib/types'
 
 export default async function EstoqueProdutosPage() {
   const [inventory, products, materials, settings, tenantStats, movements] = await Promise.all([
@@ -126,7 +127,7 @@ export default async function EstoqueProdutosPage() {
               <ProductForm availableMaterials={materials} settings={settings} tenantPlan={plan} />
             </div>
             <ProductListSimplified
-              products={products as any}
+              products={products as ProductWithMaterials[]}
               materials={materials}
               settings={settings}
               tenantPlan={plan}
@@ -165,7 +166,7 @@ export default async function EstoqueProdutosPage() {
               </h2>
               <p className="text-xl font-black">Histórico de Movimentações</p>
             </div>
-            <ProductInventoryHistory movements={movements as any} />
+            <ProductInventoryHistory movements={movements} />
           </div>
         </TabsContent>
       </Tabs>

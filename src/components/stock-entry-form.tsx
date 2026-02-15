@@ -57,7 +57,7 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
     if (!mat || !mat.colors) return []
 
     try {
-      let parsed: any = mat.colors
+      let parsed: unknown = mat.colors
       if (typeof parsed === 'string') {
         if (parsed.startsWith('[')) {
           parsed = JSON.parse(parsed)

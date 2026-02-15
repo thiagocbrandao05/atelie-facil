@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, Package, TrendingDown } from 'lucide-react'
 import { getProductStockAlerts } from '@/features/inventory-finished/actions'
+import type { ComponentProps } from 'react'
 
 interface StockAlert {
   id: string
@@ -33,6 +34,8 @@ const SEVERITY_CONFIG = {
     label: 'Médio',
   },
 } as const
+
+type BadgeVariant = ComponentProps<typeof Badge>['variant']
 
 export function ProductStockAlerts() {
   const [alerts, setAlerts] = useState<StockAlert[]>([])
@@ -126,7 +129,7 @@ export function ProductStockAlerts() {
                 </div>
                 <div>
                   <Badge
-                    variant={config.color as any}
+                    variant={config.color as BadgeVariant}
                     className="h-5 px-1.5 text-[8px] font-black tracking-widest uppercase"
                   >
                     {config.label}

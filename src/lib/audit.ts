@@ -10,8 +10,8 @@ export interface AuditLogData {
   action: AuditAction
   entity: string
   entityId?: string
-  changes?: Record<string, any>
-  metadata?: Record<string, any>
+  changes?: Record<string, unknown>
+  metadata?: Record<string, unknown>
   status?: AuditStatus
   errorMessage?: string
 }
@@ -23,6 +23,7 @@ export interface AuditLogData {
 export async function createAuditLog(data: AuditLogData) {
   try {
     const supabase = await createClient()
+    // @ts-expect-error legacy schema not fully represented in generated DB types
     await supabase.from('AuditLog').insert({
       ...data,
       userId: data.userId || 'system', // Handle optional userId
@@ -32,7 +33,7 @@ export async function createAuditLog(data: AuditLogData) {
         errorMessage: data.errorMessage,
       }, // Map to JSONB column 'details'
       status: data.status || 'SUCCESS', // If 'status' column exists, otherwise put in details
-    } as any)
+    })
   } catch (error) {
     // Silent fail - logging should never break the app
     console.error('Failed to create audit log:', error)
@@ -48,8 +49,8 @@ export async function logAction(
   action: AuditAction,
   entity: string,
   entityId?: string,
-  changes?: Record<string, any>,
-  metadata?: Record<string, any>
+  changes?: Record<string, unknown>,
+  metadata?: Record<string, unknown>
 ) {
   return createAuditLog({
     tenantId,
@@ -69,7 +70,7 @@ export async function logAuth(
   tenantId: string,
   userId: string | undefined,
   action: 'LOGIN' | 'LOGOUT' | 'LOGIN_FAILED',
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ) {
   return createAuditLog({
     tenantId,
@@ -91,7 +92,7 @@ export async function logError(
   action: AuditAction,
   entity: string,
   errorMessage: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ) {
   return createAuditLog({
     tenantId,

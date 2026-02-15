@@ -18,6 +18,7 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { summarizeFinancials } from '@/lib/logic'
+import type { OrderWithDetails } from '@/lib/types'
 
 interface Material {
   id: string
@@ -47,14 +48,14 @@ export default async function DashboardPage({
     redirect('/login')
   }
 
-  const userWorkspaceSlug = (user as any)?.tenant?.slug
+  const userWorkspaceSlug = user.tenant?.slug
   if (userWorkspaceSlug && userWorkspaceSlug !== workspaceSlug) {
     redirect(`/${userWorkspaceSlug}/app/dashboard`)
   }
 
   const [lowStockMaterials, orders, orderStats, settings] = await Promise.all([
     getLowStockMaterials() as Promise<Material[]>,
-    getOrders() as Promise<any[]>,
+    getOrders() as Promise<OrderWithDetails[]>,
     getOrdersStats(),
     getSettings(),
   ])
@@ -65,6 +66,13 @@ export default async function DashboardPage({
     settings?.monthlyFixedCosts || [],
     Number(settings?.workingHoursPerMonth || 160)
   )
+  const calendarOrders = orders.map(order => ({
+    id: order.id,
+    deliveryDate: order.dueDate,
+    customer: order.customer,
+    status: order.status,
+    items: order.items.map(item => item.product?.name || 'Item'),
+  }))
 
   return (
     <div className="relative mx-auto max-w-7xl space-y-8 pb-12">
@@ -245,7 +253,7 @@ export default async function DashboardPage({
             </div>
 
             <div className="border-primary/5 bg-primary/[0.01] rounded-xl border p-4">
-              <OrderCalendar orders={orders} />
+              <OrderCalendar orders={calendarOrders} />
             </div>
           </div>
         </div>

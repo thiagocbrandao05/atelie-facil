@@ -12,9 +12,10 @@ import {
 import { Phone, Mail, MapPin, Plus } from 'lucide-react'
 import { CustomerDialog } from '@/components/customer-dialog'
 import { CustomerHistoryDialog } from '@/components/customer-history-dialog'
+import type { Customer } from '@/lib/types'
 
 export default async function ClientesPage() {
-  const customers = (await getCustomers()) as any[]
+  const customers = (await getCustomers()) as Customer[]
 
   return (
     <div className="container mx-auto space-y-6 px-4 py-6 md:space-y-8 md:py-8">

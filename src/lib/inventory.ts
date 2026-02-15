@@ -55,8 +55,7 @@ type MaterialAlertRow = {
  * Returns an object with availability and details about missing items.
  */
 export async function checkStockAvailability(orderId: string) {
-  const supabase = await createClient()
-  const db = supabase as any
+  const db = await createClient()
 
   const { data: orderItems, error } = await db
     .from('OrderItem')
@@ -119,6 +118,7 @@ export async function checkStockAvailability(orderId: string) {
     const [materialId, colorKey] = key.split('|')
     const color = colorKey === 'ALL' ? null : colorKey
 
+    // @ts-expect-error legacy rpc typing missing in generated Database type
     const { data: balance, error: balanceError } = await db.rpc('get_material_balance_v2', {
       p_tenant_id: currentUser?.tenantId,
       p_material_id: materialId,
@@ -152,9 +152,9 @@ export async function deductStockForOrder(orderId: string) {
   const user = await getCurrentUser()
   if (!user) throw new Error('Unauthorized')
 
-  const supabase = await createClient()
-  const db = supabase as any
+  const db = await createClient()
 
+  // @ts-expect-error legacy rpc typing missing in generated Database type
   const { error } = await db.rpc('deduct_stock_for_order', {
     p_order_id: orderId,
     p_tenant_id: user.tenantId,
@@ -170,8 +170,7 @@ export async function deductStockForOrder(orderId: string) {
  * Checks if there is enough finished product stock for a given order.
  */
 export async function checkFinishedStockAvailability(orderId: string) {
-  const supabase = await createClient()
-  const db = supabase as any
+  const db = await createClient()
 
   const { data: orderItems, error } = await db
     .from('ProductInventory')
@@ -218,8 +217,7 @@ export async function deductFinishedStockForOrder(orderId: string) {
   const user = await getCurrentUser()
   if (!user) throw new Error('Unauthorized')
 
-  const supabase = await createClient()
-  const db = supabase as any
+  const db = await createClient()
 
   const { data: items, error: fetchError } = await db
     .from('OrderItem')
@@ -229,15 +227,18 @@ export async function deductFinishedStockForOrder(orderId: string) {
   if (fetchError || !items) throw new Error('Failed to fetch order items for deduction')
 
   for (const item of items as ProductOrderItem[]) {
-    await db.from('ProductInventoryMovement').insert({
-      tenantId: user.tenantId,
-      productId: item.productId,
-      type: 'SAIDA',
-      quantity: item.quantity,
-      reason: `Pedido #${orderId}`,
-      reference: orderId,
-      createdBy: user.id,
-    })
+    await db
+      .from('ProductInventoryMovement')
+      // @ts-expect-error legacy table typing missing in generated Database type
+      .insert({
+        tenantId: user.tenantId,
+        productId: item.productId,
+        type: 'SAIDA',
+        quantity: item.quantity,
+        reason: `Pedido #${orderId}`,
+        reference: orderId,
+        createdBy: user.id,
+      })
 
     const { data: current } = await db
       .from('ProductInventory')
@@ -245,11 +246,13 @@ export async function deductFinishedStockForOrder(orderId: string) {
       .eq('productId', item.productId)
       .eq('tenantId', user.tenantId)
       .single()
+    const currentRow = current as { quantity?: number | string | null } | null
 
-    const newBalance = (Number(current?.quantity) || 0) - item.quantity
+    const newBalance = (Number(currentRow?.quantity) || 0) - item.quantity
 
     await db
       .from('ProductInventory')
+      // @ts-expect-error legacy table typing missing in generated Database type
       .update({ quantity: newBalance, updatedAt: new Date().toISOString() })
       .eq('productId', item.productId)
       .eq('tenantId', user.tenantId)

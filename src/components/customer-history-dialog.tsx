@@ -15,17 +15,30 @@ import { getCustomerOrders } from '@/features/customers/actions'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import type { Customer, OrderStatus } from '@/lib/types'
 
-export function CustomerHistoryDialog({ customer }: { customer: any }) {
+type CustomerOrderHistory = {
+  id: string
+  status: OrderStatus
+  totalValue: number
+  createdAt: string | Date
+  items?: Array<{
+    productId: string
+    quantity: number
+    product?: { name: string } | null
+  }>
+}
+
+export function CustomerHistoryDialog({ customer }: { customer: Customer }) {
   const [open, setOpen] = useState(false)
-  const [orders, setOrders] = useState<any[]>([])
+  const [orders, setOrders] = useState<CustomerOrderHistory[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   const loadOrders = useCallback(async () => {
     setIsLoading(true)
     try {
       const data = await getCustomerOrders(customer.id)
-      setOrders(data)
+      setOrders(data as CustomerOrderHistory[])
     } catch (error) {
       console.error(error)
     } finally {
@@ -129,7 +142,7 @@ export function CustomerHistoryDialog({ customer }: { customer: any }) {
                         </div>
 
                         <div className="space-y-1">
-                          {order.items?.map((item: any, idx: number) => (
+                          {order.items?.map((item, idx: number) => (
                             <div key={idx} className="flex items-center gap-2 text-sm font-medium">
                               <Package className="text-primary/60 h-3.5 w-3.5" />
                               <span>{item.product?.name}</span>

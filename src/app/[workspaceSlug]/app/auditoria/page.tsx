@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAuditLogs, getAuditStats } from '@/features/audits/actions'
 import { AuditStats } from '@/components/audit/AuditStats'
+import type { AuditAction } from '@/lib/types'
 
 // Dynamic import for heavy component
 const AuditLogTable = dynamic(
@@ -24,8 +25,9 @@ export default async function AuditoriaPage({
   searchParams: { page?: string; action?: string; entity?: string }
 }) {
   const page = Number(searchParams.page) || 1
+  const action = searchParams.action as AuditAction | undefined
   const filters = {
-    action: searchParams.action as any,
+    action,
     entity: searchParams.entity,
   }
 

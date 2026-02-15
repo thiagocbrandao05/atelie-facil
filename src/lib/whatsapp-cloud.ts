@@ -30,8 +30,13 @@ function getWhatsAppConfig() {
   }
 }
 
-function extractProviderMessageId(responseBody: any) {
-  return responseBody?.messages?.[0]?.id || null
+function extractProviderMessageId(responseBody: unknown) {
+  if (!responseBody || typeof responseBody !== 'object') return null
+  const maybeMessages = (responseBody as { messages?: unknown }).messages
+  if (!Array.isArray(maybeMessages) || maybeMessages.length === 0) return null
+  const firstMessage = maybeMessages[0]
+  if (!firstMessage || typeof firstMessage !== 'object') return null
+  return (firstMessage as { id?: string }).id || null
 }
 
 export async function sendWhatsAppTemplateMessage({
@@ -100,12 +105,13 @@ export async function sendWhatsAppTemplateMessage({
       responseBody,
       providerMessageId: extractProviderMessageId(responseBody),
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erro inesperado ao enviar mensagem.'
     return {
       success: false,
       statusCode: 500,
       responseBody: null,
-      errorMessage: error?.message || 'Erro inesperado ao enviar mensagem.',
+      errorMessage: message,
       providerMessageId: null,
     }
   }

@@ -5,6 +5,15 @@ import { getStripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 import { PlanType } from './types'
 
+type BillingSubscriptionRow = {
+  stripeCustomerId?: string | null
+}
+
+type TenantPlanRow = {
+  plan?: PlanType | null
+  profile?: string | null
+}
+
 const PRICE_IDS: Record<PlanType, string> = {
   start: 'price_start_placeholder',
   pro: 'price_pro_placeholder',
@@ -58,7 +67,8 @@ export async function createStripeCheckoutSession(params: {
     .eq('workspaceId', params.workspaceId)
     .single()
 
-  let customerId = (subscription as any)?.stripeCustomerId
+  const existingSubscription = subscription as BillingSubscriptionRow | null
+  let customerId = existingSubscription?.stripeCustomerId
 
   if (!customerId) {
     const stripe = getStripe()
@@ -114,10 +124,10 @@ export async function getCurrentTenantPlan() {
     .eq('id', user.tenantId)
     .single()
 
-  const tenant = data as any
+  const tenant = data as TenantPlanRow | null
 
   return {
-    plan: (tenant?.plan as PlanType) || 'free_creative',
-    profile: (tenant?.profile as string) || 'CREATIVE',
+    plan: tenant?.plan || 'free_creative',
+    profile: tenant?.profile || 'CREATIVE',
   }
 }

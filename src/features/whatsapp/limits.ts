@@ -13,8 +13,7 @@ type WhatsAppLimitType = 'transactional' | 'campaign' | 'test'
 type UsageRow = { type: string; count: number }
 
 export async function getWhatsAppUsageSummary(tenantId: string): Promise<UsageSummary> {
-  const supabase = await createClient()
-  const db = supabase as any
+  const db = await createClient()
 
   const { data: workspacePlan } = await db
     .from('WorkspacePlans')
@@ -22,7 +21,8 @@ export async function getWhatsAppUsageSummary(tenantId: string): Promise<UsageSu
     .eq('workspaceId', tenantId)
     .single()
 
-  const currentPlan: PlanType = workspacePlan?.plan || 'start'
+  const workspacePlanRow = workspacePlan as { plan?: PlanType | null } | null
+  const currentPlan: PlanType = workspacePlanRow?.plan || 'start'
 
   const { data: dbLimits } = await db
     .from('WhatsAppLimits')
@@ -106,10 +106,10 @@ export async function incrementWhatsAppUsage(
   type: WhatsAppLimitType,
   count: number = 1
 ) {
-  const supabase = await createClient()
-  const db = supabase as any
+  const db = await createClient()
   const today = new Date().toISOString().split('T')[0]
 
+  // @ts-expect-error legacy rpc typing missing in generated Database type
   const { error } = await db.rpc('increment_whatsapp_usage', {
     p_tenant_id: tenantId,
     p_date: today,

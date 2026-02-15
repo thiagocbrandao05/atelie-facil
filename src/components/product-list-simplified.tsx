@@ -1,6 +1,6 @@
 'use client'
 
-import { ProductWithMaterials } from '@/lib/types'
+import { AppSettings, Material, ProductWithMaterials } from '@/lib/types'
 import {
   Table,
   TableBody,
@@ -22,8 +22,8 @@ import { Info } from 'lucide-react'
 
 interface ProductListSimplifiedProps {
   products: ProductWithMaterials[]
-  materials: any[]
-  settings: any
+  materials: Material[]
+  settings: AppSettings
   tenantPlan?: PlanType
 }
 

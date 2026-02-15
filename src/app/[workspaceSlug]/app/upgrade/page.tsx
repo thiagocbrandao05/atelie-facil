@@ -37,14 +37,15 @@ export default async function UpgradePage({
     .single()
 
   if (!workspace) redirect('/')
+  const workspaceData = workspace as { id: string }
 
   const { data: planData } = await supabase
     .from('WorkspacePlans')
     .select('plan')
-    .eq('workspaceId', (workspace as any).id)
+    .eq('workspaceId', workspaceData.id)
     .single()
 
-  const currentPlan = (planData as any)?.plan || 'start'
+  const currentPlan = (planData as { plan?: string } | null)?.plan || 'start'
 
   return (
     <div className="container max-w-5xl py-10">
@@ -135,7 +136,7 @@ export default async function UpgradePage({
                 action={async () => {
                   'use server'
                   await createStripeCheckoutSession({
-                    workspaceId: (workspace as any).id,
+                    workspaceId: workspaceData.id,
                     plan: 'pro',
                     successUrl: `${appBaseUrl}/${workspaceSlug}/app/configuracoes?success=upgrade`,
                     cancelUrl: `${appBaseUrl}/${workspaceSlug}/app/upgrade`,
@@ -217,7 +218,7 @@ export default async function UpgradePage({
                 action={async () => {
                   'use server'
                   await createStripeCheckoutSession({
-                    workspaceId: (workspace as any).id,
+                    workspaceId: workspaceData.id,
                     plan: 'premium',
                     successUrl: `${appBaseUrl}/${workspaceSlug}/app/configuracoes?success=upgrade`,
                     cancelUrl: `${appBaseUrl}/${workspaceSlug}/app/upgrade`,

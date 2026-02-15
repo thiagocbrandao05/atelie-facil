@@ -11,7 +11,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 export default async function LogsPage() {
-  const logs = await getSystemLogs()
+  type SystemLog = {
+    id: string
+    createdAt: string | Date
+    action: string
+    entity: string
+    entityId?: string | null
+    details?: unknown
+    user?: { name?: string | null; email?: string | null } | null
+    tenant?: { name?: string | null } | null
+  }
+  const logs = (await getSystemLogs()) as SystemLog[]
 
   return (
     <div className="space-y-6">
@@ -36,7 +46,7 @@ export default async function LogsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {logs.map((log: any) => (
+              {logs.map(log => (
                 <TableRow key={log.id}>
                   <TableCell className="font-mono text-xs whitespace-nowrap text-slate-500">
                     {new Date(log.createdAt).toLocaleString('pt-BR')}

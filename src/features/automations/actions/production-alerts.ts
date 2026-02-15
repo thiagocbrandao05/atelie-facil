@@ -14,6 +14,19 @@ export type ProductionAlert = {
   daysUntilDue: number
 }
 
+type ProductionOrderItem = {
+  quantity: number
+  product?: { name?: string | null; laborTime?: number | null } | null
+}
+
+type ProductionOrderRow = {
+  id: string
+  status: string
+  dueDate: string | Date
+  customer?: { name?: string | null } | null
+  items: ProductionOrderItem[]
+}
+
 export async function getProductionAlerts(): Promise<ProductionAlert[]> {
   const user = await getCurrentUser()
   if (!user) throw new Error('Unauthorized')
@@ -48,15 +61,15 @@ export async function getProductionAlerts(): Promise<ProductionAlert[]> {
   const alerts: ProductionAlert[] = []
   const today = new Date()
 
-  orders?.forEach((order: any) => {
+  ;(orders as ProductionOrderRow[] | null)?.forEach(order => {
     // Calculate Total Labor Time needed for this order
     let totalLaborMinutes = 0
     let mainProductName = ''
 
-    order.items?.forEach((item: any) => {
+    order.items?.forEach(item => {
       const time = item.product?.laborTime || 0
       totalLaborMinutes += time * item.quantity
-      if (!mainProductName) mainProductName = item.product?.name
+      if (!mainProductName) mainProductName = item.product?.name || 'Produto'
     })
 
     if (order.items.length > 1) mainProductName += ` + ${order.items.length - 1} outros`

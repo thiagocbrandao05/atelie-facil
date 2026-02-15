@@ -11,12 +11,36 @@ import type {
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
+type InventoryQuantityRow = { quantity: number | null }
+type ProductInventoryWithProduct = ProductInventory & {
+  product?: { id: string; name: string; imageUrl: string | null } | null
+}
+type ProductInventoryAlertRow = {
+  id: string
+  quantity: number
+  minQuantity: number | null
+  product?: { name: string; imageUrl: string | null } | null
+}
+type ProductMovementWithProduct = ProductInventoryMovement & {
+  product?: { name: string } | null
+}
+type ProductStockEntryItem = {
+  productId: string
+  quantity: number
+  unitCost: number
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return 'Erro desconhecido'
+}
+
 export async function getProductsInventory(): Promise<ProductInventory[]> {
   const user = await getCurrentUser()
   if (!user) return []
 
   const supabase = await createClient()
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('ProductInventory')
     .select(
       `
@@ -31,7 +55,7 @@ export async function getProductsInventory(): Promise<ProductInventory[]> {
     return []
   }
 
-  return data as any[]
+  return (data ?? []) as ProductInventoryWithProduct[]
 }
 
 export async function adjustProductStock(
@@ -47,7 +71,8 @@ export async function adjustProductStock(
   try {
     const supabase = await createClient()
 
-    const { error: moveError } = await (supabase as any).from('ProductInventoryMovement').insert({
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { error: moveError } = await supabase.from('ProductInventoryMovement').insert({
       tenantId: user.tenantId,
       productId,
       type,
@@ -58,25 +83,27 @@ export async function adjustProductStock(
     })
     if (moveError) throw moveError
 
-    const { data: currentInv } = await (supabase as any)
+    const { data: currentInv } = await supabase
       .from('ProductInventory')
       .select('quantity')
       .eq('productId', productId)
       .eq('tenantId', user.tenantId)
-      .single()
+      .maybeSingle<InventoryQuantityRow>()
 
     const adjustment = type === 'SAIDA' ? -quantity : quantity
-    const newTotal = ((currentInv as any)?.quantity || 0) + adjustment
+    const newTotal = Number(currentInv?.quantity || 0) + adjustment
 
     if (currentInv) {
-      const { error: updError } = await (supabase as any)
+      const { error: updError } = await supabase
         .from('ProductInventory')
+        // @ts-expect-error legacy schema not fully represented in generated DB types
         .update({ quantity: newTotal, updatedAt: new Date().toISOString() })
         .eq('productId', productId)
         .eq('tenantId', user.tenantId)
       if (updError) throw updError
     } else {
-      const { error: insError } = await (supabase as any).from('ProductInventory').insert({
+      // @ts-expect-error legacy schema not fully represented in generated DB types
+      const { error: insError } = await supabase.from('ProductInventory').insert({
         tenantId: user.tenantId,
         productId,
         quantity: newTotal,
@@ -90,9 +117,9 @@ export async function adjustProductStock(
       revalidateWorkspaceAppPaths(slug, ['/estoque-produtos'])
     }
     return actionSuccess('Estoque atualizado com sucesso!')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error adjusting product stock:', error)
-    return actionError('Erro ao atualizar estoque: ' + error.message)
+    return actionError('Erro ao atualizar estoque: ' + getErrorMessage(error))
   }
 }
 
@@ -101,7 +128,7 @@ export async function getProductStockAlerts() {
   if (!user) return []
 
   const supabase = await createClient()
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('ProductInventory')
     .select(
       `
@@ -119,7 +146,7 @@ export async function getProductStockAlerts() {
     return []
   }
 
-  return (data as any[])
+  return ((data ?? []) as ProductInventoryAlertRow[])
     .filter(item => item.quantity <= (item.minQuantity || 0))
     .map(item => ({
       id: item.id,
@@ -141,7 +168,7 @@ export async function getAllProductInventoryMovements(): Promise<ProductInventor
   if (!user) return []
 
   const supabase = await createClient()
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('ProductInventoryMovement')
     .select(
       `
@@ -158,19 +185,19 @@ export async function getAllProductInventoryMovements(): Promise<ProductInventor
     return []
   }
 
-  return data as any[]
+  return (data ?? []) as ProductMovementWithProduct[]
 }
 
 export async function createProductStockEntry(
-  prevState: any,
+  _prevState: unknown,
   formData: FormData
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
-  let itemsRaw = []
+  let itemsRaw: ProductStockEntryItem[] = []
   try {
-    itemsRaw = JSON.parse((formData.get('items') as string) || '[]')
+    itemsRaw = JSON.parse((formData.get('items') as string) || '[]') as ProductStockEntryItem[]
   } catch {
     return actionError('Erro ao processar itens da entrada')
   }
@@ -188,13 +215,14 @@ export async function createProductStockEntry(
   if (rawData.items.length === 0) return actionError('Adicione pelo menos um item')
 
   const totalCost =
-    rawData.items.reduce((acc: number, item: any) => acc + item.quantity * item.unitCost, 0) +
+    rawData.items.reduce((acc, item) => acc + item.quantity * item.unitCost, 0) +
     rawData.freightCost
 
   const supabase = await createClient()
 
   try {
-    const { error } = await (supabase as any).rpc('create_product_stock_entry_transaction', {
+    // @ts-expect-error legacy schema not fully represented in generated DB types
+    const { error } = await supabase.rpc('create_product_stock_entry_transaction', {
       p_tenant_id: user.tenantId,
       p_supplier_name: rawData.supplierName,
       p_freight_cost: rawData.freightCost,
@@ -212,8 +240,8 @@ export async function createProductStockEntry(
       revalidateWorkspaceAppPaths(slug, ['/estoque-produtos'])
     }
     return actionSuccess('Entrada de estoque registrada com sucesso!')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create Product Stock Entry Error:', error)
-    return actionError('Erro ao registrar entrada: ' + error.message)
+    return actionError('Erro ao registrar entrada: ' + getErrorMessage(error))
   }
 }

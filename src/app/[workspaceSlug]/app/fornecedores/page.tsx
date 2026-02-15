@@ -5,9 +5,10 @@ import { deleteSupplier } from '@/features/suppliers/actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Phone, Mail, MapPin, Package, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import type { Supplier } from '@/lib/types'
 
 export default async function FornecedoresPage() {
-  const suppliers = (await getSuppliers()) as any[]
+  const suppliers = (await getSuppliers()) as Supplier[]
 
   return (
     <div className="space-y-5 md:space-y-6">

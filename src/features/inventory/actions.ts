@@ -4,6 +4,23 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
 import { calculateStockAlerts } from '@/lib/inventory'
 
+type MovementRow = {
+  id: string
+  type: string
+  quantity: number
+  reason?: string | null
+  reference?: string | null
+  createdAt: string
+  materialId: string
+  color?: string | null
+}
+
+type MaterialRow = {
+  id: string
+  name: string
+  unit: string
+}
+
 export async function getAllInventoryMovements() {
   const user = await getCurrentUser()
   if (!user) return []
@@ -40,7 +57,8 @@ export async function getAllInventoryMovements() {
   }
 
   // Get unique material IDs
-  const materialIds = Array.from(new Set(movementsData.map((m: any) => m.materialId)))
+  const movementRows = movementsData as MovementRow[]
+  const materialIds = Array.from(new Set(movementRows.map(m => m.materialId)))
 
   // Fetch materials
   const { data: materialsData, error: materialsError } = await supabase
@@ -54,24 +72,24 @@ export async function getAllInventoryMovements() {
   }
 
   // Create map
-  const materialMap = new Map()
+  const materialMap = new Map<string, MaterialRow>()
   if (materialsData) {
-    materialsData.forEach((m: any) => {
+    ;(materialsData as MaterialRow[]).forEach(m => {
       materialMap.set(m.id, m)
     })
   }
 
-  return movementsData.map((m: any) => {
+  return movementRows.map(m => {
     const mat = materialMap.get(m.materialId)
     return {
       id: m.id,
-      createdAt: m.createdAt,
+      createdAt: new Date(m.createdAt),
       materialName: mat?.name || 'Material Removido/Desconhecido',
       type: m.type,
       quantity: m.quantity,
       unit: mat?.unit || '',
       reason: m.reason || m.reference || '',
-      color: m.color || null,
+      color: m.color || undefined,
     }
   })
 }

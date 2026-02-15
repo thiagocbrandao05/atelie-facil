@@ -11,22 +11,31 @@ type Props = {
   }>
 }
 
+type PublicCampaignRow = {
+  name: string
+  imageUrl?: string | null
+  tenantName: string
+  messageText: string
+}
+
 export default async function PublicCampaignPage({ params }: Props) {
   const { workspaceSlug, campaignToken } = await params
   const supabase = await createClient()
 
-  const { data: campaign, error } = await (supabase as any).rpc('get_public_campaign', {
+  // @ts-expect-error legacy rpc typing missing in generated Database type
+  const { data: campaign, error } = await supabase.rpc('get_public_campaign', {
     p_token: campaignToken,
   })
+  const campaignRows = (campaign || []) as PublicCampaignRow[]
 
   // No strict slug check here usually needed for campaigns as token is unique,
   // but good practice to verify context if slug is in URL
-  if (error || !campaign || campaign.length === 0) {
+  if (error || campaignRows.length === 0) {
     // || campaign[0].tenantSlug !== workspaceSlug (RPC doesn't return slug currently, added check)
     notFound()
   }
 
-  const data = campaign[0]
+  const data = campaignRows[0]
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-black p-0 md:p-4">

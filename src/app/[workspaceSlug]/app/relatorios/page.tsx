@@ -14,7 +14,7 @@ export default async function ReportsPage() {
     getLowStockMaterials(),
   ])
 
-  const totalRevenue = revenueData.reduce((acc, curr: any) => acc + curr.value, 0)
+  const totalRevenue = revenueData.reduce((acc, curr) => acc + curr.value, 0)
 
   return (
     <div className="space-y-5 md:space-y-6">

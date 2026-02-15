@@ -2,12 +2,15 @@ import { getCurrentUser } from './auth'
 
 interface LogContext {
   action: string
-  data?: any
+  data?: Record<string, unknown>
   userId?: string
   error?: Error
 }
 
-export async function logError(error: Error, context: { action: string; data?: any }) {
+export async function logError(
+  error: Error,
+  context: { action: string; data?: Record<string, unknown> }
+) {
   const user = await getCurrentUser()
 
   const logEntry = {
@@ -34,7 +37,7 @@ export async function logError(error: Error, context: { action: string; data?: a
   return logEntry
 }
 
-export async function logInfo(message: string, context?: Record<string, any>) {
+export async function logInfo(message: string, context?: Record<string, unknown>) {
   const user = await getCurrentUser()
 
   const logEntry = {
@@ -52,7 +55,7 @@ export async function logInfo(message: string, context?: Record<string, any>) {
   return logEntry
 }
 
-export async function logWarning(message: string, context?: Record<string, any>) {
+export async function logWarning(message: string, context?: Record<string, unknown>) {
   const user = await getCurrentUser()
 
   const logEntry = {

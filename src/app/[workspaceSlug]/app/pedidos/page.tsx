@@ -171,13 +171,13 @@ export default async function PedidosPage(props: {
                       <div className="text-muted-foreground mt-1 text-sm leading-relaxed">
                         <p className="text-foreground/80 mb-1 font-medium">Itens:</p>
                         <ul className="list-inside list-disc space-y-1">
-                          {order.items.map((item: any, idx) => (
+                          {order.items.map((item, idx) => (
                             <li key={idx}>
                               {item.quantity}x {item.product.name}
                               {(item.discount ?? 0) > 0 && (
                                 <span className="ml-2 text-[10px] font-medium text-red-500">
                                   (-
-                                  {item.discount.toLocaleString('pt-BR', {
+                                  {(item.discount ?? 0).toLocaleString('pt-BR', {
                                     style: 'currency',
                                     currency: 'BRL',
                                   })}

@@ -49,7 +49,7 @@ export function MaterialList({ materials, suppliers = [] }: MaterialListProps) {
                   <span className="text-sm">
                     {(() => {
                       try {
-                        let parsed: any = material.colors
+                        let parsed: unknown = material.colors
                         if (typeof parsed === 'string') {
                           // Try to parse if it's a JSON string
                           if (parsed.startsWith('[')) {

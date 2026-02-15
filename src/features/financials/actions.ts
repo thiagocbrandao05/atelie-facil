@@ -22,8 +22,7 @@ export type TransactionInput = z.infer<typeof TransactionSchema>
 type FinancialSummaryRow = { amount: number | string; type: 'IN' | 'OUT'; status: string }
 
 async function getDb() {
-  const supabase = await createClient()
-  return supabase as any
+  return createClient()
 }
 
 async function getTenantId() {
@@ -34,8 +33,8 @@ async function getTenantId() {
   if (!user) return null
 
   const { data: tenant } = await db.from('tenants').select('id').eq('owner_id', user.id).single()
-
-  return tenant?.id ?? null
+  const tenantRow = tenant as { id?: string } | null
+  return tenantRow?.id ?? null
 }
 
 export async function getTransactions(month: number, year: number) {
@@ -76,6 +75,7 @@ export async function createTransaction(input: TransactionInput) {
 
   const { data, error } = await db
     .from('financial_transactions')
+    // @ts-expect-error legacy table typing missing in generated Database type
     .insert({
       ...input,
       tenant_id: tenantId,
@@ -101,6 +101,7 @@ export async function updateTransaction(id: string, input: Partial<TransactionIn
 
   const { data, error } = await db
     .from('financial_transactions')
+    // @ts-expect-error legacy table typing missing in generated Database type
     .update(input)
     .eq('id', id)
     .select()

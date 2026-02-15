@@ -11,8 +11,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { OrderForm } from './order-form'
+import type { Customer, ProductWithMaterials } from '@/lib/types'
 
-export function OrderDialog({ products, customers }: { products: any[]; customers: any[] }) {
+type CustomerOption = Pick<Customer, 'id' | 'name'>
+
+export function OrderDialog({
+  products,
+  customers,
+}: {
+  products: ProductWithMaterials[]
+  customers: CustomerOption[]
+}) {
   const [open, setOpen] = useState(false)
 
   return (

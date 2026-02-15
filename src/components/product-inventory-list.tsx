@@ -27,7 +27,7 @@ export function ProductInventoryList({ inventory }: ProductInventoryListProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {inventory.map(item => {
-        const product = item.product as any
+        const product = item.product
         const isLowStock = item.minQuantity && item.quantity <= item.minQuantity
 
         return (

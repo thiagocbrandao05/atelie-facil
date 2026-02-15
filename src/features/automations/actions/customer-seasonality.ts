@@ -12,6 +12,12 @@ export type CustomerSeasonalPattern = {
   frequencyLabel: 'Mensal' | 'Bimestral' | 'Trimestral' | 'Esporádico'
 }
 
+type CustomerSeasonalityOrderRow = {
+  customerId: string
+  createdAt: string | Date
+  customer?: { name?: string | null } | null
+}
+
 export async function getCustomerSeasonality(): Promise<CustomerSeasonalPattern[]> {
   const user = await getCurrentUser()
   if (!user) throw new Error('Unauthorized')
@@ -43,7 +49,7 @@ export async function getCustomerSeasonality(): Promise<CustomerSeasonalPattern[
     }
   >()
 
-  orders?.forEach((order: any) => {
+  ;(orders as CustomerSeasonalityOrderRow[] | null)?.forEach(order => {
     const id = order.customerId
     if (!customerMap.has(id)) {
       customerMap.set(id, {

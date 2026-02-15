@@ -18,11 +18,22 @@ import { getStockReport } from '@/features/stock/actions'
 import { Plus } from 'lucide-react'
 import { StockOverviewList } from '@/components/stock-overview-list'
 
+type StockReportItem = {
+  materialId: string
+  color: string | null
+  balance: number
+}
+
+type EnrichedStockItem = StockReportItem & {
+  materialName: string
+  unit: string
+}
+
 export default async function EstoquePage() {
   let materials: Material[] = []
   let suppliers: Supplier[] = []
-  let movements: any[] = []
-  let stockItems: any[] = []
+  let movements: Awaited<ReturnType<typeof getAllInventoryMovements>> = []
+  let stockItems: EnrichedStockItem[] = []
 
   try {
     const [materialsResult, suppliersResult, movementsResult, stockReportResult] =
@@ -37,8 +48,8 @@ export default async function EstoquePage() {
     movements = movementsResult
 
     // Enrich stock report with material names
-    stockItems = stockReportResult
-      .map((item: any) => {
+    stockItems = (stockReportResult as StockReportItem[])
+      .map(item => {
         const mat = materials.find(m => m.id === item.materialId)
         return {
           ...item,
@@ -46,7 +57,7 @@ export default async function EstoquePage() {
           unit: mat?.unit || '',
         }
       })
-      .filter((item: any) => item.balance !== 0) // Optional: show only non-zero? User asked for "saldo atual".
+      .filter(item => item.balance !== 0) // Optional: show only non-zero? User asked for "saldo atual".
   } catch (error) {
     console.error('Failed to fetch data:', error)
   }
