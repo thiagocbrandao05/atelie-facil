@@ -41,9 +41,9 @@ export async function createMaterial(prevState: any, formData: FormData): Promis
   // Parse colors: split by comma if present
   const colorArray = colors
     ? colors
-      .split(',')
-      .map(c => c.trim())
-      .filter(c => c.length > 0)
+        .split(',')
+        .map(c => c.trim())
+        .filter(c => c.length > 0)
     : []
 
   const supabase = await createClient()
@@ -103,9 +103,9 @@ export async function updateMaterial(
   const { name, unit, minQuantity, supplierId, colors } = validated.data
   const colorArray = colors
     ? colors
-      .split(',')
-      .map(c => c.trim())
-      .filter(c => c.length > 0)
+        .split(',')
+        .map(c => c.trim())
+        .filter(c => c.length > 0)
     : []
 
   const supabase = await createClient()

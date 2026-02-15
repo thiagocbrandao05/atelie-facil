@@ -264,10 +264,10 @@ describe('Search Utilities', () => {
     it('should handle relevance scoring tiers', () => {
       const items = [
         { name: 'PaperCraft', materials: [] }, // Exact
-        { name: 'Paper', materials: [] },      // Exact (if query is Paper)
+        { name: 'Paper', materials: [] }, // Exact (if query is Paper)
         { name: 'Paper Rolls', materials: [] }, // StartsWith
         { name: 'Artistic Paper', materials: [] }, // Includes
-        { name: 'P_a_p_e_r', materials: [] }   // Fuzzy
+        { name: 'P_a_p_e_r', materials: [] }, // Fuzzy
       ] as any
 
       const results = searchProducts(items, 'Paper')
@@ -279,11 +279,13 @@ describe('Search Utilities', () => {
     })
 
     it('should search products by material name', () => {
-      const prodWithMats = [{
-        id: 'p1',
-        name: 'Prod',
-        materials: [{ material: { name: 'Gold' } }]
-      }] as any
+      const prodWithMats = [
+        {
+          id: 'p1',
+          name: 'Prod',
+          materials: [{ material: { name: 'Gold' } }],
+        },
+      ] as any
       const results = searchProducts(prodWithMats, 'Gold')
       expect(results).toHaveLength(1)
     })
@@ -291,7 +293,7 @@ describe('Search Utilities', () => {
     it('should sort products by relevance', () => {
       const products = [
         { id: '1', name: 'Apple', materials: [] },
-        { id: '2', name: 'Pineapple', materials: [] }
+        { id: '2', name: 'Pineapple', materials: [] },
       ] as any
       const results = searchProducts(products, 'Apple')
       expect(results[0].id).toBe('1') // Exact match first
@@ -342,7 +344,7 @@ describe('Search Utilities', () => {
     it('should sort materials by relevance with multiple items', () => {
       const mats = [
         { id: '1', name: 'Cotton Fabric', colors: [] },
-        { id: '2', name: 'Cotton', colors: [] }
+        { id: '2', name: 'Cotton', colors: [] },
       ] as any
       const results = searchMaterials(mats, 'Cotton')
       expect(results[0].name).toBe('Cotton') // Exact match first
@@ -398,7 +400,7 @@ describe('Search Utilities', () => {
     it('should sort customers by relevance', () => {
       const customers = [
         { id: '1', name: 'John Doe' },
-        { id: '2', name: 'John' }
+        { id: '2', name: 'John' },
       ] as any
       const results = searchCustomers(customers, 'John')
       expect(results[0].name).toBe('John') // Exact match first

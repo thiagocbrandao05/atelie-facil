@@ -140,14 +140,10 @@ export function calculateDashboardMetrics(
   const completedOrders = orders.filter(o => o.status === 'DELIVERED').length
   const pendingOrders = orders.filter(o => o.status === 'PENDING').length
 
-  const lowStockItems = materials.filter(
-    m => (m.quantity || 0) < (m.minQuantity || 0)
-  ).length
+  const lowStockItems = materials.filter(m => (m.quantity || 0) < (m.minQuantity || 0)).length
 
   const profitMargin =
-    financials.totalRevenue > 0
-      ? (financials.totalProfit / financials.totalRevenue) * 100
-      : 0
+    financials.totalRevenue > 0 ? (financials.totalProfit / financials.totalRevenue) * 100 : 0
 
   return {
     ...financials,

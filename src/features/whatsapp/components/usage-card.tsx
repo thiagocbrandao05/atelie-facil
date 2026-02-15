@@ -70,8 +70,6 @@ export function WhatsAppUsageCard({
 }) {
   if (!summary) return null
 
-
-
   return (
     <Card className="flex h-full flex-col">
       <CardHeader className="pb-3">

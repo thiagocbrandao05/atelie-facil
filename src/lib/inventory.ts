@@ -132,7 +132,8 @@ export async function checkFinishedStockAvailability(orderId: string) {
   // Fetch order items with current inventory
   const { data: orderItems, error } = await (supabase as any)
     .from('ProductInventory')
-    .select(`
+    .select(
+      `
       productId,
       quantity,
       product:Product (
@@ -141,7 +142,8 @@ export async function checkFinishedStockAvailability(orderId: string) {
           quantity
         )
       )
-    `)
+    `
+    )
     .eq('orderId', orderId)
 
   if (error || !orderItems) {
@@ -157,12 +159,12 @@ export async function checkFinishedStockAvailability(orderId: string) {
     .map(item => ({
       name: item.product?.name || 'Produto Desconhecido',
       required: item.quantity,
-      available: item.product?.inventory?.quantity || 0
+      available: item.product?.inventory?.quantity || 0,
     }))
 
   return {
     isAvailable: missingProducts.length === 0,
-    missingProducts
+    missingProducts,
   }
 }
 
@@ -193,7 +195,7 @@ export async function deductFinishedStockForOrder(orderId: string) {
       quantity: item.quantity,
       reason: `Pedido #${orderId}`,
       reference: orderId,
-      createdBy: user.id
+      createdBy: user.id,
     })
 
     // Update balance
@@ -242,72 +244,83 @@ export async function calculateStockAlerts(tenantId: string) {
   // 3. Calculate balances per material and color
   const balances: Record<string, Record<string, number>> = {} // materialId -> color -> balance
 
-    ; (movements as any[]).forEach(m => {
-      const materialId = m.materialId
-      const color = m.color || 'DEFAULT'
-      const qty = Number(m.quantity)
-      const isIn = ['ENTRADA', 'ENTRADA_AJUSTE'].includes(m.type)
-      const isOut = ['SAIDA', 'SAIDA_AJUSTE', 'PERDA', 'RETIRADA'].includes(m.type)
+  ;(movements as any[]).forEach(m => {
+    const materialId = m.materialId
+    const color = m.color || 'DEFAULT'
+    const qty = Number(m.quantity)
+    const isIn = ['ENTRADA', 'ENTRADA_AJUSTE'].includes(m.type)
+    const isOut = ['SAIDA', 'SAIDA_AJUSTE', 'PERDA', 'RETIRADA'].includes(m.type)
 
-      if (!balances[materialId]) balances[materialId] = {}
-      if (typeof balances[materialId][color] === 'undefined') balances[materialId][color] = 0
+    if (!balances[materialId]) balances[materialId] = {}
+    if (typeof balances[materialId][color] === 'undefined') balances[materialId][color] = 0
 
-      if (isIn) balances[materialId][color] += qty
-      if (isOut) balances[materialId][color] -= qty
-    })
+    if (isIn) balances[materialId][color] += qty
+    if (isOut) balances[materialId][color] -= qty
+  })
 
   // 4. Identify alerts per color
   const alerts: any[] = []
 
-    ; (materials as any[]).forEach(m => {
-      const minQty = Number(m.minQuantity)
+  ;(materials as any[]).forEach(m => {
+    const minQty = Number(m.minQuantity)
 
-      // We consider all colors recorded in movements plus any defined in the 'colors' array
-      const materialMovements = balances[m.id] || {}
+    // We consider all colors recorded in movements plus any defined in the 'colors' array
+    const materialMovements = balances[m.id] || {}
 
-      let definedColors: string[] = []
-      try {
-        let parsed: any = m.colors
-        if (typeof parsed === 'string') {
-          if (parsed.startsWith('[')) {
-            parsed = JSON.parse(parsed)
-          }
+    let definedColors: string[] = []
+    try {
+      let parsed: any = m.colors
+      if (typeof parsed === 'string') {
+        if (parsed.startsWith('[')) {
+          parsed = JSON.parse(parsed)
         }
-
-        if (Array.isArray(parsed)) {
-          definedColors = parsed.flat().map(c => String(c).replace(/['"\[\]]+/g, '').trim()).filter(Boolean)
-        } else if (parsed) {
-          definedColors = [String(parsed).replace(/['"\[\]]+/g, '').trim()].filter(Boolean)
-        }
-      } catch (e) {
-        definedColors = []
       }
 
-      // Combine all color keys to check
-      const colorsToCheck = new Set([...Object.keys(materialMovements), ...definedColors])
-
-      // If there are no movements and no defined colors, check 'DEFAULT'
-      if (colorsToCheck.size === 0) {
-        colorsToCheck.add('DEFAULT')
+      if (Array.isArray(parsed)) {
+        definedColors = parsed
+          .flat()
+          .map(c =>
+            String(c)
+              .replace(/['"\[\]]+/g, '')
+              .trim()
+          )
+          .filter(Boolean)
+      } else if (parsed) {
+        definedColors = [
+          String(parsed)
+            .replace(/['"\[\]]+/g, '')
+            .trim(),
+        ].filter(Boolean)
       }
+    } catch (e) {
+      definedColors = []
+    }
 
-      colorsToCheck.forEach(color => {
-        const balance = materialMovements[color] || 0
-        if (balance <= minQty) {
-          const colorLabel = color === 'DEFAULT' ? '' : ` (${color})`
-          alerts.push({
-            id: `${m.id}|${color}`,
-            materialId: m.id,
-            name: `${m.name}${colorLabel}`,
-            currentQuantity: balance,
-            minQuantity: minQty,
-            unit: m.unit,
-            color: color === 'DEFAULT' ? null : color,
-            severity: balance <= 0 ? 'critical' : balance <= minQty / 2 ? 'high' : 'medium',
-          })
-        }
-      })
+    // Combine all color keys to check
+    const colorsToCheck = new Set([...Object.keys(materialMovements), ...definedColors])
+
+    // If there are no movements and no defined colors, check 'DEFAULT'
+    if (colorsToCheck.size === 0) {
+      colorsToCheck.add('DEFAULT')
+    }
+
+    colorsToCheck.forEach(color => {
+      const balance = materialMovements[color] || 0
+      if (balance <= minQty) {
+        const colorLabel = color === 'DEFAULT' ? '' : ` (${color})`
+        alerts.push({
+          id: `${m.id}|${color}`,
+          materialId: m.id,
+          name: `${m.name}${colorLabel}`,
+          currentQuantity: balance,
+          minQuantity: minQty,
+          unit: m.unit,
+          color: color === 'DEFAULT' ? null : color,
+          severity: balance <= 0 ? 'critical' : balance <= minQty / 2 ? 'high' : 'medium',
+        })
+      }
     })
+  })
 
   return alerts
 }

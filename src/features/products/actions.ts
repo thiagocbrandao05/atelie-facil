@@ -3,7 +3,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { ProductSchema } from '@/lib/schemas'
-import type { ActionResponse, PaginatedResponse, ProductWithMaterials, ProductQueryResponse } from '@/lib/types'
+import type {
+  ActionResponse,
+  PaginatedResponse,
+  ProductWithMaterials,
+  ProductQueryResponse,
+} from '@/lib/types'
 import { getCurrentUser } from '@/lib/auth'
 
 /**
@@ -38,7 +43,6 @@ export async function getProductsPaginated(
     .eq('tenantId', user.tenantId)
     .order('name', { ascending: true })
     .range(from, to)
-
 
   if (error) {
     console.error('Error fetching products:', error)

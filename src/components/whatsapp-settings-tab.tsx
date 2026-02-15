@@ -157,8 +157,8 @@ export function WhatsAppSettingsTab({
                   Selecione (ou Crie) seu Aplicativo
                 </h4>
                 <p>
-                  Clique em &quot;Meus Apps&quot; e selecione o aplicativo do seu negócio. Se não tiver, crie
-                  um novo do tipo &quot;Business&quot; (Negócios).
+                  Clique em &quot;Meus Apps&quot; e selecione o aplicativo do seu negócio. Se não
+                  tiver, crie um novo do tipo &quot;Business&quot; (Negócios).
                 </p>
               </div>
 
@@ -186,8 +186,8 @@ export function WhatsAppSettingsTab({
                 <Alert className="mt-2 border-yellow-200 bg-yellow-50 text-yellow-800">
                   <HelpCircle className="h-4 w-4 text-yellow-600" />
                   <AlertDescription className="text-xs">
-                    Importante: Não use o &quot;Token Temporário&quot; que dura apenas 24h, senão o sistema
-                    vai parar de funcionar amanhã.
+                    Importante: Não use o &quot;Token Temporário&quot; que dura apenas 24h, senão o
+                    sistema vai parar de funcionar amanhã.
                   </AlertDescription>
                 </Alert>
               </div>

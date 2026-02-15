@@ -57,9 +57,12 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
 
       // Clean up strings and filter empty
       return colorsArray
-        .map(c => String(c).replace(/['"\[\]]+/g, '').trim())
+        .map(c =>
+          String(c)
+            .replace(/['"\[\]]+/g, '')
+            .trim()
+        )
         .filter(c => c.length > 0)
-
     } catch (e) {
       return []
     }
@@ -135,7 +138,6 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
       <div className="p-6">
         <form action={formAction} ref={formRef}>
           <div className="space-y-8">
-
             {/* Section 1: Dados Gerais */}
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
@@ -187,11 +189,7 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
 
               <div className="space-y-2">
                 <Label htmlFor="paymentMethod">Forma de Pagamento</Label>
-                <Select
-                  name="paymentMethod"
-                  value={paymentMethod}
-                  onValueChange={setPaymentMethod}
-                >
+                <Select name="paymentMethod" value={paymentMethod} onValueChange={setPaymentMethod}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
@@ -219,17 +217,22 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
               )}
             </div>
 
-            <div className="border-t my-6"></div>
+            <div className="my-6 border-t"></div>
 
             {/* Section 2: Itens */}
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                 <Label className="text-base font-semibold">Itens da Compra</Label>
                 <div className="flex items-center gap-2">
                   <MaterialForm
                     suppliers={suppliers}
                     trigger={
-                      <Button type="button" variant="outline" size="sm" className="bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary"
+                      >
                         <PackagePlus className="mr-1 h-4 w-4" /> Novo Material
                       </Button>
                     }
@@ -242,12 +245,8 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
 
               <div className="space-y-3">
                 {items.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="p-4 rounded-lg border bg-muted/10 relative group"
-                  >
-                    <div className="grid grid-cols-12 gap-4 items-end">
-
+                  <div key={item.id} className="bg-muted/10 group relative rounded-lg border p-4">
+                    <div className="grid grid-cols-12 items-end gap-4">
                       <div className="col-span-12 md:col-span-4">
                         <Label className="mb-2 block text-xs font-medium">Material</Label>
                         <Select
@@ -272,7 +271,9 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
                         <Select
                           value={item.color}
                           onValueChange={val => updateItem(item.id, 'color', val)}
-                          disabled={!item.materialId || getMaterialColors(item.materialId).length === 0}
+                          disabled={
+                            !item.materialId || getMaterialColors(item.materialId).length === 0
+                          }
                         >
                           <SelectTrigger className="bg-background">
                             <SelectValue placeholder="Selecione a cor..." />
@@ -316,12 +317,12 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
                       </div>
 
                       {/* Remove Button - Absolute on Desktop, Relative on Mobile */}
-                      <div className="col-span-12 md:col-span-1 flex justify-end">
+                      <div className="col-span-12 flex justify-end md:col-span-1">
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="text-muted-foreground hover:text-red-500 hover:bg-red-50"
+                          className="text-muted-foreground hover:bg-red-50 hover:text-red-500"
                           onClick={() => removeItem(item.id)}
                           disabled={items.length === 1}
                           title="Remover item"
@@ -335,16 +336,16 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
               </div>
             </div>
 
-            <div className="border-t my-6"></div>
+            <div className="my-6 border-t"></div>
 
             {/* Section 3: Summary and Submit */}
-            <div className="grid gap-6 md:grid-cols-2 items-start">
+            <div className="grid items-start gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="note">Observações</Label>
                 <Input id="note" name="note" placeholder="Opcional. Ex: Número da Nota Fiscal" />
               </div>
 
-              <div className="bg-muted/30 p-4 rounded-lg flex flex-col gap-2">
+              <div className="bg-muted/30 flex flex-col gap-2 rounded-lg p-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal Itens:</span>
                   <span>R$ {totalProducts.toFixed(2)}</span>
@@ -353,13 +354,13 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
                   <span className="text-muted-foreground">Frete:</span>
                   <span>R$ {freight.toFixed(2)}</span>
                 </div>
-                <div className="border-t my-2"></div>
+                <div className="my-2 border-t"></div>
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total:</span>
                   <span>R$ {(totalProducts + freight).toFixed(2)}</span>
                 </div>
 
-                <Button type="submit" disabled={isPending} className="w-full mt-4" size="lg">
+                <Button type="submit" disabled={isPending} className="mt-4 w-full" size="lg">
                   {isPending ? 'Registrando Entrada...' : 'Confirmar e Registrar'}
                 </Button>
               </div>
@@ -369,7 +370,9 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
             <input type="hidden" name="items" value={JSON.stringify(preparedItems)} />
 
             {localState.message && (
-              <p className={`text-sm text-center ${localState.success ? 'text-green-600' : 'text-red-500'}`}>
+              <p
+                className={`text-center text-sm ${localState.success ? 'text-green-600' : 'text-red-500'}`}
+              >
                 {localState.message}
               </p>
             )}
@@ -378,5 +381,4 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
       </div>
     </div>
   )
-
 }
