@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname, useParams, useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { User, Settings, LogOut, Sparkles } from 'lucide-react'
 import {
@@ -25,17 +25,15 @@ export function DashboardSidebar({
   } | null
 }) {
   const pathname = usePathname()
-  const params = useParams()
   const router = useRouter()
   const supabase = createClient()
   const userName = user?.name || 'Usuário'
   const userInitials = userName.substring(0, 2).toUpperCase()
-  const slug = (params.workspaceSlug as string) || user?.tenant?.slug || 'atelis'
   const plan = (user?.tenant?.plan as PlanType) || 'free_creative'
 
   const links = getVisibleAppNavItems(plan).map(item => ({
     ...item,
-    href: buildWorkspaceAppPath(slug, item.appPath),
+    href: buildWorkspaceAppPath('', item.appPath),
   }))
 
   async function handleLogout() {
@@ -48,7 +46,7 @@ export function DashboardSidebar({
     <aside className="group/sidebar shadow-primary/5 fixed top-5 bottom-5 left-5 z-50 hidden w-16 flex-col items-center justify-between rounded-2xl border border-white/20 bg-white/60 py-6 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:w-64 md:flex">
       <div className="flex w-full flex-col items-center gap-8">
         <Link
-          href={buildWorkspaceAppPath(slug, '/dashboard')}
+          href={buildWorkspaceAppPath('', '/dashboard')}
           className="relative flex items-center justify-center"
         >
           <div className="bg-primary text-primary-foreground flex h-10 w-10 items-center justify-center rounded-xl font-black shadow-lg transition-transform hover:scale-105 hover:rotate-6">
@@ -127,7 +125,7 @@ export function DashboardSidebar({
           >
             <DropdownMenuItem asChild className="focus:bg-primary/10 rounded-lg p-2.5">
               <Link
-                href={buildWorkspaceAppPath(slug, '/perfil')}
+                href={buildWorkspaceAppPath('', '/perfil')}
                 className="flex w-full cursor-pointer items-center text-sm font-bold"
               >
                 <User className="mr-3 h-3.5 w-3.5" />
@@ -136,7 +134,7 @@ export function DashboardSidebar({
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="focus:bg-primary/10 rounded-lg p-2.5">
               <Link
-                href={buildWorkspaceAppPath(slug, '/configuracoes')}
+                href={buildWorkspaceAppPath('', '/configuracoes')}
                 className="flex w-full cursor-pointer items-center text-sm font-bold"
               >
                 <Settings className="mr-3 h-3.5 w-3.5" />
@@ -149,7 +147,7 @@ export function DashboardSidebar({
               className="bg-primary/10 text-primary focus:bg-primary/20 rounded-lg p-2.5"
             >
               <Link
-                href={buildWorkspaceAppPath(slug, '/upgrade')}
+                href={buildWorkspaceAppPath('', '/upgrade')}
                 className="flex w-full cursor-pointer items-center text-sm font-black"
               >
                 <Sparkles className="fill-primary/20 mr-3 h-3.5 w-3.5" />

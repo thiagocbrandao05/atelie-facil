@@ -5,14 +5,7 @@ import { getLowStockMaterials } from '@/features/analytics/actions'
 import { StockAlertBanner } from '@/components/ui/stock-alert-banner'
 import { CommandPalette } from '@/components/command-palette'
 
-export default async function AppLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode
-  params: Promise<{ workspaceSlug: string }>
-}) {
-  const { workspaceSlug } = await params
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
   const lowStockMaterials = await getLowStockMaterials()
 

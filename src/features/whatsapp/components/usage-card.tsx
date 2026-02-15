@@ -61,13 +61,7 @@ const UsageRow = ({
   )
 }
 
-export function WhatsAppUsageCard({
-  summary,
-  workspaceSlug,
-}: {
-  summary: UsageSummary | null
-  workspaceSlug: string
-}) {
+export function WhatsAppUsageCard({ summary }: { summary: UsageSummary | null }) {
   if (!summary) return null
 
   return (
@@ -128,7 +122,7 @@ export function WhatsAppUsageCard({
       </CardContent>
       <CardFooter className="pt-2">
         <Button variant="outline" className="w-full text-xs" asChild>
-          <Link href={`/${workspaceSlug}/app/upgrade`}>
+          <Link href="/app/upgrade">
             {summary.limits.plan === 'premium' ? 'Gerenciar Assinatura' : 'Fazer Upgrade de Plano'}
           </Link>
         </Button>

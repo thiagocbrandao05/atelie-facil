@@ -33,11 +33,9 @@ import { WhatsAppUsageCard } from '@/features/whatsapp/components/usage-card'
 export function WhatsAppSettingsTab({
   settings,
   usageSummary,
-  workspaceSlug,
 }: {
   settings: AppSettings
   usageSummary?: UsageSummary | null
-  workspaceSlug: string
 }) {
   const [state, saveAction, isPending] = useActionState(saveWhatsAppCredentials, initialState)
   const [validating, setValidating] = useState(false)
@@ -103,7 +101,7 @@ export function WhatsAppSettingsTab({
       </Card>
 
       {/* Usage Limits Card */}
-      <WhatsAppUsageCard summary={usageSummary ?? null} workspaceSlug={workspaceSlug} />
+      <WhatsAppUsageCard summary={usageSummary ?? null} />
 
       {/* Tutorial Accordion */}
       <Card className="border-blue-100 bg-blue-50/50">

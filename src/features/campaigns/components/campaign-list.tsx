@@ -18,13 +18,7 @@ type CampaignListItem = {
   recipients?: Array<{ count?: number }> | null
 }
 
-export function CampaignList({
-  campaigns,
-  workspaceSlug,
-}: {
-  campaigns: CampaignListItem[]
-  workspaceSlug: string
-}) {
+export function CampaignList({ campaigns }: { campaigns: CampaignListItem[] }) {
   const [sending, setSending] = useState<string | null>(null)
 
   const handleSend = async (campaignId: string) => {
@@ -61,7 +55,7 @@ export function CampaignList({
                 {camp.recipients ? camp.recipients[0]?.count : 0} destinatários
               </div>
               <div className="flex gap-2">
-                <Link href={`/${workspaceSlug}/s/campanha/${camp.campaignToken}`} target="_blank">
+                <Link href={`/campanha/${camp.campaignToken}`} target="_blank">
                   <Button variant="ghost" size="icon" title="Ver Link Público">
                     <ExternalLink className="h-4 w-4" />
                   </Button>

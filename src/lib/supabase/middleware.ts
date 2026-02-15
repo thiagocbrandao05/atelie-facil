@@ -30,6 +30,16 @@ export async function updateSession(request: NextRequest) {
   // 3. Routing Logic
   const url = request.nextUrl.clone()
   const { pathname } = url
+  const legacySluggedAppMatch = pathname.match(/^\/[^/]+\/app(?:\/(.*))?$/)
+  const legacySluggedOnboardingMatch = pathname.match(/^\/[^/]+\/onboarding(?:\/(.*))?$/)
+  const isLegacyDashboard = pathname === '/dashboard' || pathname.startsWith('/dashboard/')
+  const isProtectedPath =
+    pathname === '/app' ||
+    pathname.startsWith('/app/') ||
+    pathname.startsWith('/admin') ||
+    Boolean(legacySluggedAppMatch) ||
+    Boolean(legacySluggedOnboardingMatch) ||
+    isLegacyDashboard
 
   // Public Routes (Marketing, Auth, Public shared links)
   const isPublicRoute =
@@ -39,11 +49,12 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/register') ||
     pathname.startsWith('/about') ||
     pathname.startsWith('/offline') ||
-    pathname.includes('/s/') // Shared public links: /[slug]/s/...
+    pathname.startsWith('/planos') ||
+    pathname.startsWith('/orcamento')
 
   // 3.1. Unauthenticated User
   if (!user) {
-    if (!isPublicRoute) {
+    if (!isPublicRoute && isProtectedPath) {
       // If trying to access a protected route, redirect to login
       url.pathname = '/login'
       return NextResponse.redirect(url)
@@ -72,7 +83,7 @@ export async function updateSession(request: NextRequest) {
   if (pathname.startsWith('/admin')) {
     if (userRole !== 'SUPER_ADMIN') {
       // Redirect unauthorized users to their dashboard or home
-      url.pathname = userSlug ? `/${userSlug}/app/dashboard` : '/'
+      url.pathname = '/app/dashboard'
       return NextResponse.redirect(url)
     }
     // Allow SUPER_ADMIN to access /admin
@@ -86,33 +97,39 @@ export async function updateSession(request: NextRequest) {
 
   // Redirects for root/auth pages to Dashboard
   if (pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/register')) {
-    url.pathname = `/${userSlug}/app/dashboard`
+    url.pathname = '/app/dashboard'
     return NextResponse.redirect(url)
   }
 
-  // Handle legacy /dashboard redirects
-  if (pathname === '/dashboard') {
-    url.pathname = `/${userSlug}/app/dashboard`
+  // Canonical dashboard path
+  if (pathname === '/app') {
+    url.pathname = '/app/dashboard'
     return NextResponse.redirect(url)
   }
 
-  if (pathname.startsWith('/dashboard/')) {
-    const newPath = pathname.replace('/dashboard/', `/${userSlug}/app/`)
-    url.pathname = newPath
-    return NextResponse.redirect(url)
-  }
-
-  // Validate Tenant Access
-  // Regex to capture slug from path: /([^/]+)/app/.*
-  const appMatch = pathname.match(/^\/([^/]+)\/app/)
-  if (appMatch) {
-    const pathSlug = appMatch[1]
-    if (pathSlug !== userSlug && userRole !== 'SUPER_ADMIN') {
-      // Redirect to correct tenant
-      const correctPath = pathname.replace(`/${pathSlug}/`, `/${userSlug}/`)
-      url.pathname = correctPath
-      return NextResponse.redirect(url)
+  // Legacy redirects: /dashboard/*
+  if (isLegacyDashboard) {
+    if (pathname === '/dashboard') {
+      url.pathname = '/app/dashboard'
+    } else {
+      const legacySuffix = pathname.replace('/dashboard/', '')
+      url.pathname = `/app/${legacySuffix}`
     }
+    return NextResponse.redirect(url)
+  }
+
+  // Legacy redirects: /:slug/app/*
+  if (legacySluggedAppMatch) {
+    const legacySuffix = legacySluggedAppMatch[1]
+    url.pathname = legacySuffix ? `/app/${legacySuffix}` : '/app/dashboard'
+    return NextResponse.redirect(url)
+  }
+
+  // Legacy redirects: /:slug/onboarding
+  if (legacySluggedOnboardingMatch) {
+    const legacySuffix = legacySluggedOnboardingMatch[1]
+    url.pathname = legacySuffix ? `/app/onboarding/${legacySuffix}` : '/app/onboarding'
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse

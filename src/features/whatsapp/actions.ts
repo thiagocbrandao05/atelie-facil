@@ -498,7 +498,6 @@ export async function processPendingWhatsAppNotifications(
     if (!log.customerPhone || !log.messageBody) {
       await db
         .from('WhatsAppNotificationLog')
-        // @ts-expect-error legacy table typing missing in generated Database type
         .update({
           status: 'GAVE_UP',
           errorMessage: 'Dados insuficientes para reenvio.',
@@ -513,7 +512,6 @@ export async function processPendingWhatsAppNotifications(
     if (!formattedPhone) {
       await db
         .from('WhatsAppNotificationLog')
-        // @ts-expect-error legacy table typing missing in generated Database type
         .update({
           status: 'GAVE_UP',
           errorMessage: 'Telefone inválido para reenvio.',
@@ -538,7 +536,6 @@ export async function processPendingWhatsAppNotifications(
 
     await db
       .from('WhatsAppNotificationLog')
-      // @ts-expect-error legacy table typing missing in generated Database type
       .update({
         attempts,
         lastAttemptAt: new Date().toISOString(),

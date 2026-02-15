@@ -45,7 +45,7 @@ export async function authenticate(prevState: string | undefined, formData: Form
     const slug = userRecord?.tenant?.slug || 'atelis'
 
     logInfo('Successful login', { email, ip: clientIP, slug })
-    redirect(`/${slug}/app/dashboard`)
+    redirect('/app/dashboard')
   } catch (error) {
     if (isNextRedirectError(error)) throw error
     logError(error as Error, { action: 'authenticate' })
@@ -142,7 +142,7 @@ export async function register(prevState: string | undefined, formData: FormData
       return 'Account created! Please check your email to confirm.'
     }
 
-    const redirectUrl = `/${slug}/app/dashboard`
+    const redirectUrl = '/app/dashboard'
     redirect(redirectUrl)
   } catch (error) {
     if (isNextRedirectError(error)) throw error

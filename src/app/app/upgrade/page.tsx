@@ -16,33 +16,21 @@ import { getCurrentUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export default async function UpgradePage({
-  params,
-}: {
-  params: Promise<{ workspaceSlug: string }>
-}) {
-  const { workspaceSlug } = await params
+export default async function UpgradePage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
+  if (!user.tenantId) redirect('/')
 
   const appBaseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
   const supabase = await createClient()
-  const { data: workspace } = await supabase
-    .from('Tenant')
-    .select('id')
-    .eq('slug', workspaceSlug)
-    .single()
-
-  if (!workspace) redirect('/')
-  const workspaceData = workspace as { id: string }
 
   const { data: planData } = await supabase
     .from('WorkspacePlans')
     .select('plan')
-    .eq('workspaceId', workspaceData.id)
+    .eq('workspaceId', user.tenantId)
     .single()
 
   const currentPlan = (planData as { plan?: string } | null)?.plan || 'start'
@@ -50,7 +38,7 @@ export default async function UpgradePage({
   return (
     <div className="container max-w-5xl py-10">
       <Link
-        href={`/${workspaceSlug}/app/configuracoes`}
+        href="/app/configuracoes"
         className="text-muted-foreground hover:text-foreground mb-8 flex items-center text-sm transition-colors"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
@@ -136,10 +124,10 @@ export default async function UpgradePage({
                 action={async () => {
                   'use server'
                   await createStripeCheckoutSession({
-                    workspaceId: workspaceData.id,
+                    workspaceId: user.tenantId,
                     plan: 'pro',
-                    successUrl: `${appBaseUrl}/${workspaceSlug}/app/configuracoes?success=upgrade`,
-                    cancelUrl: `${appBaseUrl}/${workspaceSlug}/app/upgrade`,
+                    successUrl: `${appBaseUrl}/app/configuracoes?success=upgrade`,
+                    cancelUrl: `${appBaseUrl}/app/upgrade`,
                   }).then(res => redirect(res.url))
                 }}
                 className="w-full"
@@ -218,10 +206,10 @@ export default async function UpgradePage({
                 action={async () => {
                   'use server'
                   await createStripeCheckoutSession({
-                    workspaceId: workspaceData.id,
+                    workspaceId: user.tenantId,
                     plan: 'premium',
-                    successUrl: `${appBaseUrl}/${workspaceSlug}/app/configuracoes?success=upgrade`,
-                    cancelUrl: `${appBaseUrl}/${workspaceSlug}/app/upgrade`,
+                    successUrl: `${appBaseUrl}/app/configuracoes?success=upgrade`,
+                    cancelUrl: `${appBaseUrl}/app/upgrade`,
                   }).then(res => redirect(res.url))
                 }}
                 className="w-full"
@@ -241,7 +229,7 @@ export default async function UpgradePage({
 
       <p className="text-muted-foreground mt-12 text-center text-sm">
         Dúvidas sobre os planos?{' '}
-        <Link href={`/${workspaceSlug}/app/configuracoes`} className="hover:text-primary underline">
+        <Link href="/app/configuracoes" className="hover:text-primary underline">
           Fale com o suporte no painel
         </Link>
         .

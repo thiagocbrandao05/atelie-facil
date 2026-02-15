@@ -83,11 +83,9 @@ interface FixedCostItem {
 export function SettingsForm({
   settings,
   whatsappUsage,
-  workspaceSlug,
 }: {
   settings: AppSettings
   whatsappUsage?: UsageSummary | null
-  workspaceSlug: string
 }) {
   const [state, action, isPending] = useActionState(updateSettings, initialState)
   const [activeTab, setActiveTab] = useState('general')
@@ -959,11 +957,7 @@ export function SettingsForm({
       </TabsContent>
 
       <TabsContent value="whatsapp">
-        <WhatsAppSettingsTab
-          settings={settings}
-          usageSummary={whatsappUsage}
-          workspaceSlug={workspaceSlug}
-        />
+        <WhatsAppSettingsTab settings={settings} usageSummary={whatsappUsage} />
       </TabsContent>
       <TabsContent value="subscription">
         <Card className="border-primary/20 bg-primary/5">
@@ -984,7 +978,7 @@ export function SettingsForm({
                 pedidos.
               </p>
               <Button asChild size="lg" className="w-full font-bold sm:w-auto">
-                <Link href={`/${workspaceSlug}/app/upgrade`}>Ver Opções de upgrade →</Link>
+                <Link href="/app/upgrade">Ver Opções de upgrade →</Link>
               </Button>
             </div>
           </CardContent>

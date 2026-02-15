@@ -65,10 +65,9 @@ export async function createCampaign(input: CreateCampaignInput) {
   }))
 
   if (recipientsData.length > 0) {
-    // @ts-expect-error legacy schema not fully represented in generated DB types
     const { error: recipientError } = await supabase
       .from('CampaignRecipient')
-      .insert(recipientsData)
+      .insert(recipientsData as never)
 
     if (recipientError) {
       console.error('Error adding recipients:', recipientError)
@@ -127,7 +126,7 @@ export async function sendCampaign(campaignId: string) {
   let successCount = 0
   let failureCount = 0
 
-  const publicLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://ateliefacil.com'}/${user.tenant?.slug}/s/campanha/${campaignRecord.campaignToken}`
+  const publicLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://ateliefacil.com'}/campanha/${campaignRecord.campaignToken}`
 
   for (const recipient of recipientsList) {
     const customer = recipient.customer
