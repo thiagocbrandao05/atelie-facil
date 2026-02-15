@@ -1,4 +1,4 @@
-﻿import { PLANS } from '@/features/subscription/constants'
+import { PLANS } from '@/features/subscription/constants'
 import { Check, X } from 'lucide-react'
 import Link from 'next/link'
 

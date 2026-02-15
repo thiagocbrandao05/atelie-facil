@@ -1,4 +1,4 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 
 import { getLowStockMaterials } from '@/features/analytics/actions'
 import { getOrders, getOrdersStats } from '@/features/orders/actions'

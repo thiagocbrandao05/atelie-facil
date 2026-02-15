@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { getTransactions, getFinancialSummary, getCategories, TransactionInput } from './actions'

@@ -1,4 +1,4 @@
-﻿# PWA Icons Setup Guide
+# PWA Icons Setup Guide
 
 Este projeto usa PWA leve com foco em manifesto e icones.
 

@@ -1,4 +1,4 @@
-﻿import { expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { loginViaUI } from '../helpers/playwright'
 
 test.describe('WhatsApp Plan Feature Gating', () => {
