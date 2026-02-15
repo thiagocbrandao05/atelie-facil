@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { ProductSchema } from '@/lib/schemas'
@@ -11,6 +11,54 @@ import type {
 import { getCurrentUser } from '@/lib/auth'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
+
+type ProductMaterialInput = {
+  id: string
+  quantity: number
+  unit: string
+  color?: string | null
+}
+
+function normalizeProducts(rawData: ProductQueryResponse[]): ProductWithMaterials[] {
+  return rawData.map(product => ({
+    ...product,
+    cost: product.cost || 0,
+    materials: product.materials.map(pm => ({
+      ...pm,
+      material: {
+        ...pm.material,
+        cost: pm.material.cost || 0,
+      },
+    })),
+  }))
+}
+
+function parseMaterials(formData: FormData): ProductMaterialInput[] {
+  const materialsJson = formData.get('materials') as string
+  const parsed = JSON.parse(materialsJson || '[]') as ProductMaterialInput[]
+
+  for (const material of parsed) {
+    if (!material.id || material.id.trim() === '') {
+      throw new Error('Erro: material sem ID válido encontrado.')
+    }
+  }
+
+  return parsed
+}
+
+function parsePrice(formData: FormData): number | null {
+  const priceRaw = formData.get('price') as string
+  return priceRaw && priceRaw.trim() !== '' ? parseFloat(priceRaw) : null
+}
+
+function mapMaterialsForRpc(materials: ProductMaterialInput[]) {
+  return materials.map(material => ({
+    id: material.id,
+    quantity: material.quantity,
+    unit: material.unit,
+    color: material.color,
+  }))
+}
 
 export async function getProductsPaginated(
   page: number = 1,
@@ -48,17 +96,7 @@ export async function getProductsPaginated(
   }
 
   const rawData = data as unknown as ProductQueryResponse[]
-  const formattedData: ProductWithMaterials[] = rawData.map(product => ({
-    ...product,
-    cost: product.cost || 0,
-    materials: product.materials.map(pm => ({
-      ...pm,
-      material: {
-        ...pm.material,
-        cost: pm.material.cost || 0,
-      },
-    })),
-  }))
+  const formattedData = normalizeProducts(rawData)
 
   return {
     data: formattedData,
@@ -74,7 +112,9 @@ export async function getProducts() {
   if (!user) return []
 
   const supabase = await createClient()
-  const { data, error } = await (supabase as any)
+  const db = supabase as any
+
+  const { data, error } = await db
     .from('Product')
     .select(
       `
@@ -95,46 +135,25 @@ export async function getProducts() {
     console.error('SUPABASE ERROR IN getProducts:', error)
   }
 
-  const formattedData = ((data || []) as any[]).map(product => ({
-    ...product,
-    cost: product.cost || 0,
-    materials: product.materials.map((pm: any) => ({
-      ...pm,
-      material: {
-        ...pm.material,
-        cost: pm.material.cost || 0,
-      },
-    })),
-  }))
-
-  return formattedData || []
+  const rawData = (data || []) as ProductQueryResponse[]
+  return normalizeProducts(rawData)
 }
 
 export async function createProduct(
-  prevState: ActionResponse,
+  _prevState: ActionResponse,
   formData: FormData
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
   try {
-    const materialsJson = formData.get('materials') as string
-    const materials = JSON.parse(materialsJson || '[]')
-
-    for (const material of materials) {
-      if (!material.id || material.id.trim() === '') {
-        return actionError('Erro: Material sem ID válido encontrado.')
-      }
-    }
-
-    const priceRaw = formData.get('price') as string
-    const price = priceRaw && priceRaw.trim() !== '' ? parseFloat(priceRaw) : null
+    const materials = parseMaterials(formData)
 
     const data = {
       name: formData.get('name'),
       imageUrl: formData.get('imageUrl') || undefined,
       description: formData.get('description') || undefined,
-      price,
+      price: parsePrice(formData),
       laborTime: formData.get('laborTime'),
       profitMargin: formData.get('profitMargin'),
       materials,
@@ -149,23 +168,19 @@ export async function createProduct(
     }
 
     const supabase = await createClient()
+    const db = supabase as any
     const workspaceSlug = user.tenant?.slug
 
-    const { error } = await (supabase as any).rpc('create_product_with_materials', {
+    const { error } = await db.rpc('create_product_with_materials', {
       p_tenant_id: user.tenantId,
       p_name: validatedFields.data.name,
       p_image_url: validatedFields.data.imageUrl || '',
       p_labor_time: validatedFields.data.laborTime,
       p_profit_margin: validatedFields.data.profitMargin,
-      p_materials: (validatedFields.data.materials || []).map((m: any) => ({
-        id: m.id,
-        quantity: m.quantity,
-        unit: m.unit,
-        color: m.color,
-      })),
+      p_materials: mapMaterialsForRpc(validatedFields.data.materials || []),
       p_description: validatedFields.data.description || null,
       p_price: validatedFields.data.price || null,
-    } as any)
+    })
 
     if (error) throw error
 
@@ -173,34 +188,29 @@ export async function createProduct(
       revalidateWorkspaceAppPaths(workspaceSlug, ['/produtos'])
     }
     return actionSuccess('Produto cadastrado com sucesso!')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create product:', error)
-    return actionError('Erro ao cadastrar produto: ' + (error.message || 'Erro desconhecido'))
+    const message = error instanceof Error ? error.message : 'Erro desconhecido'
+    return actionError(`Erro ao cadastrar produto: ${message}`)
   }
 }
 
 export async function updateProduct(
   id: string,
-  prevState: ActionResponse,
+  _prevState: ActionResponse,
   formData: FormData
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
-  const materialsJson = formData.get('materials') as string
-  const materials = JSON.parse(materialsJson || '[]')
-
-  const priceRaw = formData.get('price') as string
-  const price = priceRaw && priceRaw.trim() !== '' ? parseFloat(priceRaw) : null
-
   const data = {
     name: formData.get('name'),
     imageUrl: formData.get('imageUrl') || undefined,
     description: formData.get('description') || undefined,
-    price,
+    price: parsePrice(formData),
     laborTime: formData.get('laborTime'),
     profitMargin: formData.get('profitMargin'),
-    materials,
+    materials: parseMaterials(formData),
   }
 
   const validatedFields = ProductSchema.safeParse(data)
@@ -210,24 +220,20 @@ export async function updateProduct(
 
   try {
     const supabase = await createClient()
+    const db = supabase as any
     const workspaceSlug = user.tenant?.slug
 
-    const { error } = await (supabase as any).rpc('update_product_with_materials', {
+    const { error } = await db.rpc('update_product_with_materials', {
       p_product_id: id,
       p_tenant_id: user.tenantId,
       p_name: validatedFields.data.name,
       p_image_url: validatedFields.data.imageUrl || '',
       p_labor_time: validatedFields.data.laborTime,
       p_profit_margin: validatedFields.data.profitMargin,
-      p_materials: (validatedFields.data.materials || []).map((m: any) => ({
-        id: m.id,
-        quantity: m.quantity,
-        unit: m.unit,
-        color: m.color,
-      })),
+      p_materials: mapMaterialsForRpc(validatedFields.data.materials || []),
       p_description: validatedFields.data.description || null,
       p_price: validatedFields.data.price || null,
-    } as any)
+    })
 
     if (error) throw error
 
@@ -235,9 +241,10 @@ export async function updateProduct(
       revalidateWorkspaceAppPaths(workspaceSlug, ['/produtos'])
     }
     return actionSuccess('Produto atualizado!')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to update product:', error)
-    return actionError('Erro ao atualizar produto: ' + (error.message || 'Erro desconhecido'))
+    const message = error instanceof Error ? error.message : 'Erro desconhecido'
+    return actionError(`Erro ao atualizar produto: ${message}`)
   }
 }
 
@@ -247,12 +254,13 @@ export async function deleteProduct(id: string): Promise<ActionResponse> {
 
   try {
     const supabase = await createClient()
+    const db = supabase as any
     const workspaceSlug = user.tenant?.slug
 
-    const { error } = await (supabase as any).rpc('delete_product', {
+    const { error } = await db.rpc('delete_product', {
       p_product_id: id,
       p_tenant_id: user.tenantId,
-    } as any)
+    })
 
     if (error) throw error
 
