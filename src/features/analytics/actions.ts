@@ -1,11 +1,22 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
 import { calculateStockAlerts } from '@/lib/inventory'
-// Self-import removed
 
-// Helper to get start/end of period
+type OrderMetricRow = { status: string; totalValue: number | string; createdAt?: string }
+type MaterialMetricRow = {
+  quantity: number | string
+  cost?: number | string | null
+  minQuantity?: number
+}
+type ActivityLogRow = Record<string, unknown>
+type TopProductsRpcRow = {
+  productId: string
+  productName?: string | null
+  totalQuantity: number | string
+}
+
 function getPeriodDates(days: number) {
   const end = new Date()
   const start = new Date()
@@ -19,8 +30,9 @@ export async function getSalesMetrics(days: number = 30) {
 
   const { start } = getPeriodDates(days)
   const supabase = await createClient()
+  const db = supabase as any
 
-  const { data: orders, error } = await (supabase as any)
+  const { data: orders, error } = await db
     .from('Order')
     .select('*')
     .eq('tenantId', user.tenantId)
@@ -31,24 +43,24 @@ export async function getSalesMetrics(days: number = 30) {
     return null
   }
 
-  const totalOrders = orders.length
-  const totalRevenue = (orders as any[]).reduce((sum, order) => sum + Number(order.totalValue), 0)
+  const rows = (orders || []) as OrderMetricRow[]
+  const totalOrders = rows.length
+  const totalRevenue = rows.reduce((sum, order) => sum + Number(order.totalValue), 0)
 
-  // Group by status
-  const ordersByStatus = Object.values(
-    (orders as any[]).reduce((acc: any, order) => {
-      const status = order.status
-      if (!acc[status]) acc[status] = { status, count: 0, value: 0 }
-      acc[status].count++
-      acc[status].value += Number(order.totalValue)
-      return acc
-    }, {})
-  )
+  const groupedByStatus = rows.reduce<
+    Record<string, { status: string; count: number; value: number }>
+  >((acc, order) => {
+    const status = order.status
+    if (!acc[status]) acc[status] = { status, count: 0, value: 0 }
+    acc[status].count += 1
+    acc[status].value += Number(order.totalValue)
+    return acc
+  }, {})
 
   return {
     totalOrders,
     totalRevenue,
-    ordersByStatus,
+    ordersByStatus: Object.values(groupedByStatus),
   }
 }
 
@@ -57,10 +69,9 @@ export async function getInventoryMetrics() {
   if (!user) return null
 
   const supabase = await createClient()
+  const db = supabase as any
 
-  // We can use Promise.all for parallel fetching
-  // Get total materials and value (approximate value based on current cost * quantity)
-  const { data: materials, error } = await (supabase as any)
+  const { data: materials, error } = await db
     .from('Material')
     .select('quantity, cost, minQuantity')
     .eq('tenantId', user.tenantId)
@@ -70,20 +81,19 @@ export async function getInventoryMetrics() {
     return null
   }
 
-  const totalMaterials = materials.length
-  const totalValue = (materials as any[]).reduce(
-    (sum, m) => sum + Number(m.cost || 0) * Number(m.quantity || 0),
+  const rows = (materials || []) as MaterialMetricRow[]
+  const totalMaterials = rows.length
+  const totalValue = rows.reduce(
+    (sum, material) => sum + Number(material.cost || 0) * Number(material.quantity || 0),
     0
   )
 
-  // Use shared utility for alerts count
   const alerts = await calculateStockAlerts(user.tenantId)
-  const lowStockCount = alerts.length
 
   return {
     totalMaterials,
     totalValue,
-    lowStockCount,
+    lowStockCount: alerts.length,
   }
 }
 
@@ -92,9 +102,9 @@ export async function getRecentActivity(limit: number = 10) {
   if (!user) return []
 
   const supabase = await createClient()
+  const db = supabase as any
 
-  // Fetch audit logs as activity
-  const { data: logs, error } = await (supabase as any)
+  const { data: logs, error } = await db
     .from('AuditLog')
     .select('*, user:User(name)')
     .eq('tenantId', user.tenantId)
@@ -106,20 +116,20 @@ export async function getRecentActivity(limit: number = 10) {
     return []
   }
 
-  return logs
+  return (logs || []) as ActivityLogRow[]
 }
 
 export async function getMonthlyRevenue() {
   const user = await getCurrentUser()
   if (!user) return []
 
-  // Get orders from the last 6 months
   const sixMonthsAgo = new Date()
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
   const supabase = await createClient()
+  const db = supabase as any
 
-  const { data: orders, error } = await (supabase as any)
+  const { data: orders, error } = await db
     .from('Order')
     .select('totalValue, createdAt')
     .eq('tenantId', user.tenantId)
@@ -131,16 +141,13 @@ export async function getMonthlyRevenue() {
     return []
   }
 
-  // Aggregate by month in JS
-  const monthlyData = (orders || []).reduce(
-    (acc: any, order: any) => {
-      const date = new Date(order.createdAt)
-      const month = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
-      acc[month] = (acc[month] || 0) + Number(order.totalValue)
-      return acc
-    },
-    {} as Record<string, number>
-  )
+  const rows = (orders || []) as Array<{ totalValue: number | string; createdAt: string }>
+  const monthlyData = rows.reduce<Record<string, number>>((acc, order) => {
+    const date = new Date(order.createdAt)
+    const month = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+    acc[month] = (acc[month] || 0) + Number(order.totalValue)
+    return acc
+  }, {})
 
   return Object.entries(monthlyData).map(([name, value]) => ({ name, value }))
 }
@@ -151,23 +158,25 @@ export async function getTopProducts(limit: number = 5) {
 
   try {
     const supabase = await createClient()
+    const db = supabase as any
 
-    // Use RPC for aggregation
-    const { data, error } = await (supabase as any).rpc('get_top_products', {
+    const { data, error } = await db.rpc('get_top_products', {
       p_tenant_id: user.tenantId,
       p_limit: limit,
-    } as any)
+    })
 
     if (error) throw error
 
-    return ((data as any[]) || []).map((item: any) => ({
+    const rows = (data || []) as TopProductsRpcRow[]
+
+    return rows.map(item => ({
       productId: item.productId,
       productName: item.productName || 'Desconhecido',
       quantity: Number(item.totalQuantity),
       revenue: 0,
     }))
-  } catch (e) {
-    console.error('Error fetching top products:', e)
+  } catch (error) {
+    console.error('Error fetching top products:', error)
     return []
   }
 }
@@ -177,11 +186,11 @@ export async function getLowStockMaterials() {
   if (!user) return []
 
   const alerts = await calculateStockAlerts(user.tenantId)
-  return alerts.map(a => ({
-    id: a.id,
-    name: a.name,
-    unit: a.unit,
-    quantity: a.currentQuantity,
-    minQuantity: a.minQuantity,
+  return alerts.map(alert => ({
+    id: alert.id,
+    name: alert.name,
+    unit: alert.unit,
+    quantity: alert.currentQuantity,
+    minQuantity: alert.minQuantity,
   }))
 }
