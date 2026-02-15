@@ -28,8 +28,3 @@ Documento atualizado para refletir o estado atual do Atelis.
 2. Alterar status e validar mensagem correspondente.
 3. Simular falha de credencial e validar tratamento de erro.
 4. Validar bloqueio por limite de plano.
-
-## Nota de limpeza
-
-- Referencias antigas a `src/components/whatsapp-button.tsx` foram removidas deste documento.
-- Caminhos antigos como `src/app/dashboard/pedidos/page.tsx` nao representam a estrutura atual.

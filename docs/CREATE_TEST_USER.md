@@ -1,6 +1,6 @@
-﻿# Como criar usuário de teste
+# Como criar usuario de teste
 
-## Pré-requisitos
+## Pre-requisitos
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -9,21 +9,21 @@
 ## Passo a passo (sem script)
 
 1. Abra o Supabase Dashboard.
-2. Vá em `Authentication > Users`.
-3. Crie o usuário:
+2. Va em `Authentication > Users`.
+3. Crie o usuario:
 
-- Email: `test@ateliefacil.com.br`
+- Email: `test@atelis.local`
 - Senha: `TestPassword123!`
 
-4. Copie o `id` do usuário criado.
-5. Em `Table Editor`, crie um tenant e o vínculo do usuário com esse tenant nas tabelas do projeto.
+4. Copie o `id` do usuario criado.
+5. Em `Table Editor`, crie um tenant e o vinculo do usuario com esse tenant nas tabelas do projeto.
 
-## Variáveis para E2E
+## Variaveis para E2E
 
 No `.env.local`, defina:
 
 ```env
-TEST_USER_EMAIL=test@ateliefacil.com.br
+TEST_USER_EMAIL=test@atelis.local
 TEST_USER_PASSWORD=TestPassword123!
 TEST_WORKSPACE_SLUG=atelis
 ```
@@ -31,5 +31,5 @@ TEST_WORKSPACE_SLUG=atelis
 ## Validar
 
 - Acesse `http://localhost:3000/login`
-- Faça login com o usuário de teste
+- Faca login com o usuario de teste
 - Rode `npm run test:e2e`
