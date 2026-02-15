@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/auth'
 import type {
   ActionResponse,
@@ -9,10 +8,9 @@ import type {
   ProductInventoryMovement,
   ProductInventoryMovementType,
 } from '@/lib/types'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
-/**
- * Obtém o estoque de todos os produtos do tenant
- */
 export async function getProductsInventory(): Promise<ProductInventory[]> {
   const user = await getCurrentUser()
   if (!user) return []
@@ -36,9 +34,6 @@ export async function getProductsInventory(): Promise<ProductInventory[]> {
   return data as any[]
 }
 
-/**
- * Ajusta o estoque de um produto (Entrada, Saída ou Ajuste)
- */
 export async function adjustProductStock(
   productId: string,
   quantity: number,
@@ -47,17 +42,11 @@ export async function adjustProductStock(
   reference?: string
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const supabase = await createClient()
 
-    // Usar uma transação ou RPC para garantir atomicidade
-    // Por simplicidade aqui, usaremos o padrão de insert na tabela de movimentação
-    // e o banco cuidará do saldo via trigger (se configurado) ou atualizaremos manualmente.
-    // Como ainda não temos tigger de saldo automático para produto pronto, faremos manual.
-
-    // 1. Registrar movimento
     const { error: moveError } = await (supabase as any).from('ProductInventoryMovement').insert({
       tenantId: user.tenantId,
       productId,
@@ -67,11 +56,8 @@ export async function adjustProductStock(
       reference,
       createdBy: user.id,
     })
-
     if (moveError) throw moveError
 
-    // 2. Atualizar saldo na tabela ProductInventory
-    // Primeiro verifica se existe registro
     const { data: currentInv } = await (supabase as any)
       .from('ProductInventory')
       .select('quantity')
@@ -88,7 +74,6 @@ export async function adjustProductStock(
         .update({ quantity: newTotal, updatedAt: new Date().toISOString() })
         .eq('productId', productId)
         .eq('tenantId', user.tenantId)
-
       if (updError) throw updError
     } else {
       const { error: insError } = await (supabase as any).from('ProductInventory').insert({
@@ -97,21 +82,20 @@ export async function adjustProductStock(
         quantity: newTotal,
         minQuantity: 0,
       })
-
       if (insError) throw insError
     }
 
-    revalidatePath('/estoque-produtos')
-    return { success: true, message: 'Estoque atualizado com sucesso!' }
+    const slug = user.tenant?.slug
+    if (slug) {
+      revalidateWorkspaceAppPaths(slug, ['/estoque-produtos'])
+    }
+    return actionSuccess('Estoque atualizado com sucesso!')
   } catch (error: any) {
     console.error('Error adjusting product stock:', error)
-    return { success: false, message: 'Erro ao atualizar estoque: ' + error.message }
+    return actionError('Erro ao atualizar estoque: ' + error.message)
   }
 }
 
-/**
- * Obtém alertas de estoque baixo de produtos acabados
- */
 export async function getProductStockAlerts() {
   const user = await getCurrentUser()
   if (!user) return []
@@ -142,7 +126,7 @@ export async function getProductStockAlerts() {
       name: item.product?.name || 'Produto Desconhecido',
       currentQuantity: item.quantity,
       minQuantity: item.minQuantity,
-      unit: 'un', // Produtos acabados são geralmente em unidades
+      unit: 'un',
       severity:
         item.quantity <= 0
           ? 'critical'
@@ -152,9 +136,6 @@ export async function getProductStockAlerts() {
     }))
 }
 
-/**
- * Obtém todas as movimentações de estoque de produtos acabados
- */
 export async function getAllProductInventoryMovements(): Promise<ProductInventoryMovement[]> {
   const user = await getCurrentUser()
   if (!user) return []
@@ -180,21 +161,18 @@ export async function getAllProductInventoryMovements(): Promise<ProductInventor
   return data as any[]
 }
 
-/**
- * Registra uma entrada de estoque de produtos acabados (Compra)
- */
 export async function createProductStockEntry(
   prevState: any,
   formData: FormData
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   let itemsRaw = []
   try {
     itemsRaw = JSON.parse((formData.get('items') as string) || '[]')
-  } catch (e) {
-    return { success: false, message: 'Erro ao processar itens da entrada' }
+  } catch {
+    return actionError('Erro ao processar itens da entrada')
   }
 
   const rawData = {
@@ -206,8 +184,8 @@ export async function createProductStockEntry(
     installments: parseInt((formData.get('installments') as string) || '1'),
   }
 
-  if (!rawData.supplierName) return { success: false, message: 'Nome do fornecedor é obrigatório' }
-  if (rawData.items.length === 0) return { success: false, message: 'Adicione pelo menos um item' }
+  if (!rawData.supplierName) return actionError('Nome do fornecedor é obrigatório')
+  if (rawData.items.length === 0) return actionError('Adicione pelo menos um item')
 
   const totalCost =
     rawData.items.reduce((acc: number, item: any) => acc + item.quantity * item.unitCost, 0) +
@@ -216,7 +194,7 @@ export async function createProductStockEntry(
   const supabase = await createClient()
 
   try {
-    const { data, error } = await (supabase as any).rpc('create_product_stock_entry_transaction', {
+    const { error } = await (supabase as any).rpc('create_product_stock_entry_transaction', {
       p_tenant_id: user.tenantId,
       p_supplier_name: rawData.supplierName,
       p_freight_cost: rawData.freightCost,
@@ -229,10 +207,13 @@ export async function createProductStockEntry(
 
     if (error) throw error
 
-    revalidatePath('/estoque-produtos')
-    return { success: true, message: 'Entrada de estoque registrada com sucesso!' }
+    const slug = user.tenant?.slug
+    if (slug) {
+      revalidateWorkspaceAppPaths(slug, ['/estoque-produtos'])
+    }
+    return actionSuccess('Entrada de estoque registrada com sucesso!')
   } catch (error: any) {
     console.error('Create Product Stock Entry Error:', error)
-    return { success: false, message: 'Erro ao registrar entrada: ' + error.message }
+    return actionError('Erro ao registrar entrada: ' + error.message)
   }
 }

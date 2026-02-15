@@ -1,22 +1,31 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/auth'
 import { ActionResponse, MaterialQueryResponse } from '@/lib/types'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 const materialSchema = z.object({
   name: z.string().min(1, 'Nome do material é obrigatório'),
   unit: z.string().min(1, 'Unidade é obrigatória'),
   minQuantity: z.coerce.number().optional().nullable(),
   supplierId: z.string().optional().nullable(),
-  colors: z.string().optional(), // Comma separated or single string
+  colors: z.string().optional(),
 })
+
+function parseColors(colors?: string | null) {
+  if (!colors) return []
+  return colors
+    .split(',')
+    .map(color => color.trim())
+    .filter(color => color.length > 0)
+}
 
 export async function createMaterial(prevState: any, formData: FormData): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   const rawData = {
     name: formData.get('name'),
@@ -27,25 +36,12 @@ export async function createMaterial(prevState: any, formData: FormData): Promis
   }
 
   const validated = materialSchema.safeParse(rawData)
-
   if (!validated.success) {
-    return {
-      success: false,
-      message: 'Erro de validação',
-      errors: validated.error.flatten().fieldErrors,
-    }
+    return actionError('Erro de validação', validated.error.flatten().fieldErrors)
   }
 
   const { name, unit, minQuantity, supplierId, colors } = validated.data
-
-  // Parse colors: split by comma if present
-  const colorArray = colors
-    ? colors
-        .split(',')
-        .map(c => c.trim())
-        .filter(c => c.length > 0)
-    : []
-
+  const colorArray = parseColors(colors)
   const supabase = await createClient()
 
   try {
@@ -53,7 +49,7 @@ export async function createMaterial(prevState: any, formData: FormData): Promis
       tenantId: user.tenantId,
       name,
       unit,
-      quantity: 0, // Deprecated, always start with 0. Stock is managed via Movements.
+      quantity: 0,
       minQuantity: minQuantity || null,
       supplierId: supplierId || null,
       colors: colorArray,
@@ -61,19 +57,19 @@ export async function createMaterial(prevState: any, formData: FormData): Promis
 
     if (error) {
       console.error('Database Error:', error)
-      return { success: false, message: 'Erro ao criar material' }
+      return actionError('Erro ao criar material')
     }
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/estoque`)
-    return { success: true, message: 'Material criado com sucesso!' }
+    const slug = user.tenant?.slug
+    if (slug) {
+      revalidateWorkspaceAppPaths(slug, ['/estoque'])
+    }
+    return actionSuccess('Material criado com sucesso!')
   } catch (error) {
-    return { success: false, message: 'Erro no servidor' }
+    console.error('Server Error:', error)
+    return actionError('Erro no servidor')
   }
 }
-
-// ... existing imports
-// Add updateMaterial logic
 
 export async function updateMaterial(
   id: string,
@@ -81,7 +77,7 @@ export async function updateMaterial(
   formData: FormData
 ): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   const rawData = {
     name: formData.get('name'),
@@ -93,20 +89,11 @@ export async function updateMaterial(
 
   const validated = materialSchema.safeParse(rawData)
   if (!validated.success) {
-    return {
-      success: false,
-      message: 'Erro de validação',
-      errors: validated.error.flatten().fieldErrors,
-    }
+    return actionError('Erro de validação', validated.error.flatten().fieldErrors)
   }
 
   const { name, unit, minQuantity, supplierId, colors } = validated.data
-  const colorArray = colors
-    ? colors
-        .split(',')
-        .map(c => c.trim())
-        .filter(c => c.length > 0)
-    : []
+  const colorArray = parseColors(colors)
 
   const supabase = await createClient()
   const { error } = await (supabase as any)
@@ -123,17 +110,19 @@ export async function updateMaterial(
 
   if (error) {
     console.error('Update Error:', error)
-    return { success: false, message: 'Erro ao atualizar material' }
+    return actionError('Erro ao atualizar material')
   }
 
-  const slug = (user as any).tenant?.slug
-  revalidatePath(`/${slug}/app/estoque`)
-  return { success: true, message: 'Material atualizado com sucesso!' }
+  const slug = user.tenant?.slug
+  if (slug) {
+    revalidateWorkspaceAppPaths(slug, ['/estoque'])
+  }
+  return actionSuccess('Material atualizado com sucesso!')
 }
 
 export async function deleteMaterial(id: string) {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   const supabase = await createClient()
   const { error } = await (supabase as any)
@@ -143,12 +132,14 @@ export async function deleteMaterial(id: string) {
     .eq('tenantId', user.tenantId)
 
   if (error) {
-    return { success: false, message: 'Erro ao deletar material' }
+    return actionError('Erro ao deletar material')
   }
 
-  const slug = (user as any).tenant?.slug
-  revalidatePath(`/${slug}/app/estoque`)
-  return { success: true, message: 'Material deletado' }
+  const slug = user.tenant?.slug
+  if (slug) {
+    revalidateWorkspaceAppPaths(slug, ['/estoque'])
+  }
+  return actionSuccess('Material deletado')
 }
 
 export async function getMaterials() {
@@ -157,7 +148,6 @@ export async function getMaterials() {
 
   const supabase = await createClient()
 
-  // Fetch materials with Supplier
   const { data: materialsData, error: materialsError } = await supabase
     .from('Material')
     .select(
@@ -174,16 +164,12 @@ export async function getMaterials() {
     return []
   }
 
-  // Cast seguro para a estrutura do banco
   const rawData = materialsData as unknown as MaterialQueryResponse[]
 
-  // Mapeamento para o tipo de domínio MaterialWithDetails
-  return rawData.map(m => ({
-    ...m,
-    supplierName: m.Supplier?.name,
-    // Use the database cost column (which now stores MPM)
-    cost: m.cost || 0,
-    // Ensure colors is an array
-    colors: Array.isArray(m.colors) ? m.colors : [],
+  return rawData.map(material => ({
+    ...material,
+    supplierName: material.Supplier?.name,
+    cost: material.cost || 0,
+    colors: Array.isArray(material.colors) ? material.colors : [],
   }))
 }

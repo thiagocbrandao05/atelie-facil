@@ -3,10 +3,10 @@
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
-import { revalidatePath } from 'next/cache'
 import { MaterialSchema, CustomerSchema, SupplierSchema } from '@/lib/schemas'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
-// Custom schema for Stock Balance import
 const StockBalanceSchema = z.object({
   materialName: z.string().min(1, 'Nome do material é obrigatório'),
   quantity: z.coerce.number().min(0, 'Quantidade deve ser positiva'),
@@ -15,15 +15,13 @@ const StockBalanceSchema = z.object({
 
 export async function importMaterialsAction(data: any[]) {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const supabase = await createClient()
     const tenantId = user.tenantId
 
-    // Validate all items first
     const validatedData = data.map(item => MaterialSchema.parse(item))
-
     const materialsToInsert = validatedData.map(item => ({
       ...item,
       tenantId,
@@ -31,10 +29,8 @@ export async function importMaterialsAction(data: any[]) {
     }))
 
     const { error } = await supabase.from('Material').insert(materialsToInsert as any)
-
     if (error) throw error
 
-    // Audit Log
     await supabase.from('AuditLog').insert({
       tenantId,
       userId: user.id,
@@ -43,34 +39,30 @@ export async function importMaterialsAction(data: any[]) {
       metadata: { count: data.length, status: 'SUCCESS' },
     } as any)
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/estoque`)
-    return { success: true, message: `${data.length} materiais importados com sucesso!` }
+    const slug = user.tenant?.slug
+    if (slug) {
+      revalidateWorkspaceAppPaths(slug, ['/estoque'])
+    }
+    return actionSuccess(`${data.length} materiais importados com sucesso!`)
   } catch (error: any) {
     console.error('Bulk Import Materials Error:', error)
-    return {
-      success: false,
-      message: `Erro na importação: ${error.message || 'Erro desconhecido'}`,
-    }
+    return actionError(`Erro na importação: ${error.message || 'Erro desconhecido'}`)
   }
 }
 
 export async function importStockAction(data: any[]) {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const supabase = await createClient()
     const tenantId = user.tenantId
 
-    // Validate data
     const validatedData = data.map(item => StockBalanceSchema.parse(item))
-
     let successCount = 0
     const errors: string[] = []
 
     for (const item of validatedData) {
-      // Find material by name
       const { data: material, error: findError } = await supabase
         .from('Material')
         .select('id, quantity')
@@ -83,7 +75,6 @@ export async function importStockAction(data: any[]) {
         continue
       }
 
-      // Update material quantity (Absolute set for Balance Import)
       const { error: updateError } = await (supabase as any)
         .from('Material')
         .update({ quantity: item.quantity } as any)
@@ -94,7 +85,6 @@ export async function importStockAction(data: any[]) {
         continue
       }
 
-      // Record movement
       await (supabase as any).from('InventoryMovement').insert({
         tenantId,
         materialId: (material as any).id,
@@ -107,7 +97,6 @@ export async function importStockAction(data: any[]) {
       successCount++
     }
 
-    // Audit Log
     await supabase.from('AuditLog').insert({
       tenantId,
       userId: user.id,
@@ -116,8 +105,10 @@ export async function importStockAction(data: any[]) {
       metadata: { successCount, errorCount: errors.length },
     } as any)
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/estoque`)
+    const slug = user.tenant?.slug
+    if (slug) {
+      revalidateWorkspaceAppPaths(slug, ['/estoque'])
+    }
 
     if (errors.length > 0) {
       return {
@@ -127,23 +118,22 @@ export async function importStockAction(data: any[]) {
       }
     }
 
-    return { success: true, message: `${successCount} saldos de estoque atualizados!` }
+    return actionSuccess(`${successCount} saldos de estoque atualizados!`)
   } catch (error: any) {
     console.error('Bulk Import Stock Error:', error)
-    return { success: false, message: `Erro na importação: ${error.message}` }
+    return actionError(`Erro na importação: ${error.message}`)
   }
 }
 
 export async function importCustomersAction(data: any[]) {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const supabase = await createClient()
     const tenantId = user.tenantId
 
     const validatedData = data.map(item => CustomerSchema.parse(item))
-
     const toInsert = validatedData.map(item => ({
       ...item,
       tenantId,
@@ -151,7 +141,6 @@ export async function importCustomersAction(data: any[]) {
     }))
 
     const { error } = await supabase.from('Customer').insert(toInsert as any)
-
     if (error) throw error
 
     await supabase.from('AuditLog').insert({
@@ -162,24 +151,25 @@ export async function importCustomersAction(data: any[]) {
       metadata: { count: data.length },
     } as any)
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/clientes`)
-    return { success: true, message: `${data.length} clientes importados!` }
+    const slug = user.tenant?.slug
+    if (slug) {
+      revalidateWorkspaceAppPaths(slug, ['/clientes'])
+    }
+    return actionSuccess(`${data.length} clientes importados!`)
   } catch (error: any) {
-    return { success: false, message: `Erro: ${error.message}` }
+    return actionError(`Erro: ${error.message}`)
   }
 }
 
 export async function importSuppliersAction(data: any[]) {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return unauthorizedAction()
 
   try {
     const supabase = await createClient()
     const tenantId = user.tenantId
 
     const validatedData = data.map(item => SupplierSchema.parse(item))
-
     const toInsert = validatedData.map(item => ({
       ...item,
       tenantId,
@@ -187,7 +177,6 @@ export async function importSuppliersAction(data: any[]) {
     }))
 
     const { error } = await supabase.from('Supplier').insert(toInsert as any)
-
     if (error) throw error
 
     await supabase.from('AuditLog').insert({
@@ -198,10 +187,12 @@ export async function importSuppliersAction(data: any[]) {
       metadata: { count: data.length },
     } as any)
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/fornecedores`)
-    return { success: true, message: `${data.length} fornecedores importados!` }
+    const slug = user.tenant?.slug
+    if (slug) {
+      revalidateWorkspaceAppPaths(slug, ['/fornecedores'])
+    }
+    return actionSuccess(`${data.length} fornecedores importados!`)
   } catch (error: any) {
-    return { success: false, message: `Erro: ${error.message}` }
+    return actionError(`Erro: ${error.message}`)
   }
 }

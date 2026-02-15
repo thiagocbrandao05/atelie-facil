@@ -3,7 +3,6 @@
 import { headers } from 'next/headers'
 
 import { z } from 'zod'
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWhatsAppTemplateMessage } from '@/lib/whatsapp-cloud'
@@ -11,6 +10,8 @@ import { formatCurrency } from '@/lib/formatters'
 import { getCurrentUser } from '@/lib/auth'
 import type { OrderStatus } from '@/lib/types'
 import { validateCSRF } from '@/lib/security'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 // ==============================================================================
 // CONFIGURATION ACTIONS
@@ -25,13 +26,13 @@ export async function saveWhatsAppCredentials(prevState: any, formData: FormData
   console.log('[WHATSAPP] Saving credentials')
   const csrf = await validateCSRF()
   if (!csrf.valid) {
-    return { success: false, message: csrf.error || 'CSRF inválido.' }
+    return actionError(csrf.error || 'CSRF inválido.')
   }
 
   const user = await getCurrentUser()
   const tenantId = user?.tenantId
   if (!tenantId) {
-    return { success: false, message: 'Não autorizado.' }
+    return unauthorizedAction()
   }
 
   try {
@@ -57,15 +58,17 @@ export async function saveWhatsAppCredentials(prevState: any, formData: FormData
       throw error
     }
 
-    const slug = (user as any).tenant?.slug
-    revalidatePath(`/${slug}/app/configuracoes`)
-    return { success: true, message: 'Credenciais do WhatsApp salvas com sucesso!' }
+    const slug = user?.tenant?.slug
+    if (slug) {
+      revalidateWorkspaceAppPaths(slug, ['/configuracoes'])
+    }
+    return actionSuccess('Credenciais do WhatsApp salvas com sucesso!')
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, message: error.issues[0]?.message || 'Dados invalidos' }
+      return actionError(error.issues[0]?.message || 'Dados inválidos')
     }
     console.error('[WHATSAPP] Unexpected error:', error)
-    return { success: false, message: 'Erro ao salvar credenciais. Tente novamente.' }
+    return actionError('Erro ao salvar credenciais. Tente novamente.')
   }
 }
 
@@ -74,13 +77,13 @@ export async function validateWhatsAppCredentials() {
   const user = await getCurrentUser()
   const tenantId = user?.tenantId
   if (!tenantId) {
-    return { success: false, message: 'Não autorizado.' }
+    return unauthorizedAction()
   }
 
   try {
     await import('./limits').then(m => m.ensureCanSendTestMessage(tenantId))
   } catch (error: any) {
-    return { success: false, message: error.message }
+    return actionError(error.message)
   }
 
   const supabase = await createClient()
@@ -95,7 +98,7 @@ export async function validateWhatsAppCredentials() {
     !(settings as any)?.whatsappPhoneNumberId ||
     !(settings as any)?.whatsappAccessToken
   ) {
-    return { success: false, message: 'Credenciais não encontradas. Salve antes de validar.' }
+    return actionError('Credenciais não encontradas. Salve antes de validar.')
   }
 
   try {
@@ -109,11 +112,11 @@ export async function validateWhatsAppCredentials() {
     if (!response.ok) {
       console.error('[WHATSAPP] API Validation Error:', data)
       const errorMsg = data.error?.message || 'Erro desconhecido na API do WhatsApp'
-      return { success: false, message: `Falha na validação: ${errorMsg}` }
+      return actionError(`Falha na validação: ${errorMsg}`)
     }
 
     if (data.id !== (settings as any).whatsappPhoneNumberId) {
-      return { success: false, message: 'ID retornado pela API não corresponde ao ID salvo.' }
+      return actionError('ID retornado pela API não corresponde ao ID salvo.')
     }
 
     // Successfully validated
@@ -128,16 +131,10 @@ export async function validateWhatsAppCredentials() {
     // Increment usage
     await import('./limits').then(m => m.incrementWhatsAppUsage(tenantId, 'test', 1))
 
-    return {
-      success: true,
-      message: `Conexão validada com sucesso! Conta: ${verifiedName}`,
-    }
+    return actionSuccess(`Conexão validada com sucesso! Conta: ${verifiedName}`)
   } catch (error) {
     console.error('[WHATSAPP] Connection Error:', error)
-    return {
-      success: false,
-      message: 'Erro de conexão com a API do WhatsApp. Verifique sua internet.',
-    }
+    return actionError('Erro de conexão com a API do WhatsApp. Verifique sua internet.')
   }
 }
 
@@ -158,9 +155,9 @@ const STATUS_TEMPLATE_KEYS: Partial<Record<OrderStatus, keyof SettingsMessageTem
 
 const STATUS_FALLBACK_MESSAGES: Partial<Record<OrderStatus, string>> = {
   PENDING: 'Olá {cliente}, seu pedido #{pedido} foi aprovado e está na fila de produção!',
-  PRODUCING: 'Olá {cliente}, seu pedido #{pedido} acaba de entrar em produção! 🎨',
-  READY: 'Olá {cliente}, boas notícias! Seu pedido #{pedido} está pronto para retirada! ✨',
-  DELIVERED: 'Olá {cliente}, seu pedido #{pedido} foi entregue. Muito obrigado pela confiança! ❤️',
+  PRODUCING: 'Olá {cliente}, seu pedido #{pedido} acaba de entrar em produção! ??',
+  READY: 'Olá {cliente}, boas notícias! Seu pedido #{pedido} está pronto para retirada! ?',
+  DELIVERED: 'Olá {cliente}, seu pedido #{pedido} foi entregue. Muito obrigado pela confiança! ??',
   QUOTATION: 'Olá {cliente}, aqui está o orçamento dos seus produtos.',
 }
 
@@ -367,11 +364,11 @@ async function insertNotificationLog(params: {
 
 export async function enqueueOrderStatusNotification(context: OrderNotificationContext) {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado.' }
+  if (!user) return unauthorizedAction()
 
   const { order, settings, error } = await buildOrderNotificationPayload(context)
   if (error || !order) {
-    return { success: false, message: error || 'Pedido não encontrado.' }
+    return actionError(error || 'Pedido não encontrado.')
   }
 
   const { messageBody, templateKey, pdfLink } = await buildMessage({
@@ -533,7 +530,7 @@ export async function sendWhatsAppMessage({
   imageUrl?: string
 }) {
   const user = await getCurrentUser()
-  if (!user?.tenantId) return { success: false, message: 'Não autorizado' }
+  if (!user?.tenantId) return unauthorizedAction()
 
   // Validar se o plano do tenant tem acesso à API WhatsApp
   const { hasWhatsAppAPI } = await import('@/features/subscription/utils')
@@ -542,11 +539,9 @@ export async function sendWhatsAppMessage({
   const tenantPlan = await getCurrentTenantPlan()
 
   if (!tenantPlan || !hasWhatsAppAPI(tenantPlan.plan)) {
-    return {
-      success: false,
-      message:
-        'API WhatsApp disponível apenas no plano Premium. Use o botão de notificação manual.',
-    }
+    return actionError(
+      'API WhatsApp disponível apenas no plano Premium. Use o botão de notificação manual.'
+    )
   }
 
   // Check limits (Transactional? Or is this generic?)
@@ -562,9 +557,15 @@ export async function sendWhatsAppMessage({
     messageBody: message,
   })
 
+  if (!result.success) {
+    return {
+      ...actionError(result.errorMessage || 'Falha'),
+      providerMessageId: result.providerMessageId,
+    }
+  }
+
   return {
-    success: result.success,
-    message: result.errorMessage || (result.success ? 'Enviado' : 'Falha'),
+    ...actionSuccess('Enviado'),
     providerMessageId: result.providerMessageId,
   }
 }

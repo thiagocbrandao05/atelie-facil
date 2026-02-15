@@ -12,20 +12,24 @@ import { KanbanBoard } from '@/components/orders/kanban-board'
 import { LayoutGrid, List } from 'lucide-react'
 import { WhatsAppNotifyWrapper } from '@/features/whatsapp/components/WhatsAppNotifyWrapper'
 import { getCurrentTenantPlan } from '@/features/subscription/actions'
-
-const STATUS_LABELS: Record<string, string> = {
-  QUOTATION: 'Orçamento',
-  PENDING: 'Aguardando início',
-  PRODUCING: 'Em produção',
-  READY: 'Pronto para entrega',
-  DELIVERED: 'Entregue',
-}
+import { ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from '@/lib/constants'
 
 function getSafePage(value: string | string[] | undefined): number {
   const raw = Array.isArray(value) ? value[0] : value
   const parsed = Number(raw)
   if (!Number.isFinite(parsed) || parsed < 1) return 1
   return Math.floor(parsed)
+}
+
+function getOrderBadgeVariant(status: string): 'default' | 'outline' | 'secondary' | 'destructive' {
+  const statusKey = status as keyof typeof ORDER_STATUS_COLORS
+  const variant = ORDER_STATUS_COLORS[statusKey]
+
+  if (variant === 'default' || variant === 'secondary' || variant === 'destructive') {
+    return variant
+  }
+
+  return 'outline'
 }
 
 export default async function PedidosPage(props: {
@@ -85,122 +89,118 @@ export default async function PedidosPage(props: {
             </div>
           ) : (
             <>
-              {orders.map(order => (
-                <Card key={order.id} className="border-border/60 shadow-sm">
-                  <CardHeader className="px-4 pb-3 sm:px-6">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="flex items-center justify-between text-base sm:text-lg">
-                          <span>{order.customer?.name || 'Cliente desconhecido'}</span>
-                          <span className="text-primary/60 font-mono text-xs sm:text-sm">
-                            #{order.orderNumber}
-                          </span>
-                        </CardTitle>
-                        <CardDescription>
-                          {order.dueDate
-                            ? new Intl.DateTimeFormat('pt-BR', {
-                                day: '2-digit',
-                                month: 'long',
-                              }).format(new Date(order.dueDate))
-                            : 'Sem data'}
-                        </CardDescription>
-                      </div>
-                      <div className="space-y-2 text-left sm:text-right">
-                        <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
-                          <Badge
-                            variant={
-                              order.status === 'QUOTATION'
-                                ? 'secondary'
-                                : order.status === 'PENDING'
-                                  ? 'outline'
-                                  : order.status === 'PRODUCING'
-                                    ? 'default'
-                                    : order.status === 'READY'
-                                      ? 'secondary'
-                                      : 'outline'
-                            }
-                          >
-                            {STATUS_LABELS[order.status] || order.status}
-                          </Badge>
+              {orders.map(order => {
+                const statusKey = order.status as keyof typeof ORDER_STATUS_LABELS
 
-                          {order.status === 'QUOTATION' && (
-                            <StatusUpdateButton
-                              id={order.id}
-                              status="PENDING"
-                              label="Aprovar orçamento"
-                            />
-                          )}
-                          {order.status === 'PENDING' && (
-                            <StatusUpdateButton
-                              id={order.id}
-                              status="PRODUCING"
-                              label="Iniciar produção"
-                            />
-                          )}
-                          {order.status === 'PRODUCING' && (
-                            <StatusUpdateButton id={order.id} status="READY" label="Finalizar" />
-                          )}
-                          {order.status === 'READY' && (
-                            <StatusUpdateButton id={order.id} status="DELIVERED" label="Entregar" />
-                          )}
+                return (
+                  <Card key={order.id} className="border-border/60 shadow-sm">
+                    <CardHeader className="px-4 pb-3 sm:px-6">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="flex items-center justify-between text-base sm:text-lg">
+                            <span>{order.customer?.name || 'Cliente desconhecido'}</span>
+                            <span className="text-primary/60 font-mono text-xs sm:text-sm">
+                              #{order.orderNumber}
+                            </span>
+                          </CardTitle>
+                          <CardDescription>
+                            {order.dueDate
+                              ? new Intl.DateTimeFormat('pt-BR', {
+                                  day: '2-digit',
+                                  month: 'long',
+                                }).format(new Date(order.dueDate))
+                              : 'Sem data'}
+                          </CardDescription>
+                        </div>
+                        <div className="space-y-2 text-left sm:text-right">
+                          <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+                            <Badge variant={getOrderBadgeVariant(order.status)}>
+                              {ORDER_STATUS_LABELS[statusKey] || order.status}
+                            </Badge>
 
-                          <DeleteButton
-                            id={order.id}
-                            onDelete={deleteOrder}
-                            className="h-10 w-10 md:h-8 md:w-8"
-                          />
-                        </div>
-                        <div className="font-bold">
-                          {order.totalValue.toLocaleString('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          })}
-                        </div>
-                        {(order.discount ?? 0) > 0 && (
-                          <div className="text-[10px] font-medium text-red-500">
-                            Desc. total:{' '}
-                            {order.discount?.toLocaleString('pt-BR', {
+                            {order.status === 'QUOTATION' && (
+                              <StatusUpdateButton
+                                id={order.id}
+                                status="PENDING"
+                                label="Aprovar orçamento"
+                              />
+                            )}
+                            {order.status === 'PENDING' && (
+                              <StatusUpdateButton
+                                id={order.id}
+                                status="PRODUCING"
+                                label="Iniciar produção"
+                              />
+                            )}
+                            {order.status === 'PRODUCING' && (
+                              <StatusUpdateButton id={order.id} status="READY" label="Finalizar" />
+                            )}
+                            {order.status === 'READY' && (
+                              <StatusUpdateButton
+                                id={order.id}
+                                status="DELIVERED"
+                                label="Entregar"
+                              />
+                            )}
+
+                            <DeleteButton
+                              id={order.id}
+                              onDelete={deleteOrder}
+                              className="h-10 w-10 md:h-8 md:w-8"
+                            />
+                          </div>
+                          <div className="font-bold">
+                            {order.totalValue.toLocaleString('pt-BR', {
                               style: 'currency',
                               currency: 'BRL',
                             })}
                           </div>
-                        )}
+                          {(order.discount ?? 0) > 0 && (
+                            <div className="text-[10px] font-medium text-red-500">
+                              Desc. total:{' '}
+                              {order.discount?.toLocaleString('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4 sm:px-6">
-                    <div className="text-muted-foreground mt-1 text-sm leading-relaxed">
-                      <p className="text-foreground/80 mb-1 font-medium">Itens:</p>
-                      <ul className="list-inside list-disc space-y-1">
-                        {order.items.map((item: any, idx) => (
-                          <li key={idx}>
-                            {item.quantity}x {item.product.name}
-                            {(item.discount ?? 0) > 0 && (
-                              <span className="ml-2 text-[10px] font-medium text-red-500">
-                                (-
-                                {item.discount.toLocaleString('pt-BR', {
-                                  style: 'currency',
-                                  currency: 'BRL',
-                                })}
-                                /un)
-                              </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 sm:px-6">
+                      <div className="text-muted-foreground mt-1 text-sm leading-relaxed">
+                        <p className="text-foreground/80 mb-1 font-medium">Itens:</p>
+                        <ul className="list-inside list-disc space-y-1">
+                          {order.items.map((item: any, idx) => (
+                            <li key={idx}>
+                              {item.quantity}x {item.product.name}
+                              {(item.discount ?? 0) > 0 && (
+                                <span className="ml-2 text-[10px] font-medium text-red-500">
+                                  (-
+                                  {item.discount.toLocaleString('pt-BR', {
+                                    style: 'currency',
+                                    currency: 'BRL',
+                                  })}
+                                  /un)
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
 
-                    <div className="mt-4 border-t pt-4">
-                      <WhatsAppNotifyWrapper
-                        orderId={order.id}
-                        customerPhone={order.customer?.phone}
-                        customerName={order.customer?.name || 'Cliente'}
-                        tenantPlan={tenantPlan.plan}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="mt-4 border-t pt-4">
+                        <WhatsAppNotifyWrapper
+                          orderId={order.id}
+                          customerPhone={order.customer?.phone}
+                          customerName={order.customer?.name || 'Cliente'}
+                          tenantPlan={tenantPlan.plan}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
               <Pagination currentPage={currentPage} totalPages={totalPages} />
             </>
           )}

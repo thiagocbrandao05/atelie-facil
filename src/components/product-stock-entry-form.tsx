@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,6 +15,7 @@ import { Plus, Trash2, ShoppingBag } from 'lucide-react'
 import { createProductStockEntry } from '@/features/inventory-finished/actions'
 import { useFormHandler } from '@/hooks/use-form-handler'
 import { Product, ActionResponse } from '@/lib/types'
+import { useEntryItems } from '@/hooks/use-entry-items'
 
 interface ProductStockEntryFormProps {
   products: Product[]
@@ -32,30 +33,18 @@ export function ProductStockEntryForm({ products = [] }: ProductStockEntryFormPr
   const formRef = useRef<HTMLFormElement>(null)
   const [localState, setLocalState] = useState<ActionResponse>(state)
 
-  const [items, setItems] = useState<EntryItem[]>([
-    { id: '1', productId: '', quantity: 0, unitCost: 0 },
-  ])
+  const createEmptyItem = useCallback(
+    (id: string): EntryItem => ({
+      id,
+      productId: '',
+      quantity: 0,
+      unitCost: 0,
+    }),
+    []
+  )
 
-  const addItem = () => {
-    setItems([...items, { id: crypto.randomUUID(), productId: '', quantity: 0, unitCost: 0 }])
-  }
-
-  const removeItem = (id: string) => {
-    if (items.length > 1) {
-      setItems(items.filter(i => i.id !== id))
-    }
-  }
-
-  const updateItem = (id: string, field: keyof EntryItem, value: any) => {
-    setItems(
-      items.map(i => {
-        if (i.id === id) {
-          return { ...i, [field]: value }
-        }
-        return i
-      })
-    )
-  }
+  const { items, addItem, removeItem, updateItem, resetItems } =
+    useEntryItems<EntryItem>(createEmptyItem)
 
   const totalProducts = items.reduce((acc, item) => acc + (item.quantity * item.unitCost || 0), 0)
   const [freight, setFreight] = useState(0)
@@ -65,13 +54,13 @@ export function ProductStockEntryForm({ products = [] }: ProductStockEntryFormPr
     setLocalState(state)
     if (state.success) {
       const timer = setTimeout(() => {
-        setItems([{ id: '1', productId: '', quantity: 0, unitCost: 0 }])
+        resetItems()
         setFreight(0)
         formRef.current?.reset()
       }, 1000)
       return () => clearTimeout(timer)
     }
-  }, [state])
+  }, [state, resetItems])
 
   return (
     <div className="bg-card overflow-hidden rounded-2xl border border-white/40 shadow-sm">

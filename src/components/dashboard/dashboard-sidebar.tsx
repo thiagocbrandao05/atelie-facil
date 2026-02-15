@@ -2,21 +2,7 @@
 
 import { usePathname, useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  LayoutDashboard,
-  ClipboardList,
-  ShoppingBag,
-  Package,
-  Users,
-  Truck,
-  BarChart3,
-  User,
-  Settings,
-  LogOut,
-  Banknote,
-  Sparkles,
-  Inbox,
-} from 'lucide-react'
+import { User, Settings, LogOut, Sparkles } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,46 +11,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { PlanType } from '@/features/subscription/types'
-import { hasFeature, isReseller } from '@/features/subscription/utils'
 import { createClient } from '@/lib/supabase/client'
-
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/pedidos', label: 'Pedidos', icon: ClipboardList },
-  { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
-  { href: '/dashboard/produtos', label: 'Produtos', icon: ShoppingBag },
-  {
-    href: '/dashboard/estoque',
-    label: 'Estoque MP',
-    icon: Package,
-    profile: 'CREATIVE' as const,
-  },
-  {
-    href: '/dashboard/estoque-produtos',
-    label: 'Pronta Entrega',
-    icon: Inbox,
-    feature: 'INVENTORY_FINISHED' as const,
-  },
-  { href: '/dashboard/fornecedores', label: 'Fornecedores', icon: Truck },
-  {
-    href: '/dashboard/financeiro',
-    label: 'Financeiro',
-    icon: Banknote,
-    feature: 'FINANCIAL' as const,
-  },
-  {
-    href: '/dashboard/relatorios',
-    label: 'Relatórios',
-    icon: BarChart3,
-    feature: 'REPORTS_ADVANCED' as const,
-  },
-  {
-    href: '/dashboard/automacoes',
-    label: 'Automações IA',
-    icon: Sparkles,
-    feature: 'AI_INSIGHTS' as const,
-  },
-]
+import { getVisibleAppNavItems } from '@/lib/app-navigation'
+import { buildWorkspaceAppPath } from '@/lib/workspace-path'
 
 export function DashboardSidebar({
   user,
@@ -84,22 +33,9 @@ export function DashboardSidebar({
   const slug = (params.workspaceSlug as string) || user?.tenant?.slug || 'atelis'
   const plan = (user?.tenant?.plan as PlanType) || 'free_creative'
 
-  const filteredItems = navItems.filter(item => {
-    // Se o item exige um perfil específico (ex: Estoque MP só para Creative)
-    if (item.profile === 'CREATIVE' && isReseller(plan)) return false
-
-    // Se o item exige uma feature específica
-    if (item.feature && !hasFeature(plan, item.feature as any)) return false
-
-    return true
-  })
-
-  const links = filteredItems.map(item => ({
+  const links = getVisibleAppNavItems(plan).map(item => ({
     ...item,
-    href:
-      item.href === '/dashboard'
-        ? `/${slug}/app/dashboard`
-        : `/${slug}/app${item.href.replace('/dashboard', '')}`,
+    href: buildWorkspaceAppPath(slug, item.appPath),
   }))
 
   async function handleLogout() {
@@ -111,7 +47,10 @@ export function DashboardSidebar({
   return (
     <aside className="group/sidebar shadow-primary/5 fixed top-5 bottom-5 left-5 z-50 hidden w-16 flex-col items-center justify-between rounded-2xl border border-white/20 bg-white/60 py-6 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:w-64 md:flex">
       <div className="flex w-full flex-col items-center gap-8">
-        <Link href={`/${slug}/app/dashboard`} className="relative flex items-center justify-center">
+        <Link
+          href={buildWorkspaceAppPath(slug, '/dashboard')}
+          className="relative flex items-center justify-center"
+        >
           <div className="bg-primary text-primary-foreground flex h-10 w-10 items-center justify-center rounded-xl font-black shadow-lg transition-transform hover:scale-105 hover:rotate-6">
             A
           </div>
@@ -188,7 +127,7 @@ export function DashboardSidebar({
           >
             <DropdownMenuItem asChild className="focus:bg-primary/10 rounded-lg p-2.5">
               <Link
-                href={`/${slug}/app/perfil`}
+                href={buildWorkspaceAppPath(slug, '/perfil')}
                 className="flex w-full cursor-pointer items-center text-sm font-bold"
               >
                 <User className="mr-3 h-3.5 w-3.5" />
@@ -197,7 +136,7 @@ export function DashboardSidebar({
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="focus:bg-primary/10 rounded-lg p-2.5">
               <Link
-                href={`/${slug}/app/configuracoes`}
+                href={buildWorkspaceAppPath(slug, '/configuracoes')}
                 className="flex w-full cursor-pointer items-center text-sm font-bold"
               >
                 <Settings className="mr-3 h-3.5 w-3.5" />
@@ -210,7 +149,7 @@ export function DashboardSidebar({
               className="bg-primary/10 text-primary focus:bg-primary/20 rounded-lg p-2.5"
             >
               <Link
-                href={`/${slug}/app/upgrade`}
+                href={buildWorkspaceAppPath(slug, '/upgrade')}
                 className="flex w-full cursor-pointer items-center text-sm font-black"
               >
                 <Sparkles className="fill-primary/20 mr-3 h-3.5 w-3.5" />

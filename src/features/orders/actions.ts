@@ -8,7 +8,6 @@ import type {
   OrderStatus,
   OrderSummary,
 } from '@/lib/types'
-import { revalidatePath } from 'next/cache'
 import { OrderSchema, type OrderInput } from '@/lib/schemas'
 import { calculateOrderTotal } from '@/lib/logic'
 import { getCurrentUser } from '@/lib/auth'
@@ -21,21 +20,19 @@ import {
   checkFinishedStockAvailability,
   deductFinishedStockForOrder,
 } from '@/lib/inventory'
-import { rateLimit, rateLimitPresets } from '@/lib/rate-limiter'
 import { logError } from '@/lib/logger'
 import { enqueueOrderStatusNotification } from '@/features/whatsapp/actions'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
   if (!csrf.valid) {
-    return { success: false, message: csrf.error || 'CSRF inválido.' }
+    return actionError(csrf.error || 'CSRF inválido.')
   }
   return null
 }
 
-/**
- * Get orders with pagination support
- */
 export async function getOrdersPaginated(
   page: number = 1,
   pageSize: number = 20,
@@ -76,7 +73,6 @@ export async function getOrdersPaginated(
     return { data: [], total: 0, page, pageSize, totalPages: 0 }
   }
 
-  // Cast seguro usando unknown primeiro, pois supabase types não estão gerados
   const orders = data as unknown as OrderSummary[]
 
   return {
@@ -88,9 +84,6 @@ export async function getOrdersPaginated(
   }
 }
 
-/**
- * Get orders without pagination (for backward compatibility)
- */
 export async function getOrders() {
   const user = await getCurrentUser()
   if (!user) return []
@@ -118,14 +111,10 @@ export async function getOrders() {
     .eq('tenantId', user.tenantId)
     .order('createdAt', { ascending: false })
 
-  // Cast seguro usando unknown
   const orders = data as unknown as OrderWithDetails[]
   return orders || []
 }
 
-/**
- * Get lightweight order payload optimized for Kanban rendering.
- */
 export async function getOrdersForKanban() {
   const user = await getCurrentUser()
   if (!user) return []
@@ -155,37 +144,35 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
   if (csrfError) return csrfError
 
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado. Faça login novamente.' }
+  if (!user) return unauthorizedAction()
 
   const validatedFields = OrderSchema.safeParse(data)
-
   if (!validatedFields.success) {
-    return {
-      success: false,
-      message: 'Dados inválidos. Verifique os campos.',
-      errors: validatedFields.error.flatten().fieldErrors,
-    }
+    return actionError(
+      'Dados inválidos. Verifique os campos.',
+      validatedFields.error.flatten().fieldErrors
+    )
   }
 
   const { customerId, dueDate, items, status, discount } = validatedFields.data
   const totalValue = calculateOrderTotal(items as any, discount)
   const supabase = await createClient()
+  const workspaceSlug = user.tenant?.slug
 
   try {
-    // Use RPC to create order and items atomically
     const { data: rpcData, error } = await (supabase as any).rpc('create_order', {
       p_tenant_id: user.tenantId,
       p_customer_id: customerId,
       p_status: status || 'PENDING',
       p_due_date: new Date(dueDate).toISOString(),
       p_total_value: totalValue,
-      p_items: items, // Array of { productId, quantity, price, discount }
+      p_items: items,
       p_discount: discount || 0,
     } as any)
 
+    if (error) throw error
     const createdOrderId = (rpcData as any).id as string
 
-    // If it's a reseller, deduct from finished product stock immediately if status is PENDING/PRODUCING
     const { plan } = await getCurrentTenantPlan()
     if (isReseller(plan as any) && (status === 'PENDING' || status === 'PRODUCING')) {
       const stock = await checkFinishedStockAvailability(createdOrderId)
@@ -194,10 +181,10 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
       }
     }
 
-    revalidatePath('/pedidos')
-    revalidatePath('/')
+    if (workspaceSlug) {
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])
+    }
 
-    // ... notification logic ...
     if (status === 'QUOTATION' && createdOrderId) {
       const notificationResult = await enqueueOrderStatusNotification({
         orderId: createdOrderId,
@@ -221,11 +208,10 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
       }
     }
 
-    // Assuming rpcData returns { success, id }
-    return { success: true, message: 'Pedido criado com sucesso!', data: { id: createdOrderId } }
-  } catch (e: any) {
-    console.error('Failed to create order:', e)
-    return { success: false, message: e.message || 'Erro ao criar pedido.' }
+    return actionSuccess('Pedido criado com sucesso!', { id: createdOrderId })
+  } catch (error: any) {
+    console.error('Failed to create order:', error)
+    return actionError(error.message || 'Erro ao criar pedido.')
   }
 }
 
@@ -234,45 +220,35 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
   if (csrfError) return csrfError
 
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado.' }
+  if (!user) return unauthorizedAction()
   const supabase = await createClient()
+  const workspaceSlug = user.tenant?.slug
 
   try {
-    // Get current order status
     const { data: order, error: fetchError } = await (supabase as any)
       .from('Order')
       .select('status')
       .eq('id', id)
       .single()
 
-    if (fetchError || !order) return { success: false, message: 'Pedido não encontrado.' }
+    if (fetchError || !order) return actionError('Pedido não encontrado.')
+    if (order.status === newStatus) return actionSuccess('Status já estava atualizado.')
 
-    if (order.status === newStatus) {
-      return { success: true, message: 'Status já estava atualizado.' }
-    }
-
-    // If moving to PRODUCING and it was PENDING or QUOTATION, check and deduct stock
     if (newStatus === 'PRODUCING' && (order.status === 'PENDING' || order.status === 'QUOTATION')) {
       const { plan } = await getCurrentTenantPlan()
 
       if (isReseller(plan as any)) {
         const stock = await checkFinishedStockAvailability(id)
         if (!stock.isAvailable) {
-          const missing = stock.missingProducts.map(p => p.name).join(', ')
-          return {
-            success: false,
-            message: `Estoque insuficiente para os produtos: ${missing}`,
-          }
+          const missing = stock.missingProducts.map(product => product.name).join(', ')
+          return actionError(`Estoque insuficiente para os produtos: ${missing}`)
         }
         await deductFinishedStockForOrder(id)
       } else {
         const stock = await checkStockAvailability(id)
         if (!stock.isAvailable) {
-          const missing = stock.missingMaterials.map(m => m.name).join(', ')
-          return {
-            success: false,
-            message: `Estoque insuficiente para os materiais: ${missing}`,
-          }
+          const missing = stock.missingMaterials.map(material => material.name).join(', ')
+          return actionError(`Estoque insuficiente para os materiais: ${missing}`)
         }
         await deductStockForOrder(id)
       }
@@ -282,12 +258,11 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
       .from('Order')
       .update({ status: newStatus } as any as never)
       .eq('id', id)
-    // RLS ensures tenant isolation, but eq id is enough
-
     if (updateError) throw updateError
 
-    revalidatePath('/pedidos')
-    revalidatePath('/')
+    if (workspaceSlug) {
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])
+    }
 
     const notificationResult = await enqueueOrderStatusNotification({
       orderId: id,
@@ -310,10 +285,10 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
       )
     }
 
-    return { success: true, message: 'Status atualizado com sucesso!' }
-  } catch (e) {
-    console.error('Failed to update order status:', e)
-    return { success: false, message: 'Erro ao atualizar status do pedido.' }
+    return actionSuccess('Status atualizado com sucesso!')
+  } catch (error) {
+    console.error('Failed to update order status:', error)
+    return actionError('Erro ao atualizar status do pedido.')
   }
 }
 
@@ -322,11 +297,11 @@ export async function deleteOrder(id: string): Promise<ActionResponse> {
   if (csrfError) return csrfError
 
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado.' }
+  if (!user) return unauthorizedAction()
   const supabase = await createClient()
+  const workspaceSlug = user.tenant?.slug
 
   try {
-    // Use RPC for atomic delete (cascading items)
     const { error } = await (supabase as any).rpc('delete_order', {
       p_order_id: id,
       p_tenant_id: user.tenantId,
@@ -334,12 +309,13 @@ export async function deleteOrder(id: string): Promise<ActionResponse> {
 
     if (error) throw error
 
-    revalidatePath('/pedidos')
-    revalidatePath('/')
-    return { success: true, message: 'Pedido excluído com sucesso!' }
-  } catch (e: any) {
-    console.error('Failed to delete order:', e)
-    return { success: false, message: e.message || 'Erro ao excluir pedido.' }
+    if (workspaceSlug) {
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])
+    }
+    return actionSuccess('Pedido excluído com sucesso!')
+  } catch (error: any) {
+    console.error('Failed to delete order:', error)
+    return actionError(error.message || 'Erro ao excluir pedido.')
   }
 }
 
@@ -349,7 +325,6 @@ export async function getOrdersStats() {
 
   const supabase = await createClient()
 
-  // Active orders: Not COMPLETED and Not DELIVERED
   const { count, error } = await (supabase as any)
     .from('Order')
     .select('*', { count: 'exact', head: true })

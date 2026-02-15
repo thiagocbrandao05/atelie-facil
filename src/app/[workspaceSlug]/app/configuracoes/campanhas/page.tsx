@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getWhatsAppUsage } from '@/features/whatsapp/actions'
 import { WhatsAppUsageCard } from '@/features/whatsapp/components/usage-card'
 
-export default async function CampaignsPage({ params }: { params: { workspaceSlug: string } }) {
+export default async function CampaignsPage(props: { params: Promise<{ workspaceSlug: string }> }) {
+  const params = await props.params
   const { workspaceSlug } = params
   const user = await getCurrentUser()
   const supabase = await createClient()

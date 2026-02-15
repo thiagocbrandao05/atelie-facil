@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,6 +17,7 @@ import { useFormHandler } from '@/hooks/use-form-handler'
 import { Material, Supplier } from '@/lib/types'
 import { ActionResponse } from '@/lib/types'
 import { MaterialForm } from '@/components/material-form'
+import { useEntryItems } from '@/hooks/use-entry-items'
 
 interface StockEntryFormProps {
   materials: Material[]
@@ -36,9 +37,19 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
   const formRef = useRef<HTMLFormElement>(null)
   const [localState, setLocalState] = useState<ActionResponse>(state)
 
-  const [items, setItems] = useState<EntryItem[]>([
-    { id: '1', materialId: '', color: '', quantity: 0, totalCost: 0 },
-  ])
+  const createEmptyItem = useCallback(
+    (id: string): EntryItem => ({
+      id,
+      materialId: '',
+      color: '',
+      quantity: 0,
+      totalCost: 0,
+    }),
+    []
+  )
+
+  const { items, addItem, removeItem, updateItem, resetItems } =
+    useEntryItems<EntryItem>(createEmptyItem)
 
   // Helper to get compatible colors for a selected material
   const getMaterialColors = (materialId: string) => {
@@ -68,31 +79,19 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
     }
   }
 
-  const addItem = () => {
-    setItems([
-      ...items,
-      { id: crypto.randomUUID(), materialId: '', color: '', quantity: 0, totalCost: 0 },
-    ])
-  }
-
-  const removeItem = (id: string) => {
-    if (items.length > 1) {
-      setItems(items.filter(i => i.id !== id))
+  const handleUpdateItem = (id: string, field: keyof EntryItem, value: string | number) => {
+    if (field === 'materialId') {
+      updateItem(id, 'materialId', String(value))
+      updateItem(id, 'color', '')
+      return
     }
-  }
 
-  const updateItem = (id: string, field: keyof EntryItem, value: any) => {
-    setItems(
-      items.map(i => {
-        if (i.id === id) {
-          if (field === 'materialId') {
-            return { ...i, [field]: value, color: '' }
-          }
-          return { ...i, [field]: value }
-        }
-        return i
-      })
-    )
+    if (field === 'color') {
+      updateItem(id, 'color', String(value))
+      return
+    }
+
+    updateItem(id, field, Number(value))
   }
 
   const totalProducts = items.reduce((acc, item) => acc + (item.totalCost || 0), 0)
@@ -105,13 +104,13 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
     setLocalState(state)
     if (state.success) {
       const timer = setTimeout(() => {
-        setItems([{ id: '1', materialId: '', color: '', quantity: 0, totalCost: 0 }])
+        resetItems()
         setFreight(0)
         formRef.current?.reset()
       }, 1000) // Give user time to see success message
       return () => clearTimeout(timer)
     }
-  }, [state])
+  }, [state, resetItems])
 
   useEffect(() => {
     if (!open) {
@@ -251,7 +250,7 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
                         <Label className="mb-2 block text-xs font-medium">Material</Label>
                         <Select
                           value={item.materialId}
-                          onValueChange={val => updateItem(item.id, 'materialId', val)}
+                          onValueChange={val => handleUpdateItem(item.id, 'materialId', val)}
                         >
                           <SelectTrigger className="bg-background">
                             <SelectValue placeholder="Selecione o material..." />
@@ -270,7 +269,7 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
                         <Label className="mb-2 block text-xs font-medium">Cor / Variante</Label>
                         <Select
                           value={item.color}
-                          onValueChange={val => updateItem(item.id, 'color', val)}
+                          onValueChange={val => handleUpdateItem(item.id, 'color', val)}
                           disabled={
                             !item.materialId || getMaterialColors(item.materialId).length === 0
                           }
@@ -296,7 +295,7 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
                           className="bg-background"
                           value={item.quantity || ''}
                           onChange={e =>
-                            updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)
+                            handleUpdateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)
                           }
                           placeholder="0"
                         />
@@ -310,7 +309,7 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
                           className="bg-background"
                           value={item.totalCost || ''}
                           onChange={e =>
-                            updateItem(item.id, 'totalCost', parseFloat(e.target.value) || 0)
+                            handleUpdateItem(item.id, 'totalCost', parseFloat(e.target.value) || 0)
                           }
                           placeholder="0.00"
                         />
