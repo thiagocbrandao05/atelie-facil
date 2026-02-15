@@ -93,7 +93,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
   },
   {
     id: 'relatorios',
-    label: 'Relatorios',
+    label: 'Relatórios',
     appPath: '/relatorios',
     icon: BarChart3,
     feature: 'REPORTS_ADVANCED',
@@ -101,7 +101,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
   },
   {
     id: 'automacoes',
-    label: 'Automacoes IA',
+    label: 'Automações IA',
     appPath: '/automacoes',
     icon: Sparkles,
     feature: 'AI_INSIGHTS',
@@ -113,7 +113,7 @@ export const SETTINGS_NAV_ITEMS = [
   { id: 'perfil', label: 'Perfil', appPath: '/perfil', icon: User, shortcut: 'Ctrl+U' },
   {
     id: 'configuracoes',
-    label: 'Configuracoes',
+    label: 'Configurações',
     appPath: '/configuracoes',
     icon: Settings,
     shortcut: 'Ctrl+S',
