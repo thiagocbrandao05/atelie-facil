@@ -2,8 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { ActionResponse } from '@/lib/types'
-import type { BackupData } from '@/lib/backup-types'
 import { getCurrentUser } from '@/lib/auth'
+import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
 
 /**
  * Generate complete database backup
@@ -13,19 +13,19 @@ export async function generateBackup(): Promise<
 > {
   try {
     const user = await getCurrentUser()
-    if (!user) return { success: false, message: 'Unauthorized' }
+    if (!user) return unauthorizedAction()
 
     const timestamp = new Date().toISOString()
     const supabase = await createClient()
 
     // Fetch all data
     const [
-      { data: customers },
-      { data: materials },
-      { data: products },
-      { data: orders },
-      { data: suppliers },
-      { data: movements },
+      { data: customers, error: customersError },
+      { data: materials, error: materialsError },
+      { data: products, error: productsError },
+      { data: orders, error: ordersError },
+      { data: suppliers, error: suppliersError },
+      { data: movements, error: movementsError },
     ] = await Promise.all([
       supabase.from('Customer').select('*').eq('tenantId', user.tenantId),
       supabase.from('Material').select('*').eq('tenantId', user.tenantId),
@@ -40,6 +40,25 @@ export async function generateBackup(): Promise<
       supabase.from('Supplier').select('*').eq('tenantId', user.tenantId),
       supabase.from('InventoryMovement').select('*').eq('tenantId', user.tenantId),
     ])
+
+    if (
+      customersError ||
+      materialsError ||
+      productsError ||
+      ordersError ||
+      suppliersError ||
+      movementsError
+    ) {
+      console.error('Failed to collect backup data', {
+        customersError,
+        materialsError,
+        productsError,
+        ordersError,
+        suppliersError,
+        movementsError,
+      })
+      return actionError('Erro ao coletar dados para backup')
+    }
 
     const backup = {
       version: '1.0',
@@ -57,47 +76,24 @@ export async function generateBackup(): Promise<
     // Convert to JSON string
     const backupData = JSON.stringify(backup, null, 2)
 
-    return {
-      success: true,
-      message: 'Backup gerado com sucesso!',
-      data: {
-        data: backupData,
-        timestamp,
-      },
-    }
+    return actionSuccess('Backup gerado com sucesso!', {
+      data: backupData,
+      timestamp,
+    })
   } catch (error) {
     console.error('Failed to generate backup:', error)
-    return {
-      success: false,
-      message: 'Erro ao gerar backup',
-    }
+    return actionError('Erro ao gerar backup')
   }
-}
-
-/**
- * Validate backup file structure
- */
-function validateBackup(backup: BackupData): boolean {
-  if (!backup.version || !backup.timestamp || !backup.data) {
-    return false
-  }
-
-  const requiredTables = ['customers', 'materials', 'products', 'orders']
-  return requiredTables.every(table =>
-    Array.isArray(backup.data[table as keyof typeof backup.data])
-  )
 }
 
 /**
  * Restore database from backup
  * WARNING: This will delete all existing data!
  */
-export async function restoreBackup(backupData: string): Promise<ActionResponse> {
-  return {
-    success: false,
-    message:
-      'A restauração de backup está temporariamente desativada durante a migração do sistema. Contate o suporte.',
-  }
+export async function restoreBackup(_backupData: string): Promise<ActionResponse> {
+  return actionError(
+    'A restauração de backup está temporariamente desativada durante a migração do sistema. Contate o suporte.'
+  )
 }
 
 /**
