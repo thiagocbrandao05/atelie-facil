@@ -9,8 +9,8 @@ import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-res
 import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
 
 const materialSchema = z.object({
-  name: z.string().min(1, 'Nome do material Ã© obrigatÃ³rio'),
-  unit: z.string().min(1, 'Unidade Ã© obrigatÃ³ria'),
+  name: z.string().min(1, 'Nome do material é obrigatório'),
+  unit: z.string().min(1, 'Unidade é obrigatória'),
   minQuantity: z.coerce.number().optional().nullable(),
   supplierId: z.string().optional().nullable(),
   colors: z.string().optional(),
@@ -38,7 +38,7 @@ export async function createMaterial(prevState: any, formData: FormData): Promis
 
   const validated = materialSchema.safeParse(rawData)
   if (!validated.success) {
-    return actionError('Erro de validaÃ§Ã£o', validated.error.flatten().fieldErrors)
+    return actionError('Erro de validação', validated.error.flatten().fieldErrors)
   }
 
   const { name, unit, minQuantity, supplierId, colors } = validated.data
@@ -92,7 +92,7 @@ export async function updateMaterial(
 
   const validated = materialSchema.safeParse(rawData)
   if (!validated.success) {
-    return actionError('Erro de validaÃ§Ã£o', validated.error.flatten().fieldErrors)
+    return actionError('Erro de validação', validated.error.flatten().fieldErrors)
   }
 
   const { name, unit, minQuantity, supplierId, colors } = validated.data

@@ -19,8 +19,8 @@ import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
 // ==============================================================================
 
 const WhatsAppSettingsSchema = z.object({
-  whatsappPhoneNumberId: z.string().min(1, 'Phone Number ID Ã© obrigatÃ³rio'),
-  whatsappAccessToken: z.string().min(1, 'Access Token Ã© obrigatÃ³rio'),
+  whatsappPhoneNumberId: z.string().min(1, 'Phone Number ID é obrigatório'),
+  whatsappAccessToken: z.string().min(1, 'Access Token é obrigatório'),
 })
 
 export async function saveWhatsAppCredentials(prevState: any, formData: FormData) {
@@ -157,12 +157,11 @@ const STATUS_TEMPLATE_KEYS: Partial<Record<OrderStatus, keyof SettingsMessageTem
 }
 
 const STATUS_FALLBACK_MESSAGES: Partial<Record<OrderStatus, string>> = {
-  PENDING: 'OlÃ¡ {cliente}, seu pedido #{pedido} foi aprovado e estÃ¡ na fila de produÃ§Ã£o!',
-  PRODUCING: 'OlÃ¡ {cliente}, seu pedido #{pedido} acaba de entrar em produÃ§Ã£o! ðŸŽ¨',
-  READY: 'OlÃ¡ {cliente}, boas notÃ­cias! Seu pedido #{pedido} estÃ¡ pronto para retirada! âœ¨',
-  DELIVERED:
-    'OlÃ¡ {cliente}, seu pedido #{pedido} foi entregue. Muito obrigado pela confianÃ§a! â¤ï¸',
-  QUOTATION: 'OlÃ¡ {cliente}, aqui estÃ¡ o orÃ§amento dos seus produtos.',
+  PENDING: 'Olá {cliente}, seu pedido #{pedido} foi aprovado e está na fila de produção!',
+  PRODUCING: 'Olá {cliente}, seu pedido #{pedido} acaba de entrar em produção! 🎨',
+  READY: 'Olá {cliente}, boas notícias! Seu pedido #{pedido} está pronto para retirada! ✨',
+  DELIVERED: 'Olá {cliente}, seu pedido #{pedido} foi entregue. Muito obrigado pela confiança! ❤️',
+  QUOTATION: 'Olá {cliente}, aqui está o orçamento dos seus produtos.',
 }
 
 type SettingsMessageTemplates = {
@@ -273,7 +272,7 @@ async function buildOrderNotificationPayload(context: OrderNotificationContext) 
   ])
 
   if (orderError || !order) {
-    return { error: 'Pedido nÃ£o encontrado.' }
+    return { error: 'Pedido não encontrado.' }
   }
 
   return { order, settings: settings as SettingsMessageTemplates }
@@ -308,7 +307,7 @@ async function buildMessage({
   }
 
   const shouldAppendLink = statusTo === 'QUOTATION'
-  const linkLabel = statusTo === 'QUOTATION' ? 'Link do orÃ§amento' : 'Link do pedido'
+  const linkLabel = statusTo === 'QUOTATION' ? 'Link do orçamento' : 'Link do pedido'
 
   if (shouldAppendLink && !messageBody.includes(pdfLink)) {
     messageBody = `${messageBody}\n\n${linkLabel}: ${pdfLink}`
@@ -469,7 +468,7 @@ export async function processPendingWhatsAppNotifications(
         .from('WhatsAppNotificationLog')
         .update({
           status: 'GAVE_UP',
-          errorMessage: 'Telefone invÃ¡lido para reenvio.',
+          errorMessage: 'Telefone inválido para reenvio.',
           updatedAt: new Date().toISOString(),
         } as any)
         .eq('id', (log as any).id)
@@ -536,7 +535,7 @@ export async function sendWhatsAppMessage({
   const user = await getCurrentUser()
   if (!user?.tenantId) return unauthorizedAction()
 
-  // Validar se o plano do tenant tem acesso Ã  API WhatsApp
+  // Validar se o plano do tenant tem acesso à API WhatsApp
   const { hasWhatsAppAPI } = await import('@/features/subscription/utils')
   const { getCurrentTenantPlan } = await import('@/features/subscription/actions')
 
@@ -575,8 +574,8 @@ export async function sendWhatsAppMessage({
 }
 
 /**
- * Gera link WhatsApp para notificaÃ§Ã£o manual (botÃ£o)
- * DisponÃ­vel para todos os planos (Start, Pro, Premium)
+ * Gera link WhatsApp para notificação manual (botão)
+ * Disponível para todos os planos (Start, Pro, Premium)
  *
  * @param orderId - ID do pedido
  * @returns Link wa.me com mensagem interpolada
@@ -584,7 +583,7 @@ export async function sendWhatsAppMessage({
 export async function generateWhatsAppNotifyLink(orderId: string) {
   const user = await getCurrentUser()
   if (!user?.tenantId) {
-    return { success: false, error: 'NÃ£o autorizado' }
+    return { success: false, error: 'Não autorizado' }
   }
 
   const supabase = await createClient()
@@ -611,14 +610,14 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
     .single()
 
   if (orderError || !order) {
-    return { success: false, error: 'Pedido nÃ£o encontrado' }
+    return { success: false, error: 'Pedido não encontrado' }
   }
 
   // 2. Validar telefone do cliente
   const { isValidWhatsAppPhone } = await import('./utils')
 
   if (!isValidWhatsAppPhone(order.customer?.phone)) {
-    return { success: false, error: 'Cliente nÃ£o possui telefone vÃ¡lido cadastrado' }
+    return { success: false, error: 'Cliente não possui telefone válido cadastrado' }
   }
 
   // 3. Buscar templates de mensagem
@@ -632,7 +631,7 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   const normalizedStatus = (order.status || '').toUpperCase()
 
   // Prioridade de templates:
-  // 1. Template especÃ­fico por status (Mensagens 1 a 4)
+  // 1. Template específico por status (Mensagens 1 a 4)
   // 2. Fallback fixo do sistema
   let template = null
 
@@ -651,23 +650,23 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   }
 
   if (!template) {
-    template = 'OlÃ¡ {cliente}, seu pedido #{numero} estÃ¡ {status}!'
+    template = 'Olá {cliente}, seu pedido #{numero} está {status}!'
   }
 
-  // 4. Interpolar variÃ¡veis
+  // 4. Interpolar variáveis
   const { interpolateMessage, generateWhatsAppLink } = await import('./utils')
 
   const statusLabels: Record<string, string> = {
-    QUOTATION: 'em orÃ§amento',
-    PENDING: 'aguardando aprovaÃ§Ã£o',
+    QUOTATION: 'em orçamento',
+    PENDING: 'aguardando aprovação',
     APPROVED: 'aprovado',
-    PRODUCING: 'em produÃ§Ã£o',
+    PRODUCING: 'em produção',
     READY: 'pronto para retirada',
     DELIVERED: 'entregue',
     CANCELLED: 'cancelado',
   }
 
-  // 5. Buscar o slug do tenant para o link pÃºblico
+  // 5. Buscar o slug do tenant para o link público
   const { data: tenant } = await (supabase as any)
     .from('Tenant')
     .select('slug')
@@ -677,7 +676,7 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   const publicId = order.publicId || order.id
   const baseUrl = await getBaseUrl()
 
-  // Link amigÃ¡vel: /orcamento/[slug]/[orderNumber]?p=[publicId]
+  // Link amigável: /orcamento/[slug]/[orderNumber]?p=[publicId]
   const friendlyPath = `/orcamento/${tenant?.slug || 'atelis'}/${order.orderNumber || order.id.slice(0, 8)}?p=${publicId}`
 
   const publicLink = baseUrl ? `${baseUrl}${friendlyPath}` : friendlyPath
@@ -694,15 +693,15 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
     link_publico: publicLink,
   })
 
-  // Garantir que o link pÃºblico estÃ¡ na mensagem se for orÃ§amento e o template nÃ£o o incluiu
+  // Garantir que o link público está na mensagem se for orçamento e o template não o incluiu
   if (normalizedStatus === 'QUOTATION' && !message.includes(publicLink)) {
-    message = `${message}\n\nLink do orÃ§amento: ${publicLink}`
+    message = `${message}\n\nLink do orçamento: ${publicLink}`
   }
 
   // 5. Gerar link wa.me
   const link = generateWhatsAppLink(order.customer.phone, message)
 
-  // 6. Registrar log de notificaÃ§Ã£o manual
+  // 6. Registrar log de notificação manual
   await (supabase as any).from('WhatsAppNotificationLog').insert({
     tenantId: user.tenantId,
     orderId: order.id,

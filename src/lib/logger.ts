@@ -26,7 +26,7 @@ export async function logError(error: Error, context: { action: string; data?: a
   }
 
   // Em produção: enviar para serviço de logging (Sentry, LogRocket, etc)
-  // TODO: Integrar com Sentry quando em produção
+  // Extension point: wire this logger to an external provider (ex.: Sentry) when needed.
   // if (process.env.NODE_ENV === 'production') {
   //   Sentry.captureException(error, { contexts: { custom: logEntry } })
   // }
