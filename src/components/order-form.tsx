@@ -127,10 +127,22 @@ export function OrderForm({
     orderDiscountType === 'percent' ? (itemsTotal * orderDiscount) / 100 : orderDiscount
 
   const totalOrderValue = Math.max(0, itemsTotal - finalOrderDiscount)
+  const canSubmit = Boolean(customerId && dueDate && items.length > 0 && !loading)
+
+  async function handleAction(status: OrderStatus) {
+    if (!customerId || !dueDate || items.length === 0) {
+      setState({
+        success: false,
+        message: 'Preencha cliente, data de entrega e pelo menos um item para continuar.',
+      })
+      return
+    }
+    await handleSubmit(status)
+  }
 
   return (
     <form className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="customer">Cliente</Label>
           <Select value={customerId} onValueChange={setCustomerId}>
@@ -311,6 +323,7 @@ export function OrderForm({
                     type="button"
                     variant="ghost"
                     size="icon"
+                    aria-label={`Remover item ${item.productName}`}
                     onClick={() => removeItem(idx)}
                     className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8 rounded-full"
                   >
@@ -380,26 +393,30 @@ export function OrderForm({
       {state.errors?.items && <p className="text-xs text-red-500">{state.errors.items[0]}</p>}
 
       {state.message && (
-        <p className={`text-sm ${state.success ? 'text-green-600' : 'text-red-500'}`}>
+        <p
+          role={state.success ? 'status' : 'alert'}
+          aria-live="polite"
+          className={`text-sm ${state.success ? 'text-green-600' : 'text-red-500'}`}
+        >
           {state.message}
         </p>
       )}
 
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
         <Button
           type="button"
           variant="secondary"
-          className="w-full"
-          disabled={loading || items.length === 0}
-          onClick={() => handleSubmit('QUOTATION')}
+          className="min-h-11 w-full"
+          disabled={!canSubmit}
+          onClick={() => void handleAction('QUOTATION')}
         >
           {loading ? 'Salvando...' : 'Salvar como Orçamento'}
         </Button>
         <Button
           type="button"
-          className="w-full"
-          disabled={loading || items.length === 0}
-          onClick={() => handleSubmit('PENDING')}
+          className="min-h-11 w-full"
+          disabled={!canSubmit}
+          onClick={() => void handleAction('PENDING')}
         >
           {loading ? 'Criando...' : 'Finalizar Pedido'}
         </Button>

@@ -57,6 +57,7 @@ export function DeleteButton({
         size={label ? 'sm' : 'icon'}
         onClick={() => setShowConfirm(true)}
         disabled={isPending}
+        aria-label={label || 'Excluir item'}
         className={className}
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}

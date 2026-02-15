@@ -1,14 +1,12 @@
-﻿import { getOrdersPaginated, getOrdersForKanban, deleteOrder } from '@/features/orders/actions'
-import { getProducts } from '@/features/products/actions'
+import { getOrdersPaginated, deleteOrder } from '@/features/orders/actions'
 import { OrderDialog } from '@/components/order-dialog'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { getCustomers } from '@/features/customers/actions'
 import { StatusUpdateButton } from '@/components/status-update-button'
 import { DeleteButton } from '@/components/delete-button'
 import { Pagination } from '@/components/pagination'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { KanbanBoard } from '@/components/orders/kanban-board'
+import { KanbanBoardLazy } from '@/components/orders/kanban-board-lazy'
 import { LayoutGrid, List } from 'lucide-react'
 import { WhatsAppNotifyWrapper } from '@/features/whatsapp/components/WhatsAppNotifyWrapper'
 import { getCurrentTenantPlan } from '@/features/subscription/actions'
@@ -38,17 +36,8 @@ export default async function PedidosPage(props: {
   const searchParams = await props.searchParams
   const page = getSafePage(searchParams.page)
 
-  const [
-    { data: orders, totalPages, page: currentPage },
-    kanbanOrders,
-    products,
-    customers,
-    tenantPlan,
-  ] = await Promise.all([
+  const [{ data: orders, totalPages, page: currentPage }, tenantPlan] = await Promise.all([
     getOrdersPaginated(page),
-    getOrdersForKanban(),
-    getProducts(),
-    getCustomers(),
     getCurrentTenantPlan(),
   ])
 
@@ -63,10 +52,10 @@ export default async function PedidosPage(props: {
             Acompanhe prazos e status de produção.
           </p>
         </div>
-        <OrderDialog products={products} customers={customers} />
+        <OrderDialog />
       </div>
 
-      <Tabs defaultValue="list" className="w-full">
+      <Tabs defaultValue="list" keepMounted={false} className="w-full">
         <div className="mb-3 flex justify-end sm:mb-4">
           <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto p-1 md:w-auto">
             <TabsTrigger value="list" className="flex min-h-10 items-center gap-2 px-3 text-sm">
@@ -147,7 +136,7 @@ export default async function PedidosPage(props: {
                               id={order.id}
                               onDelete={deleteOrder}
                               confirmTitle="Cancelar pedido?"
-                              confirmDescription="O pedido sera marcado como cancelado para preservar historico e numeracao."
+                              confirmDescription="O pedido será marcado como cancelado para preservar histórico e numeração."
                               confirmActionLabel="Confirmar cancelamento"
                               className="h-10 w-10 md:h-8 md:w-8"
                             />
@@ -210,7 +199,7 @@ export default async function PedidosPage(props: {
         </TabsContent>
 
         <TabsContent value="kanban">
-          <KanbanBoard initialOrders={kanbanOrders} />
+          <KanbanBoardLazy />
         </TabsContent>
       </Tabs>
     </div>

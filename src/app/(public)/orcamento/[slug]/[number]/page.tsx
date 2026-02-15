@@ -196,56 +196,58 @@ export default async function FriendlyQuotationPage(props: {
 
         {/* Table */}
         <div className="px-8 py-8 md:px-12">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-slate-100 text-slate-400">
-                <th className="py-4 text-xs font-bold tracking-widest uppercase">Produto</th>
-                <th className="py-4 text-center text-xs font-bold tracking-widest uppercase">
-                  Qtd
-                </th>
-                <th className="py-4 text-center text-xs font-bold tracking-widest uppercase">
-                  Preço Un.
-                </th>
-                <th className="py-4 text-right text-xs font-bold tracking-widest uppercase">
-                  Subtotal
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {(order.items || []).map((item, idx: number) => {
-                const unitPrice = (item.price || 0) - (item.discount || 0)
-                const subtotal = unitPrice * item.quantity
-                return (
-                  <tr key={idx}>
-                    <td className="py-6">
-                      <p className="text-base leading-tight font-black text-slate-800">
-                        {item.productName}
-                      </p>
-                      {(item.discount || 0) > 0 && (
-                        <p className="mt-1 text-[10px] font-bold tracking-tight text-rose-500 uppercase italic">
-                          Desconto:{' '}
-                          {(item.discount || 0).toLocaleString('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          })}{' '}
-                          por unid.
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400">
+                  <th className="py-4 text-xs font-bold tracking-widest uppercase">Produto</th>
+                  <th className="py-4 text-center text-xs font-bold tracking-widest uppercase">
+                    Qtd
+                  </th>
+                  <th className="py-4 text-center text-xs font-bold tracking-widest uppercase">
+                    Preço Un.
+                  </th>
+                  <th className="py-4 text-right text-xs font-bold tracking-widest uppercase">
+                    Subtotal
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {(order.items || []).map((item, idx: number) => {
+                  const unitPrice = (item.price || 0) - (item.discount || 0)
+                  const subtotal = unitPrice * item.quantity
+                  return (
+                    <tr key={idx}>
+                      <td className="py-6">
+                        <p className="text-base leading-tight font-black text-slate-800">
+                          {item.productName}
                         </p>
-                      )}
-                    </td>
-                    <td className="py-6 text-center font-bold text-slate-600 tabular-nums">
-                      {item.quantity}
-                    </td>
-                    <td className="py-6 text-center font-medium text-slate-600 tabular-nums">
-                      {unitPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </td>
-                    <td className="py-6 text-right font-black text-slate-900 tabular-nums">
-                      {subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                        {(item.discount || 0) > 0 && (
+                          <p className="mt-1 text-[10px] font-bold tracking-tight text-rose-500 uppercase italic">
+                            Desconto:{' '}
+                            {(item.discount || 0).toLocaleString('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            })}{' '}
+                            por unid.
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-6 text-center font-bold text-slate-600 tabular-nums">
+                        {item.quantity}
+                      </td>
+                      <td className="py-6 text-center font-medium text-slate-600 tabular-nums">
+                        {unitPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </td>
+                      <td className="py-6 text-right font-black text-slate-900 tabular-nums">
+                        {subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
 
           {/* Totals */}
           <div className="mt-8 flex justify-end border-t border-slate-100 pt-8">

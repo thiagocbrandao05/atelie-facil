@@ -49,6 +49,8 @@ export function QuickAddTransactionModal() {
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const filteredCategories = categories.filter(c => c.type === type)
+  const isAmountValid = Number(amount) > 0
 
   const handleOpen = (value: boolean) => {
     setOpen(value)
@@ -63,7 +65,7 @@ export function QuickAddTransactionModal() {
   }
 
   const handleSubmit = async () => {
-    if (!amount || Number(amount) <= 0 || isSubmitting) return
+    if (!isAmountValid || isSubmitting) return
 
     setIsSubmitting(true)
     try {
@@ -90,6 +92,7 @@ export function QuickAddTransactionModal() {
           type="button"
           onClick={() => setType('IN')}
           disabled={isSubmitting}
+          aria-pressed={type === 'IN'}
           className={cn(
             'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-black tracking-wider uppercase transition-all',
             type === 'IN'
@@ -103,6 +106,7 @@ export function QuickAddTransactionModal() {
           type="button"
           onClick={() => setType('OUT')}
           disabled={isSubmitting}
+          aria-pressed={type === 'OUT'}
           className={cn(
             'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-black tracking-wider uppercase transition-all',
             type === 'OUT'
@@ -114,29 +118,42 @@ export function QuickAddTransactionModal() {
         </button>
       </div>
 
-      <div className="relative">
-        <span className="text-muted-foreground absolute top-1/2 left-4 -translate-y-1/2 text-2xl font-bold">
-          R$
-        </span>
-        <Input
-          type="number"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-          placeholder="0,00"
-          className="placeholder:text-muted-foreground/20 h-20 border-none bg-transparent pl-14 text-4xl font-black shadow-none focus-visible:ring-0"
-          autoFocus
-          disabled={isSubmitting}
-        />
+      <div className="space-y-2">
+        <label
+          htmlFor="quick-amount"
+          className="text-muted-foreground ml-1 text-xs font-bold tracking-widest uppercase"
+        >
+          Valor
+        </label>
+        <div className="relative">
+          <span className="text-muted-foreground absolute top-1/2 left-4 -translate-y-1/2 text-2xl font-bold">
+            R$
+          </span>
+          <Input
+            id="quick-amount"
+            type="number"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            inputMode="decimal"
+            placeholder="0,00"
+            className="placeholder:text-muted-foreground/20 h-20 border-none bg-transparent pl-14 text-4xl font-black shadow-none focus-visible:ring-0"
+            autoFocus
+            disabled={isSubmitting}
+          />
+        </div>
       </div>
 
       <div className="space-y-2">
         <label className="text-muted-foreground ml-1 text-xs font-bold tracking-widest uppercase">
           Categoria
         </label>
-        <div className="grid grid-cols-4 gap-2">
-          {categories
-            .filter(c => c.type === type)
-            .map(cat => {
+        {filteredCategories.length === 0 ? (
+          <p className="text-muted-foreground rounded-lg border border-dashed p-3 text-xs">
+            Cadastre categorias para facilitar seus lançamentos.
+          </p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {filteredCategories.map(cat => {
               const Icon = iconMap[cat.icon || 'help-circle'] || Icons.HelpCircle
               const isSelected = categoryId === cat.id
               return (
@@ -145,6 +162,7 @@ export function QuickAddTransactionModal() {
                   key={cat.id}
                   onClick={() => setCategoryId(cat.id)}
                   disabled={isSubmitting}
+                  aria-pressed={isSelected}
                   className={cn(
                     'flex min-h-24 flex-col items-center justify-center gap-1 rounded-xl border p-2 transition-all',
                     isSelected
@@ -161,13 +179,16 @@ export function QuickAddTransactionModal() {
                 </button>
               )
             })}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3 pt-2">
         <div className="relative">
           <AlignLeft className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
           <Input
+            id="quick-description"
+            aria-label="Descrição do lançamento"
             value={description}
             onChange={e => setDescription(e.target.value)}
             placeholder="Descrição (opcional)"
@@ -178,7 +199,9 @@ export function QuickAddTransactionModal() {
         <div className="relative">
           <Calendar className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
           <Input
+            id="quick-date"
             type="date"
+            aria-label="Data do lançamento"
             value={date}
             onChange={e => setDate(e.target.value)}
             className="bg-muted/30 min-h-11 w-full border-none pl-9"
@@ -192,10 +215,10 @@ export function QuickAddTransactionModal() {
         onClick={handleSubmit}
         className={cn(
           'h-12 w-full rounded-xl text-lg font-bold text-white shadow-lg transition-all active:scale-[0.98]',
-          !amount || isSubmitting ? 'cursor-not-allowed opacity-50' : '',
+          !isAmountValid || isSubmitting ? 'cursor-not-allowed opacity-50' : '',
           type === 'IN' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'
         )}
-        disabled={!amount || isSubmitting}
+        disabled={!isAmountValid || isSubmitting}
       >
         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         {isSubmitting ? 'Salvando...' : `Confirmar ${type === 'IN' ? 'entrada' : 'saída'}`}
@@ -209,6 +232,7 @@ export function QuickAddTransactionModal() {
         <DialogTrigger asChild>
           <Button
             size="lg"
+            aria-label="Novo lançamento"
             className="bg-primary text-primary-foreground hover:bg-primary/90 fixed right-6 bottom-24 z-50 h-14 w-14 rounded-full p-0 shadow-xl md:sticky md:right-0 md:bottom-6"
           >
             <Plus size={28} />
@@ -230,6 +254,7 @@ export function QuickAddTransactionModal() {
       <DrawerTrigger asChild>
         <Button
           size="lg"
+          aria-label="Novo lançamento"
           className="animate-in bg-primary text-primary-foreground zoom-in hover:bg-primary/90 fixed right-6 bottom-24 z-50 h-14 w-14 rounded-full p-0 shadow-xl duration-300"
         >
           <Plus size={28} />

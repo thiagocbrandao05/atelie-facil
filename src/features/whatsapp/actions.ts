@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { headers } from 'next/headers'
 
@@ -502,7 +502,7 @@ export async function processPendingWhatsAppNotifications(
           status: 'GAVE_UP',
           errorMessage: 'Dados insuficientes para reenvio.',
           updatedAt: new Date().toISOString(),
-        })
+        } as never)
         .eq('id', log.id)
       failed += 1
       continue
@@ -516,7 +516,7 @@ export async function processPendingWhatsAppNotifications(
           status: 'GAVE_UP',
           errorMessage: 'Telefone inválido para reenvio.',
           updatedAt: new Date().toISOString(),
-        })
+        } as never)
         .eq('id', log.id)
       failed += 1
       continue
@@ -543,7 +543,7 @@ export async function processPendingWhatsAppNotifications(
         errorMessage: sendResult.success ? null : sendResult.errorMessage,
         providerMessageId: sendResult.providerMessageId ?? null,
         updatedAt: new Date().toISOString(),
-      })
+      } as never)
       .eq('id', log.id)
 
     if (sendResult.success) {

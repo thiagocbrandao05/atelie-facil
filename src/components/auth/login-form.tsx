@@ -26,7 +26,7 @@ export function LoginForm() {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="password">Senha</Label>
-          <Link href="#" className="text-primary text-xs hover:underline">
+          <Link href="/recuperar-senha" className="text-primary text-xs hover:underline">
             Esqueceu a senha?
           </Link>
         </div>
@@ -47,7 +47,7 @@ export function LoginForm() {
 
       <Button
         className="shadow-primary/20 h-11 w-full shadow-lg transition-all hover:scale-[1.02]"
-        aria-disabled={isPending}
+        disabled={isPending}
       >
         {isPending ? 'Entrando...' : 'Entrar'}
       </Button>

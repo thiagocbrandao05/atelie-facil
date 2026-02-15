@@ -67,7 +67,7 @@ export function RegisterForm() {
 
       <Button
         className="shadow-primary/20 h-11 w-full shadow-lg transition-all hover:scale-[1.02]"
-        aria-disabled={isPending}
+        disabled={isPending}
       >
         {isPending ? 'Criando conta...' : 'Criar conta grátis'}
       </Button>

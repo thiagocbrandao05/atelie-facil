@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation'
 import { APP_NAV_ITEMS, SETTINGS_NAV_ITEMS } from '@/lib/app-navigation'
 
 const SEGMENT_LABELS: Record<string, string> = {
-  app: 'Inicio',
+  app: 'Início',
   dashboard: 'Dashboard',
-  configuracoes: 'Configuracoes',
+  configuracoes: 'Configurações',
   campanhas: 'Campanhas',
   onboarding: 'Onboarding',
   upgrade: 'Upgrade',

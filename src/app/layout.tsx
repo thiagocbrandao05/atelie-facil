@@ -51,7 +51,6 @@ export const metadata: Metadata = {
 }
 
 import { ThemeProvider } from '@/components/theme-provider'
-import { NotificationProvider } from '@/components/notification-provider'
 import { ThemeColorManager } from '@/components/theme-color-manager'
 import { getSettings } from '@/features/settings/actions'
 import { resolveThemeKey } from '@/lib/theme-tokens'
@@ -76,10 +75,8 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <ThemeColorManager color={settings.primaryColor} />
-          <NotificationProvider>
-            <div className="bg-background min-h-screen">{children}</div>
-            <Toaster richColors position="top-right" />
-          </NotificationProvider>
+          <div className="bg-background min-h-screen">{children}</div>
+          <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>
     </html>

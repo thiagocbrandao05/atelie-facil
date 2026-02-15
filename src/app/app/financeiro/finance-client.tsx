@@ -60,7 +60,11 @@ function FinanceContent() {
     <div className="relative space-y-5 pb-24 md:space-y-6 md:pb-10">
       <Header />
       {error ? (
-        <div className="border-destructive/30 bg-destructive/5 rounded-xl border p-3 text-sm">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="border-destructive/30 bg-destructive/5 rounded-xl border p-3 text-sm"
+        >
           <p className="text-destructive font-semibold">Não foi possível carregar o financeiro.</p>
           <Button
             variant="outline"
