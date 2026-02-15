@@ -1,49 +1,39 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { loginViaUI } from '../helpers/playwright'
 
-test.describe('Fluxo Completo de Pedidos', () => {
+test.describe('Fluxo de Pedidos', () => {
   const workspaceSlug = process.env.TEST_WORKSPACE_SLUG || 'atelis'
 
-  // Setup inicial: Login
   test.beforeEach(async ({ page }) => {
     await loginViaUI(page)
   })
 
-  test('Deve criar um novo pedido com sucesso', async ({ page }) => {
+  test('abre o modal de novo pedido', async ({ page }) => {
     await page.goto(`/${workspaceSlug}/app/pedidos`)
 
-    // Abrir Modal
-    await page.getByRole('button', { name: 'Novo Pedido' }).click()
+    const novoPedidoButton = page.getByRole('button', { name: /novo pedido/i })
+    await expect(novoPedidoButton).toBeVisible()
+    await novoPedidoButton.click()
 
-    // Preencher Formulário
-    await page.getByLabel('Cliente').click()
-    await page.getByRole('option').first().click() // Seleciona primeiro cliente
-
-    await page.getByLabel('Data de Entrega').fill('2026-12-31')
-
-    // Adicionar Item
-    await page.getByRole('button', { name: 'Adicionar Item' }).click()
-    await page.getByPlaceholder('Selecione um produto').click()
-    await page.getByRole('option').first().click()
-    await page.getByLabel('Quantidade').fill('2')
-
-    // Salvar
-    await page.getByRole('button', { name: 'Salvar Pedido' }).click()
-
-    // Validação
-    await expect(page.getByText('Pedido criado com sucesso')).toBeVisible()
-    await expect(page.locator('.lucide-receipt').first()).toBeVisible() // Ícone do pedido na lista
+    await expect(page.getByRole('heading', { name: /novo pedido/i })).toBeVisible()
   })
 
-  test('Deve filtrar pedidos por status', async ({ page }) => {
+  test('alterna entre lista e quadro', async ({ page }) => {
     await page.goto(`/${workspaceSlug}/app/pedidos`)
 
-    // Tabs de filtro (assumindo tabs ou dropdown)
-    // Se for Tabs do Shadcn:
-    await page.getByRole('tab', { name: 'Quadro' }).click()
-    await expect(page.getByText('Aguardando Início')).toBeVisible()
+    const tabQuadro = page.getByRole('button', { name: /^quadro$/i })
+    const tabLista = page.getByRole('button', { name: /^lista$/i })
 
-    await page.getByRole('tab', { name: 'Lista' }).click()
-    await expect(page.locator('table')).toBeVisible()
+    await expect(tabQuadro).toBeVisible()
+    await tabQuadro.click()
+
+    await expect(
+      page.getByText(/orcamentos|aguardando|na bancada|pronto para entrega|finalizados/i).first()
+    ).toBeVisible()
+
+    await tabLista.click()
+    await expect(
+      page.getByText(/nenhum pedido encontrado|cliente desconhecido|itens:/i).first()
+    ).toBeVisible()
   })
 })

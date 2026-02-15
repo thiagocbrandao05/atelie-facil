@@ -34,6 +34,15 @@ export async function rateLimit(
   identifier: string,
   config: RateLimitConfig = { maxRequests: 10, windowMs: 60000 }
 ): Promise<{ success: boolean; remaining: number; resetAt: number }> {
+  if (process.env.E2E_DISABLE_RATE_LIMIT === 'true' || process.env.NODE_ENV === 'test') {
+    const now = Date.now()
+    return {
+      success: true,
+      remaining: Number.MAX_SAFE_INTEGER,
+      resetAt: now + (Number(config.windowMs) || 60000),
+    }
+  }
+
   const safeIdentifier = sanitizeIdentifier(identifier)
   const safeConfig = normalizeConfig(config)
 

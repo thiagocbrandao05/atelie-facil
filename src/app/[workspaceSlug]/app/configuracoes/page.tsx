@@ -18,8 +18,12 @@ const SettingsForm = dynamic(
   }
 )
 
-export default async function SettingsPage({ params }: { params: { workspaceSlug: string } }) {
-  const { workspaceSlug } = params
+export default async function SettingsPage({
+  params,
+}: {
+  params: Promise<{ workspaceSlug: string }>
+}) {
+  const { workspaceSlug } = await params
   const settings = await getSettings()
   const { getWhatsAppUsage } = await import('@/features/whatsapp/actions')
   const whatsappUsage = await getWhatsAppUsage()
