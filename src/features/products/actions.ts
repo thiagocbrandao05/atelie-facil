@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import { ProductSchema } from '@/lib/schemas'
 import type {
   ActionResponse,
@@ -11,7 +10,7 @@ import type {
 } from '@/lib/types'
 import { getCurrentUser } from '@/lib/auth'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 export async function getProductsPaginated(
   page: number = 1,
@@ -171,9 +170,7 @@ export async function createProduct(
     if (error) throw error
 
     if (workspaceSlug) {
-      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/produtos'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/produtos'])
     }
     return actionSuccess('Produto cadastrado com sucesso!')
   } catch (error: any) {
@@ -235,9 +232,7 @@ export async function updateProduct(
     if (error) throw error
 
     if (workspaceSlug) {
-      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/produtos'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/produtos'])
     }
     return actionSuccess('Produto atualizado!')
   } catch (error: any) {
@@ -262,9 +257,7 @@ export async function deleteProduct(id: string): Promise<ActionResponse> {
     if (error) throw error
 
     if (workspaceSlug) {
-      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/produtos'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/produtos'])
     }
     return actionSuccess('Produto removido!')
   } catch {

@@ -2,10 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
-import { revalidatePath } from 'next/cache'
 import { validateWhatsAppCredentials, sendWhatsAppMessage } from '@/features/whatsapp/actions'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 type CreateCampaignInput = {
   name: string
@@ -56,9 +55,7 @@ export async function createCampaign(input: CreateCampaignInput) {
 
   const slug = user.tenant?.slug
   if (slug) {
-    for (const path of buildWorkspaceAppPaths(slug, ['/configuracoes/campanhas'])) {
-      revalidatePath(path)
-    }
+    revalidateWorkspaceAppPaths(slug, ['/configuracoes/campanhas'])
   }
 
   return actionSuccess('Campanha criada com sucesso!', { campaignId: (campaign as any).id })

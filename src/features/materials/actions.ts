@@ -1,12 +1,11 @@
-﻿'use server'
+'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/auth'
 import { ActionResponse, MaterialQueryResponse } from '@/lib/types'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 const materialSchema = z.object({
   name: z.string().min(1, 'Nome do material é obrigatório'),
@@ -63,9 +62,7 @@ export async function createMaterial(prevState: any, formData: FormData): Promis
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/estoque'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/estoque'])
     }
     return actionSuccess('Material criado com sucesso!')
   } catch (error) {
@@ -118,9 +115,7 @@ export async function updateMaterial(
 
   const slug = user.tenant?.slug
   if (slug) {
-    for (const path of buildWorkspaceAppPaths(slug, ['/estoque'])) {
-      revalidatePath(path)
-    }
+    revalidateWorkspaceAppPaths(slug, ['/estoque'])
   }
   return actionSuccess('Material atualizado com sucesso!')
 }
@@ -142,9 +137,7 @@ export async function deleteMaterial(id: string) {
 
   const slug = user.tenant?.slug
   if (slug) {
-    for (const path of buildWorkspaceAppPaths(slug, ['/estoque'])) {
-      revalidatePath(path)
-    }
+    revalidateWorkspaceAppPaths(slug, ['/estoque'])
   }
   return actionSuccess('Material deletado')
 }

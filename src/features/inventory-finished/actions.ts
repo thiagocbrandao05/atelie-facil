@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/auth'
 import type {
   ActionResponse,
@@ -10,7 +9,7 @@ import type {
   ProductInventoryMovementType,
 } from '@/lib/types'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 export async function getProductsInventory(): Promise<ProductInventory[]> {
   const user = await getCurrentUser()
@@ -88,9 +87,7 @@ export async function adjustProductStock(
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/estoque-produtos'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/estoque-produtos'])
     }
     return actionSuccess('Estoque atualizado com sucesso!')
   } catch (error: any) {
@@ -212,9 +209,7 @@ export async function createProductStockEntry(
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/estoque-produtos'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/estoque-produtos'])
     }
     return actionSuccess('Entrada de estoque registrada com sucesso!')
   } catch (error: any) {

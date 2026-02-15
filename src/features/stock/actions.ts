@@ -1,12 +1,11 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/auth'
 import { ActionResponse } from '@/lib/types'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 const stockEntryItemSchema = z.object({
   materialId: z.string().min(1, 'Material é obrigatório'),
@@ -82,9 +81,7 @@ export async function createStockEntry(
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/estoque'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/estoque'])
     }
     return actionSuccess('Entrada de estoque registrada com sucesso!')
   } catch (error: any) {
@@ -140,9 +137,7 @@ export async function addManualStockMovement(
 
   const slug = user.tenant?.slug
   if (slug) {
-    for (const path of buildWorkspaceAppPaths(slug, ['/estoque'])) {
-      revalidatePath(path)
-    }
+    revalidateWorkspaceAppPaths(slug, ['/estoque'])
   }
   return actionSuccess('Movimentação registrada com sucesso!')
 }

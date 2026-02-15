@@ -1,12 +1,11 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import { SupplierSchema } from '@/lib/schemas'
 import { getCurrentUser } from '@/lib/auth'
 import type { ActionResponse } from '@/lib/types'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 export async function getSuppliers() {
   const user = await getCurrentUser()
@@ -42,9 +41,7 @@ export async function createSupplier(data: any): Promise<ActionResponse> {
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/fornecedores', '/estoque'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/fornecedores', '/estoque'])
     }
     return actionSuccess('Fornecedor criado com sucesso!')
   } catch (error) {
@@ -73,9 +70,7 @@ export async function updateSupplier(id: string, data: any): Promise<ActionRespo
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/fornecedores', '/estoque'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/fornecedores', '/estoque'])
     }
     return actionSuccess('Fornecedor atualizado com sucesso!')
   } catch (error) {
@@ -95,9 +90,7 @@ export async function deleteSupplier(id: string): Promise<ActionResponse> {
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/fornecedores', '/estoque'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/fornecedores', '/estoque'])
     }
     return actionSuccess('Fornecedor excluído com sucesso!')
   } catch (error) {

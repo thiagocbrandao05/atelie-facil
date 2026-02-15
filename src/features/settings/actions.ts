@@ -1,13 +1,12 @@
 'use server'
 
 import { z } from 'zod'
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
 import { DEFAULT_THEME } from '@/lib/theme-tokens'
 import { validateCSRF } from '@/lib/security'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
@@ -93,9 +92,7 @@ export async function updateProfile(prevState: any, formData: FormData) {
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/perfil'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/perfil'])
     }
     return actionSuccess('Perfil atualizado com sucesso!')
   } catch (error) {
@@ -231,9 +228,7 @@ export async function updateSettings(prevState: any, formData: FormData) {
     if (error) throw error
 
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/configuracoes'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/configuracoes'])
     }
     return actionSuccess('Configurações salvas com sucesso!')
   } catch (error) {

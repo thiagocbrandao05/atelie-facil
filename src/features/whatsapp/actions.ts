@@ -1,9 +1,8 @@
-﻿'use server'
+'use server'
 
 import { headers } from 'next/headers'
 
 import { z } from 'zod'
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWhatsAppTemplateMessage } from '@/lib/whatsapp-cloud'
@@ -12,7 +11,7 @@ import { getCurrentUser } from '@/lib/auth'
 import type { OrderStatus } from '@/lib/types'
 import { validateCSRF } from '@/lib/security'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 // ==============================================================================
 // CONFIGURATION ACTIONS
@@ -61,9 +60,7 @@ export async function saveWhatsAppCredentials(prevState: any, formData: FormData
 
     const slug = user?.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/configuracoes'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/configuracoes'])
     }
     return actionSuccess('Credenciais do WhatsApp salvas com sucesso!')
   } catch (error) {
@@ -158,9 +155,9 @@ const STATUS_TEMPLATE_KEYS: Partial<Record<OrderStatus, keyof SettingsMessageTem
 
 const STATUS_FALLBACK_MESSAGES: Partial<Record<OrderStatus, string>> = {
   PENDING: 'Olá {cliente}, seu pedido #{pedido} foi aprovado e está na fila de produção!',
-  PRODUCING: 'Olá {cliente}, seu pedido #{pedido} acaba de entrar em produção! 🎨',
-  READY: 'Olá {cliente}, boas notícias! Seu pedido #{pedido} está pronto para retirada! ✨',
-  DELIVERED: 'Olá {cliente}, seu pedido #{pedido} foi entregue. Muito obrigado pela confiança! ❤️',
+  PRODUCING: 'Olá {cliente}, seu pedido #{pedido} acaba de entrar em produção! ??',
+  READY: 'Olá {cliente}, boas notícias! Seu pedido #{pedido} está pronto para retirada! ?',
+  DELIVERED: 'Olá {cliente}, seu pedido #{pedido} foi entregue. Muito obrigado pela confiança! ??',
   QUOTATION: 'Olá {cliente}, aqui está o orçamento dos seus produtos.',
 }
 

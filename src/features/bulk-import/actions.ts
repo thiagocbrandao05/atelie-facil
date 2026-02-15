@@ -3,10 +3,9 @@
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
-import { revalidatePath } from 'next/cache'
 import { MaterialSchema, CustomerSchema, SupplierSchema } from '@/lib/schemas'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 const StockBalanceSchema = z.object({
   materialName: z.string().min(1, 'Nome do material é obrigatório'),
@@ -42,9 +41,7 @@ export async function importMaterialsAction(data: any[]) {
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/estoque'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/estoque'])
     }
     return actionSuccess(`${data.length} materiais importados com sucesso!`)
   } catch (error: any) {
@@ -110,9 +107,7 @@ export async function importStockAction(data: any[]) {
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/estoque'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/estoque'])
     }
 
     if (errors.length > 0) {
@@ -158,9 +153,7 @@ export async function importCustomersAction(data: any[]) {
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/clientes'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/clientes'])
     }
     return actionSuccess(`${data.length} clientes importados!`)
   } catch (error: any) {
@@ -196,9 +189,7 @@ export async function importSuppliersAction(data: any[]) {
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/fornecedores'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/fornecedores'])
     }
     return actionSuccess(`${data.length} fornecedores importados!`)
   } catch (error: any) {

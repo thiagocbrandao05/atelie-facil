@@ -8,7 +8,6 @@ import type {
   OrderStatus,
   OrderSummary,
 } from '@/lib/types'
-import { revalidatePath } from 'next/cache'
 import { OrderSchema, type OrderInput } from '@/lib/schemas'
 import { calculateOrderTotal } from '@/lib/logic'
 import { getCurrentUser } from '@/lib/auth'
@@ -24,7 +23,7 @@ import {
 import { logError } from '@/lib/logger'
 import { enqueueOrderStatusNotification } from '@/features/whatsapp/actions'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
@@ -183,9 +182,7 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
     }
 
     if (workspaceSlug) {
-      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])
     }
 
     if (status === 'QUOTATION' && createdOrderId) {
@@ -264,9 +261,7 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
     if (updateError) throw updateError
 
     if (workspaceSlug) {
-      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])
     }
 
     const notificationResult = await enqueueOrderStatusNotification({
@@ -315,9 +310,7 @@ export async function deleteOrder(id: string): Promise<ActionResponse> {
     if (error) throw error
 
     if (workspaceSlug) {
-      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])
     }
     return actionSuccess('Pedido excluído com sucesso!')
   } catch (error: any) {

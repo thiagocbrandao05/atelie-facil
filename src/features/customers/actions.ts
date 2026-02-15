@@ -1,14 +1,13 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import { CustomerSchema } from '@/lib/schemas'
 import type { ActionResponse } from '@/lib/types'
 import { getCurrentUser } from '@/lib/auth'
 import { logAction } from '@/lib/audit'
 import { validateCSRF } from '@/lib/security'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
@@ -76,9 +75,7 @@ export async function createCustomer(
     })
 
     if (workspaceSlug) {
-      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/clientes'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/clientes'])
     }
     return actionSuccess('Cliente cadastrado!', customer)
   } catch (error) {
@@ -103,9 +100,7 @@ export async function deleteCustomer(id: string): Promise<ActionResponse> {
     await logAction(user.tenantId, user.id, 'DELETE', 'Customer', id)
 
     if (workspaceSlug) {
-      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/clientes'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/clientes'])
     }
     return actionSuccess('Cliente removido!')
   } catch {
@@ -151,9 +146,7 @@ export async function updateCustomer(
     await logAction(user.tenantId, user.id, 'UPDATE', 'Customer', id, validatedFields.data)
 
     if (workspaceSlug) {
-      for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/clientes'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(workspaceSlug, ['/clientes'])
     }
     return actionSuccess('Cliente atualizado!')
   } catch (error) {

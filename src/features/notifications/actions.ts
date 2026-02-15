@@ -1,11 +1,10 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/auth'
 import type { ActionResponse } from '@/lib/types'
 import { createClient } from '@/lib/supabase/server'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 export async function getNotifications(unreadOnly: boolean = false) {
   const user = await getCurrentUser()
@@ -46,9 +45,7 @@ export async function markAsRead(id: string): Promise<ActionResponse> {
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/dashboard'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/dashboard'])
     }
     return actionSuccess('Notificação marcada como lida')
   } catch {
@@ -75,9 +72,7 @@ export async function markAllAsRead(): Promise<ActionResponse> {
 
     const slug = user.tenant?.slug
     if (slug) {
-      for (const path of buildWorkspaceAppPaths(slug, ['/dashboard'])) {
-        revalidatePath(path)
-      }
+      revalidateWorkspaceAppPaths(slug, ['/dashboard'])
     }
     return actionSuccess('Todas as notificações foram marcadas como lidas')
   } catch {

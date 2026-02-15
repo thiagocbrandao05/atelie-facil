@@ -1,10 +1,9 @@
-﻿'use server'
+'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUser } from '@/lib/auth'
-import { buildWorkspaceAppPaths } from '@/lib/workspace-path'
+import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
 export const TransactionSchema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória'),
@@ -88,9 +87,7 @@ export async function createTransaction(input: TransactionInput) {
   }
 
   if (workspaceSlug) {
-    for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/financeiro'])) {
-      revalidatePath(path)
-    }
+    revalidateWorkspaceAppPaths(workspaceSlug, ['/financeiro'])
   }
   return data
 }
@@ -113,9 +110,7 @@ export async function updateTransaction(id: string, input: Partial<TransactionIn
   }
 
   if (workspaceSlug) {
-    for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/financeiro'])) {
-      revalidatePath(path)
-    }
+    revalidateWorkspaceAppPaths(workspaceSlug, ['/financeiro'])
   }
   return data
 }
@@ -133,9 +128,7 @@ export async function deleteTransaction(id: string) {
   }
 
   if (workspaceSlug) {
-    for (const path of buildWorkspaceAppPaths(workspaceSlug, ['/financeiro'])) {
-      revalidatePath(path)
-    }
+    revalidateWorkspaceAppPaths(workspaceSlug, ['/financeiro'])
   }
 }
 
