@@ -146,7 +146,7 @@ export function QuickAddTransactionModal() {
                   onClick={() => setCategoryId(cat.id)}
                   disabled={isSubmitting}
                   className={cn(
-                    'flex h-24 min-h-24 flex-col items-center justify-center gap-1 rounded-xl border p-2 transition-all',
+                    'flex min-h-24 flex-col items-center justify-center gap-1 rounded-xl border p-2 transition-all',
                     isSelected
                       ? type === 'IN'
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
@@ -171,7 +171,7 @@ export function QuickAddTransactionModal() {
             value={description}
             onChange={e => setDescription(e.target.value)}
             placeholder="Descrição (opcional)"
-            className="bg-muted/30 h-11 border-none pl-9"
+            className="bg-muted/30 min-h-11 border-none pl-9"
             disabled={isSubmitting}
           />
         </div>
@@ -181,7 +181,7 @@ export function QuickAddTransactionModal() {
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
-            className="bg-muted/30 h-11 w-full border-none pl-9"
+            className="bg-muted/30 min-h-11 w-full border-none pl-9"
             disabled={isSubmitting}
           />
         </div>

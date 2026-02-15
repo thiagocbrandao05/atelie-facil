@@ -54,9 +54,24 @@ function Header() {
 }
 
 function FinanceContent() {
+  const { error, refresh } = useFinancials()
+
   return (
     <div className="relative space-y-5 pb-24 md:space-y-6 md:pb-10">
       <Header />
+      {error ? (
+        <div className="border-destructive/30 bg-destructive/5 rounded-xl border p-3 text-sm">
+          <p className="text-destructive font-semibold">Não foi possível carregar o financeiro.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refresh()}
+            className="mt-2 min-h-10"
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      ) : null}
       <FinancialDashboardCard />
 
       <div className="mt-7 mb-3 flex items-center justify-between sm:mt-8 sm:mb-4">
