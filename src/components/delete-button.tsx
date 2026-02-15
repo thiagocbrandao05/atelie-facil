@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 
 interface DeleteButtonProps {
   id: string
@@ -36,7 +37,7 @@ export function DeleteButton({
     startTransition(async () => {
       const result = await onDelete(id)
       if (!result.success) {
-        alert(result.message)
+        toast.error(result.message)
       }
       setShowConfirm(false)
     })
@@ -69,7 +70,7 @@ export function DeleteButton({
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Confirmar Exclusão
+              Confirmar exclusão
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

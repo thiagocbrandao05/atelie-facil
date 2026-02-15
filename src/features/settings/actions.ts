@@ -20,13 +20,15 @@ const ProfileSchema = z.object({
   email: z.string().email('Email inválido'),
 })
 
-const PasswordSchema = z.object({
-  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  confirmPassword: z.string().min(6, 'Confirmação deve ter pelo menos 6 caracteres'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "As senhas não coincidem",
-  path: ["confirmPassword"],
-})
+const PasswordSchema = z
+  .object({
+    password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+    confirmPassword: z.string().min(6, 'Confirmação deve ter pelo menos 6 caracteres'),
+  })
+  .refine(data => data.password === data.confirmPassword, {
+    message: 'As senhas não coincidem',
+    path: ['confirmPassword'],
+  })
 
 const SettingsSchema = z.object({
   storeName: z.string().min(2, 'Nome da loja deve ter pelo menos 2 caracteres'),
@@ -115,7 +117,7 @@ export async function updatePassword(prevState: any, formData: FormData) {
     if (!validation.success) {
       return {
         success: false,
-        message: validation.error.errors[0].message
+        message: validation.error.issues[0]?.message || 'Dados invalidos',
       }
     }
 

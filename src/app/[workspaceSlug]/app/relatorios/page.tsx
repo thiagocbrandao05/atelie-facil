@@ -17,26 +17,30 @@ export default async function ReportsPage() {
   const totalRevenue = revenueData.reduce((acc, curr: any) => acc + curr.value, 0)
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Relatórios & Analytics</h1>
+    <div className="space-y-5 md:space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Relatórios e analytics</h1>
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+          Acompanhe resultados do negócio e identifique oportunidades.
+        </p>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h3 className="text-muted-foreground text-sm font-medium">Receita Total (6 meses)</h3>
+        <div className="rounded-xl border bg-white p-5 shadow-sm md:p-6">
+          <h3 className="text-muted-foreground text-sm font-medium">Receita total (6 meses)</h3>
           <div className="mt-2 text-2xl font-bold">
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
               totalRevenue
             )}
           </div>
         </div>
-        {/* More KPI cards can be added here */}
       </div>
 
       <div className="grid gap-6 md:grid-cols-7">
-        <div className="col-span-4">
+        <div className="col-span-7 md:col-span-4">
           <RevenueChart data={revenueData} />
         </div>
-        <div className="col-span-3 space-y-6">
+        <div className="col-span-7 space-y-6 md:col-span-3">
           <LowStockAlert data={lowStockData} />
           <TopProducts data={topProductsData} />
         </div>

@@ -57,10 +57,7 @@
       "purpose": "maskable any"
     }
   ],
-  "categories": [
-    "business",
-    "productivity"
-  ],
+  "categories": ["business", "productivity"],
   "screenshots": [
     {
       "src": "/screenshots/dashboard.png",

@@ -527,7 +527,7 @@ Se você produz algo sob medida ou em pequenos lotes, o Ateliê Fácil foi feito
 | ----------------- | ------------------------------------------------------------------------------------------------------ |
 | **Estoque**       | Cadastro de materiais, controle de movimentações, alertas de estoque mínimo, histórico completo        |
 | **Produtos**      | Receitas de produção, cálculo automático de custos, precificação inteligente, análise de rentabilidade |
-| **Clientes**      | Cadastro completo, histórico de pedidos, segmentação para campanhas            |
+| **Clientes**      | Cadastro completo, histórico de pedidos, segmentação para campanhas                                    |
 | **Pedidos**       | Pipeline visual, múltiplos status, baixa automática de estoque, rastreamento de prazos                 |
 | **Financeiro**    | Custos fixos, taxa horária, metas mensais, cálculo de margem, relatórios de performance                |
 | **WhatsApp**      | Notificações automáticas, campanhas de marketing, mensagens personalizadas, limites por plano          |

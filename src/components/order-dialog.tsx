@@ -18,11 +18,11 @@ export function OrderDialog({ products, customers }: { products: any[]; customer
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Novo Pedido</Button>
+        <Button className="min-h-11 w-full px-4 sm:w-auto">Novo pedido</Button>
       </DialogTrigger>
       <DialogContent className="max-h-[95vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Novo Pedido</DialogTitle>
+          <DialogTitle>Novo pedido</DialogTitle>
           <DialogDescription>Preencha os dados do pedido abaixo.</DialogDescription>
         </DialogHeader>
         <OrderForm products={products} customers={customers} onSuccess={() => setOpen(false)} />

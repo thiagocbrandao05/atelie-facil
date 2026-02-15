@@ -4,6 +4,7 @@ import { useTransition } from 'react'
 import { updateOrderStatus } from '@/features/orders/actions'
 import { Button } from '@/components/ui/button'
 import { PlusCircle, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export function StatusUpdateButton({
   id,
@@ -20,7 +21,7 @@ export function StatusUpdateButton({
     startTransition(async () => {
       const result = await updateOrderStatus(id, status)
       if (!result.success) {
-        alert(result.message)
+        toast.error(result.message)
       }
     })
   }
@@ -30,12 +31,12 @@ export function StatusUpdateButton({
       size="sm"
       onClick={handleUpdate}
       disabled={isPending}
-      className="flex h-7 items-center gap-1 px-2"
+      className="flex min-h-9 items-center gap-1.5 px-3 text-xs md:h-8"
     >
       {isPending ? (
-        <Loader2 className="h-3 w-3 animate-spin" />
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
       ) : (
-        <PlusCircle className="h-3 w-3" />
+        <PlusCircle className="h-3.5 w-3.5" />
       )}
       {label}
     </Button>

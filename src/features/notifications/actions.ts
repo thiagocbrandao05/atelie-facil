@@ -1,13 +1,10 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/auth'
 import type { ActionResponse } from '@/lib/types'
-import { revalidatePath } from 'next/cache'
+import { createClient } from '@/lib/supabase/server'
 
-/**
- * Get user notifications
- */
 export async function getNotifications(unreadOnly: boolean = false) {
   const user = await getCurrentUser()
   if (!user) return []
@@ -28,12 +25,9 @@ export async function getNotifications(unreadOnly: boolean = false) {
   return (data as any[]) || []
 }
 
-/**
- * Mark notification as read
- */
 export async function markAsRead(id: string): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return { success: false, message: 'Nao autorizado' }
 
   try {
     const supabase = await createClient()
@@ -44,23 +38,21 @@ export async function markAsRead(id: string): Promise<ActionResponse> {
         readAt: new Date().toISOString(),
       } as any as never)
       .eq('id', id)
-      .eq('tenantId', user.tenantId) // Ensure ownership
+      .eq('tenantId', user.tenantId)
 
     if (error) throw error
 
-    revalidatePath('/dashboard')
-    return { success: true, message: 'Notificação marcada como lida' }
-  } catch (error) {
-    return { success: false, message: 'Erro ao marcar notificação' }
+    const slug = (user as any).tenant?.slug
+    revalidatePath(slug ? `/${slug}/app/dashboard` : '/')
+    return { success: true, message: 'Notificacao marcada como lida' }
+  } catch {
+    return { success: false, message: 'Erro ao marcar notificacao' }
   }
 }
 
-/**
- * Mark all notifications as read
- */
 export async function markAllAsRead(): Promise<ActionResponse> {
   const user = await getCurrentUser()
-  if (!user) return { success: false, message: 'Não autorizado' }
+  if (!user) return { success: false, message: 'Nao autorizado' }
 
   try {
     const supabase = await createClient()
@@ -75,16 +67,14 @@ export async function markAllAsRead(): Promise<ActionResponse> {
 
     if (error) throw error
 
-    revalidatePath('/dashboard')
-    return { success: true, message: 'Todas as notificações foram marcadas como lidas' }
-  } catch (error) {
-    return { success: false, message: 'Erro ao marcar notificações' }
+    const slug = (user as any).tenant?.slug
+    revalidatePath(slug ? `/${slug}/app/dashboard` : '/')
+    return { success: true, message: 'Todas as notificacoes foram marcadas como lidas' }
+  } catch {
+    return { success: false, message: 'Erro ao marcar notificacoes' }
   }
 }
 
-/**
- * Get unread count
- */
 export async function getUnreadCount() {
   const user = await getCurrentUser()
   if (!user) return 0

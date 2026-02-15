@@ -491,9 +491,9 @@ export function ProductForm({
                       />
                     </div>
                   ) : (
-                    <div className="bg-muted/20 flex h-20 flex-col items-center justify-center rounded-xl border border-dashed text-center p-4">
+                    <div className="bg-muted/20 flex h-20 flex-col items-center justify-center rounded-xl border border-dashed p-4 text-center">
                       <Package className="text-muted-foreground mb-1 h-5 w-5 opacity-20" />
-                      <p className="text-muted-foreground text-[10px] font-medium max-w-xs">
+                      <p className="text-muted-foreground max-w-xs text-[10px] font-medium">
                         Em modo Revenda, o produto é tratado como item acabado único.
                       </p>
                       <input type="hidden" name="materials" value="[]" />
@@ -519,7 +519,7 @@ export function ProductForm({
                           <span className="text-muted-foreground text-xs font-bold tracking-tight uppercase">
                             Custo de Aquisição (MPM)
                           </span>
-                          <span className="text-[10px] text-muted-foreground italic">
+                          <span className="text-muted-foreground text-[10px] italic">
                             Média ponderada + frete
                           </span>
                         </div>
@@ -565,7 +565,9 @@ export function ProductForm({
                               0
                             )
                             const fixedCostPerHour =
-                              workingHoursPerMonth > 0 ? totalMonthlyFixed / workingHoursPerMonth : 0
+                              workingHoursPerMonth > 0
+                                ? totalMonthlyFixed / workingHoursPerMonth
+                                : 0
                             return ((Number(laborTime || 0) / 60) * fixedCostPerHour).toFixed(2)
                           })()}
                         </span>
@@ -579,7 +581,7 @@ export function ProductForm({
                           laborTime: Number(laborTime || 0),
                           profitMargin: Number(profitMargin || 0),
                           materials: previewMaterials as any,
-                          cost: isReseller(tenantPlan) ? (product?.cost || 0) : 0
+                          cost: isReseller(tenantPlan) ? product?.cost || 0 : 0,
                         },
                         hourlyRate,
                         monthlyFixedCosts,
@@ -614,7 +616,10 @@ export function ProductForm({
                               </span>
                             </div>
                           ) : (
-                            <UpgradeLock message="Lucro Real disponível apenas no Premium" size="sm" />
+                            <UpgradeLock
+                              message="Lucro Real disponível apenas no Premium"
+                              size="sm"
+                            />
                           )}
 
                           {/* Profitability Radar (Adaptive Feedback) */}
@@ -622,49 +627,74 @@ export function ProductForm({
                             <div className="bg-muted/30 grid grid-cols-2 gap-2 rounded-xl border border-dashed p-4">
                               <div className="flex flex-col">
                                 <span className="text-muted-foreground text-[9px] font-black uppercase">
-                                  {settings.financialDisplayMode === 'advanced' ? 'Margem de Contribuição' : 'Sobra p/ seu bolso'}
+                                  {settings.financialDisplayMode === 'advanced'
+                                    ? 'Margem de Contribuição'
+                                    : 'Sobra p/ seu bolso'}
                                 </span>
-                                <span className={`text-sm font-bold ${simulation.contributionMarginPercentage >= (settings.marginThresholdOptimal || 40)
-                                  ? 'text-green-600'
-                                  : simulation.contributionMarginPercentage >= (settings.marginThresholdWarning || 20)
-                                    ? 'text-yellow-600'
-                                    : 'text-red-600'
-                                  }`}>
-                                  R$ {simulation.contributionMargin.toFixed(2)} ({simulation.contributionMarginPercentage.toFixed(1)}%)
+                                <span
+                                  className={`text-sm font-bold ${
+                                    simulation.contributionMarginPercentage >=
+                                    (settings.marginThresholdOptimal || 40)
+                                      ? 'text-green-600'
+                                      : simulation.contributionMarginPercentage >=
+                                          (settings.marginThresholdWarning || 20)
+                                        ? 'text-yellow-600'
+                                        : 'text-red-600'
+                                  }`}
+                                >
+                                  R$ {simulation.contributionMargin.toFixed(2)} (
+                                  {simulation.contributionMarginPercentage.toFixed(1)}%)
                                 </span>
                               </div>
                               <div className="flex flex-col">
                                 <span className="text-muted-foreground text-[9px] font-black uppercase">
-                                  {settings.financialDisplayMode === 'advanced' ? 'Ponto de Equilíbrio' : 'Meta de Vendas'}
+                                  {settings.financialDisplayMode === 'advanced'
+                                    ? 'Ponto de Equilíbrio'
+                                    : 'Meta de Vendas'}
                                 </span>
-                                <span className="text-sm font-bold text-foreground">
-                                  {simulation.breakEvenUnits === Infinity ? '∞' : simulation.breakEvenUnits} {settings.financialDisplayMode === 'advanced' ? 'unidades' : 'p/ pagar as contas'}
+                                <span className="text-foreground text-sm font-bold">
+                                  {simulation.breakEvenUnits === Infinity
+                                    ? '∞'
+                                    : simulation.breakEvenUnits}{' '}
+                                  {settings.financialDisplayMode === 'advanced'
+                                    ? 'unidades'
+                                    : 'p/ pagar as contas'}
                                 </span>
                               </div>
-                              <div className="col-span-2 pt-2 border-t border-dashed mt-1">
-                                <div className="flex justify-between items-center text-[9px] text-muted-foreground font-black uppercase">
+                              <div className="col-span-2 mt-1 border-t border-dashed pt-2">
+                                <div className="text-muted-foreground flex items-center justify-between text-[9px] font-black uppercase">
                                   <span>
-                                    {settings.financialDisplayMode === 'advanced' ? 'MPM (Custo Base + Taxas)' : 'Custos da Venda (Taxas + Materiais)'}
+                                    {settings.financialDisplayMode === 'advanced'
+                                      ? 'MPM (Custo Base + Taxas)'
+                                      : 'Custos da Venda (Taxas + Materiais)'}
                                   </span>
                                   <span>R$ {simulation.variableCostsTotal.toFixed(2)}</span>
                                 </div>
                                 {settings.financialDisplayMode === 'advanced' && (
-                                  <div className="mt-2 space-y-1 pl-2 border-l-2 border-primary/10">
-                                    <div className="flex justify-between items-center text-[8px] text-muted-foreground/60 font-bold uppercase">
+                                  <div className="border-primary/10 mt-2 space-y-1 border-l-2 pl-2">
+                                    <div className="text-muted-foreground/60 flex items-center justify-between text-[8px] font-bold uppercase">
                                       <span>Mão de Obra + Fixos</span>
-                                      <span>R$ {(simulation.laborCost + simulation.fixedCost).toFixed(2)}</span>
+                                      <span>
+                                        R${' '}
+                                        {(simulation.laborCost + simulation.fixedCost).toFixed(2)}
+                                      </span>
                                     </div>
-                                    <div className="flex justify-between items-center text-[8px] text-muted-foreground/60 font-bold uppercase">
+                                    <div className="text-muted-foreground/60 flex items-center justify-between text-[8px] font-bold uppercase">
                                       <span>Materiais / Produto</span>
                                       <span>R$ {simulation.materialCost.toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between items-center text-[8px] text-muted-foreground/60 font-bold uppercase">
+                                    <div className="text-muted-foreground/60 flex items-center justify-between text-[8px] font-bold uppercase">
                                       <span>Impostos (Venda)</span>
-                                      <span>R$ {simulation.taxAmount.toFixed(2)} ({settings.taxRate}%)</span>
+                                      <span>
+                                        R$ {simulation.taxAmount.toFixed(2)} ({settings.taxRate}%)
+                                      </span>
                                     </div>
-                                    <div className="flex justify-between items-center text-[8px] text-muted-foreground/60 font-bold uppercase">
+                                    <div className="text-muted-foreground/60 flex items-center justify-between text-[8px] font-bold uppercase">
                                       <span>Taxas de Cartão</span>
-                                      <span>R$ {simulation.cardFeeAmount.toFixed(2)} ({settings.cardFeeRate}% )</span>
+                                      <span>
+                                        R$ {simulation.cardFeeAmount.toFixed(2)} (
+                                        {settings.cardFeeRate}% )
+                                      </span>
                                     </div>
                                   </div>
                                 )}
@@ -674,25 +704,36 @@ export function ProductForm({
                             <UpgradeLock message="Análise de Margem e Ponto de Equilíbrio bloqueada no plano Grátis." />
                           )}
 
-                          <div className="mt-8 pt-4 border-t">
-                            <div className="flex justify-between items-center px-1">
-                              <Label htmlFor="price" className="text-muted-foreground text-[10px] font-black uppercase">Preço Final (Venda)</Label>
+                          <div className="mt-8 border-t pt-4">
+                            <div className="flex items-center justify-between px-1">
+                              <Label
+                                htmlFor="price"
+                                className="text-muted-foreground text-[10px] font-black uppercase"
+                              >
+                                Preço Final (Venda)
+                              </Label>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
                                   const pattern = settings.psychologicalPricingPattern || '90'
-                                  const refined = applyPsychologicalPricing(simulation.suggestedPrice, pattern as any)
+                                  const refined = applyPsychologicalPricing(
+                                    simulation.suggestedPrice,
+                                    pattern as any
+                                  )
                                   setPrice(refined.toString())
                                 }}
-                                className="h-6 gap-1 text-[9px] font-black uppercase tracking-widest text-primary hover:text-primary hover:bg-primary/5"
+                                className="text-primary hover:text-primary hover:bg-primary/5 h-6 gap-1 text-[9px] font-black tracking-widest uppercase"
                               >
-                                <Wand2 size={10} /> Aplicar Arredondamento ({settings.psychologicalPricingPattern || '90'})
+                                <Wand2 size={10} /> Aplicar Arredondamento (
+                                {settings.psychologicalPricingPattern || '90'})
                               </Button>
                             </div>
                             <div className="relative mt-2">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground italic">R$</span>
+                              <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 font-bold italic">
+                                R$
+                              </span>
                               <Input
                                 id="price"
                                 name="price"
@@ -701,7 +742,7 @@ export function ProductForm({
                                 placeholder="Deixe em branco para sugerido"
                                 value={price}
                                 onChange={e => setPrice(e.target.value)}
-                                className="pl-10 h-10 text-md font-black"
+                                className="text-md h-10 pl-10 font-black"
                               />
                             </div>
                           </div>
@@ -717,7 +758,9 @@ export function ProductForm({
                             </div>
 
                             {state.message && (
-                              <p className={`text-center text-sm font-medium ${state.success ? 'text-green-600' : 'text-red-500'}`}>
+                              <p
+                                className={`text-center text-sm font-medium ${state.success ? 'text-green-600' : 'text-red-500'}`}
+                              >
                                 {state.message}
                               </p>
                             )}

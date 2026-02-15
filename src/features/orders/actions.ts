@@ -1,7 +1,13 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import type { ActionResponse, PaginatedResponse, OrderWithDetails, OrderStatus, OrderSummary } from '@/lib/types'
+import type {
+  ActionResponse,
+  PaginatedResponse,
+  OrderWithDetails,
+  OrderStatus,
+  OrderSummary,
+} from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 import { OrderSchema, type OrderInput } from '@/lib/schemas'
 import { calculateOrderTotal } from '@/lib/logic'
@@ -13,7 +19,7 @@ import {
   checkStockAvailability,
   deductStockForOrder,
   checkFinishedStockAvailability,
-  deductFinishedStockForOrder
+  deductFinishedStockForOrder,
 } from '@/lib/inventory'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limiter'
 import { logError } from '@/lib/logger'
@@ -44,7 +50,7 @@ export async function getOrdersPaginated(
     .from('Order')
     .select(
       `
-            id, status, dueDate, totalValue, createdAt, discount,
+            id, orderNumber, status, dueDate, totalValue, createdAt, discount,
             customer:Customer(id, name, phone),
             items:OrderItem(
                 productId, quantity, price, discount,
@@ -117,6 +123,33 @@ export async function getOrders() {
   return orders || []
 }
 
+/**
+ * Get lightweight order payload optimized for Kanban rendering.
+ */
+export async function getOrdersForKanban() {
+  const user = await getCurrentUser()
+  if (!user) return []
+
+  const supabase = await createClient()
+
+  const { data } = await (supabase as any)
+    .from('Order')
+    .select(
+      `
+            id, status, dueDate, totalValue,
+            customer:Customer(id, name),
+            items:OrderItem(
+                quantity,
+                product:Product(name)
+            )
+        `
+    )
+    .eq('tenantId', user.tenantId)
+    .order('createdAt', { ascending: false })
+
+  return (data as any[]) || []
+}
+
 export async function createOrder(data: OrderInput): Promise<ActionResponse> {
   const csrfError = await assertCSRFValid()
   if (csrfError) return csrfError
@@ -177,8 +210,8 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
         await logError(
           new Error(
             (notificationResult as any).message ||
-            (notificationResult as any).error ||
-            'Falha ao enviar orçamento.'
+              (notificationResult as any).error ||
+              'Falha ao enviar orçamento.'
           ),
           {
             action: 'send_order_quotation_notification',
@@ -267,8 +300,8 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
       await logError(
         new Error(
           (notificationResult as any).message ||
-          (notificationResult as any).error ||
-          'Falha ao enviar notificação de status.'
+            (notificationResult as any).error ||
+            'Falha ao enviar notificação de status.'
         ),
         {
           action: 'send_order_status_notification',

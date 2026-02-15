@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { PrintButton } from '@/components/print-button'
 
 export default async function QuotationPage(props: {
-  params: Promise<{ id: string }>,
+  params: Promise<{ id: string }>
   searchParams: Promise<{ p?: string }>
 }) {
   const { id } = await props.params
@@ -37,14 +37,14 @@ export default async function QuotationPage(props: {
         customer: {
           name: order.customerName,
           phone: order.customerPhone,
-          address: order.customerAddress
+          address: order.customerAddress,
         },
         items: (order.items || []).map((item: any) => ({
           quantity: item.quantity,
           product: { name: item.productName },
           price: item.price || 0,
-          discount: item.discount || 0
-        }))
+          discount: item.discount || 0,
+        })),
       }
     }
   } else {
@@ -73,7 +73,9 @@ export default async function QuotationPage(props: {
       <div className="mb-6 flex items-start justify-between border-b pb-6">
         <div>
           <h1 className="text-primary text-2xl font-bold">Atelis - Orçamento</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Pedido #{order.orderNumber || order.id.slice(0, 8)}</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Pedido #{order.orderNumber || order.id.slice(0, 8)}
+          </p>
         </div>
         <Badge variant="outline" className="uppercase">
           {order.status === 'QUOTATION' ? 'Orçamento' : 'Pedido de Venda'}
@@ -158,7 +160,10 @@ export default async function QuotationPage(props: {
               Valor Total
             </td>
             <td className="text-primary pt-2 pb-2 text-right text-lg font-bold">
-              {(order.totalValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {(order.totalValue || 0).toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              })}
             </td>
           </tr>
         </tfoot>

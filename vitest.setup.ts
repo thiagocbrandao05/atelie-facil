@@ -80,5 +80,7 @@ vi.mock('@/lib/security', () => ({
 
 // Mock audit wrapper
 vi.mock('@/lib/audit', () => ({
-  withAudit: vi.fn((_action: unknown, _entity: unknown, handler: (...args: unknown[]) => unknown) => handler),
+  withAudit: vi.fn(
+    (_action: unknown, _entity: unknown, handler: (...args: unknown[]) => unknown) => handler
+  ),
 }))

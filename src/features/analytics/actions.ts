@@ -176,11 +176,7 @@ export async function getLowStockMaterials() {
   const user = await getCurrentUser()
   if (!user) return []
 
-  // Use shared utility for consistency
   const alerts = await calculateStockAlerts(user.tenantId)
-
-  // Map to the format expected by the dashboard if different,
-  // but the alert format from lib/inventory.ts should be compatible or better.
   return alerts.map(a => ({
     id: a.id,
     name: a.name,

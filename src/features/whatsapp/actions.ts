@@ -62,7 +62,7 @@ export async function saveWhatsAppCredentials(prevState: any, formData: FormData
     return { success: true, message: 'Credenciais do WhatsApp salvas com sucesso!' }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, message: error.errors[0].message }
+      return { success: false, message: error.issues[0]?.message || 'Dados invalidos' }
     }
     console.error('[WHATSAPP] Unexpected error:', error)
     return { success: false, message: 'Erro ao salvar credenciais. Tente novamente.' }
@@ -278,7 +278,7 @@ async function buildOrderNotificationPayload(context: OrderNotificationContext) 
   return { order, settings: settings as SettingsMessageTemplates }
 }
 
-function buildMessage({
+async function buildMessage({
   order,
   settings,
   statusTo,
@@ -288,7 +288,7 @@ function buildMessage({
   statusTo: OrderStatus
 }) {
   const { template, templateKey } = resolveTemplate(settings || {}, statusTo)
-  const baseUrl = getBaseUrl()
+  const baseUrl = await getBaseUrl()
   const pdfLink = baseUrl ? `${baseUrl}/pedidos/${order.id}/pdf` : `/pedidos/${order.id}/pdf`
   const itemsSummary =
     order.items?.map((item: any) => `${item.quantity}x ${item.product?.name}`).join(', ') || ''
@@ -374,7 +374,7 @@ export async function enqueueOrderStatusNotification(context: OrderNotificationC
     return { success: false, message: error || 'Pedido não encontrado.' }
   }
 
-  const { messageBody, templateKey, pdfLink } = buildMessage({
+  const { messageBody, templateKey, pdfLink } = await buildMessage({
     order,
     settings: settings || {},
     statusTo: context.statusTo,
@@ -544,7 +544,8 @@ export async function sendWhatsAppMessage({
   if (!tenantPlan || !hasWhatsAppAPI(tenantPlan.plan)) {
     return {
       success: false,
-      message: 'API WhatsApp disponível apenas no plano Premium. Use o botão de notificação manual.',
+      message:
+        'API WhatsApp disponível apenas no plano Premium. Use o botão de notificação manual.',
     }
   }
 
@@ -571,7 +572,7 @@ export async function sendWhatsAppMessage({
 /**
  * Gera link WhatsApp para notificação manual (botão)
  * Disponível para todos os planos (Start, Pro, Premium)
- * 
+ *
  * @param orderId - ID do pedido
  * @returns Link wa.me com mensagem interpolada
  */
@@ -586,7 +587,8 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   // 1. Buscar pedido com customer e items
   const { data: order, error: orderError } = await (supabase as any)
     .from('Order')
-    .select(`
+    .select(
+      `
       id,
       status,
       totalValue,
@@ -597,7 +599,8 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
         quantity,
         product:Product(name)
       )
-    `)
+    `
+    )
     .eq('id', orderId)
     .eq('tenantId', user.tenantId)
     .single()
@@ -630,7 +633,11 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
 
   if (normalizedStatus === 'QUOTATION') {
     template = s?.msgQuotation
-  } else if (normalizedStatus === 'APPROVED' || normalizedStatus === 'PENDING' || normalizedStatus === 'PRODUCING') {
+  } else if (
+    normalizedStatus === 'APPROVED' ||
+    normalizedStatus === 'PENDING' ||
+    normalizedStatus === 'PRODUCING'
+  ) {
     template = s?.msgApproved
   } else if (normalizedStatus === 'READY') {
     template = s?.msgReady
@@ -668,11 +675,10 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   // Link amigável: /orcamento/[slug]/[orderNumber]?p=[publicId]
   const friendlyPath = `/orcamento/${tenant?.slug || 'atelis'}/${order.orderNumber || order.id.slice(0, 8)}?p=${publicId}`
 
-  const publicLink = baseUrl
-    ? `${baseUrl}${friendlyPath}`
-    : friendlyPath
+  const publicLink = baseUrl ? `${baseUrl}${friendlyPath}` : friendlyPath
 
-  const itemsSummary = order.items?.map((item: any) => `${item.quantity}x ${item.product?.name}`).join(', ') || ''
+  const itemsSummary =
+    order.items?.map((item: any) => `${item.quantity}x ${item.product?.name}`).join(', ') || ''
 
   let message = interpolateMessage(template, {
     cliente: order.customer?.name || 'Cliente',
@@ -680,7 +686,7 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
     status: statusLabels[normalizedStatus] || normalizedStatus.toLowerCase(),
     valor: formatCurrency(order.totalValue),
     itens: itemsSummary,
-    link_publico: publicLink
+    link_publico: publicLink,
   })
 
   // Garantir que o link público está na mensagem se for orçamento e o template não o incluiu
@@ -692,28 +698,26 @@ export async function generateWhatsAppNotifyLink(orderId: string) {
   const link = generateWhatsAppLink(order.customer.phone, message)
 
   // 6. Registrar log de notificação manual
-  await (supabase as any)
-    .from('WhatsAppNotificationLog')
-    .insert({
-      tenantId: user.tenantId,
-      orderId: order.id,
-      customerPhone: order.customer.phone,
-      statusFrom: null,
-      statusTo: order.status,
-      messageType: 'MANUAL_BUTTON',
-      templateKey: 'whatsappNotifyTemplate',
-      messageBody: message,
-      payload: {
-        customerName: order.customer.name,
-        orderShortId: order.orderNumber?.toString() || order.publicId || order.id.slice(0, 5),
-        totalValue: order.totalValue,
-        generatedLink: link,
-      },
-      attempts: 0,
-      status: 'SENT', // Link foi gerado, consideramos "enviado"
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    } as any)
+  await (supabase as any).from('WhatsAppNotificationLog').insert({
+    tenantId: user.tenantId,
+    orderId: order.id,
+    customerPhone: order.customer.phone,
+    statusFrom: null,
+    statusTo: order.status,
+    messageType: 'MANUAL_BUTTON',
+    templateKey: 'whatsappNotifyTemplate',
+    messageBody: message,
+    payload: {
+      customerName: order.customer.name,
+      orderShortId: order.orderNumber?.toString() || order.publicId || order.id.slice(0, 5),
+      totalValue: order.totalValue,
+      generatedLink: link,
+    },
+    attempts: 0,
+    status: 'SENT', // Link foi gerado, consideramos "enviado"
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } as any)
 
   return {
     success: true,

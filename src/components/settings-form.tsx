@@ -61,10 +61,12 @@ const WhatsAppSettingsTab = dynamic(
   () => import('@/components/whatsapp-settings-tab').then(mod => mod.WhatsAppSettingsTab),
   {
     ssr: false,
-    loading: () => <div className="space-y-4">
-      <Skeleton className="h-[200px] w-full rounded-xl" />
-      <Skeleton className="h-[100px] w-full rounded-xl" />
-    </div>,
+    loading: () => (
+      <div className="space-y-4">
+        <Skeleton className="h-[200px] w-full rounded-xl" />
+        <Skeleton className="h-[100px] w-full rounded-xl" />
+      </div>
+    ),
   }
 )
 
@@ -151,30 +153,33 @@ export function SettingsForm({
       onValueChange={setActiveTab}
       className="space-y-4"
     >
-      <TabsList className="bg-background h-auto flex-wrap border p-1">
-        <TabsTrigger value="general" className="shrink-0 gap-2">
+      <TabsList className="bg-background h-auto w-full justify-start gap-1 overflow-x-auto border p-1">
+        <TabsTrigger value="general" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
           <Store size={16} /> Geral
         </TabsTrigger>
-        <TabsTrigger value="financial" className="shrink-0 gap-2">
-          <TrendingUp size={16} /> Financeiro
-        </TabsTrigger>
-        <TabsTrigger value="notifications" className="shrink-0 gap-2">
-          <MessageSquare size={16} /> Mensagens
-        </TabsTrigger>
-        <TabsTrigger value="appearance" className="shrink-0 gap-2">
+        <TabsTrigger value="appearance" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
           <Palette size={16} /> Aparência
         </TabsTrigger>
-        <TabsTrigger value="maintenance" className="shrink-0 gap-2">
-          <Database size={16} /> Sistema
+        <TabsTrigger value="notifications" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
+          <MessageSquare size={16} /> Mensagens
         </TabsTrigger>
-        <TabsTrigger value="bulk-import" className="shrink-0 gap-2">
-          <Upload size={16} /> Carga em Lote
-        </TabsTrigger>
-        <TabsTrigger value="whatsapp" className="shrink-0 gap-2">
+        <TabsTrigger value="whatsapp" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
           <MessageSquare size={16} /> WhatsApp / API
         </TabsTrigger>
-        <TabsTrigger value="subscription" className="text-primary shrink-0 gap-2 font-bold">
+        <TabsTrigger value="financial" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
+          <TrendingUp size={16} /> Financeiro
+        </TabsTrigger>
+        <TabsTrigger
+          value="subscription"
+          className="text-primary min-h-10 shrink-0 gap-2 px-3 text-sm font-bold"
+        >
           <Sparkles size={16} className="fill-primary/20" /> Assinatura
+        </TabsTrigger>
+        <TabsTrigger value="bulk-import" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
+          <Upload size={16} /> Carga em lote
+        </TabsTrigger>
+        <TabsTrigger value="maintenance" className="min-h-10 shrink-0 gap-2 px-3 text-sm">
+          <Database size={16} /> Sistema
         </TabsTrigger>
       </TabsList>
 
@@ -222,7 +227,7 @@ export function SettingsForm({
                   </div>
                   <div className="shrink-0 space-y-2">
                     <Label className="text-muted-foreground text-xs font-bold uppercase">
-                      Preview Logo
+                      Prévia da logo
                     </Label>
                     <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border bg-white">
                       {settings.logoUrl ? (
@@ -273,7 +278,7 @@ export function SettingsForm({
                     placeholder="atendimento@seuatelie.com"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
                     <Label htmlFor="instagram" className="flex items-center gap-2">
                       <Instagram size={14} /> Instagram
@@ -425,7 +430,7 @@ export function SettingsForm({
         <TabsContent value="financial" className="space-y-4">
           <Card className="border-primary/20 shadow-md">
             <CardHeader className="bg-primary/5">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp size={20} className="text-primary" /> Precificação para Artesãos
@@ -434,14 +439,14 @@ export function SettingsForm({
                     Calcule seu valor por hora de forma justa e profissional.
                   </CardDescription>
                 </div>
-                <div className="bg-primary text-primary-foreground rounded-xl p-3 text-center shadow-lg">
+                <div className="bg-primary text-primary-foreground w-full rounded-xl p-3 text-center shadow-lg sm:w-auto">
                   <p className="text-[10px] font-bold uppercase opacity-80">Valor/Hora Calculado</p>
                   <p className="text-2xl font-black">R$ {calculatedHourlyRate.toFixed(2)}</p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* Left Column: Salary & Hours */}
                 <div className="space-y-6">
                   <div className="grid gap-3">
@@ -532,12 +537,18 @@ export function SettingsForm({
                 <div className="lg:col-span-2">
                   <Separator className="my-2" />
                   <div className="space-y-4 pt-4">
-                    <Label className="flex items-center gap-2 text-lg font-black tracking-tight uppercase text-primary/80">
-                      <TrendingUp size={18} className="text-primary" /> Configurações de Inteligência Financeira
+                    <Label className="text-primary/80 flex items-center gap-2 text-lg font-black tracking-tight uppercase">
+                      <TrendingUp size={18} className="text-primary" /> Configurações de
+                      Inteligência Financeira
                     </Label>
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="taxRate" className="font-semibold text-xs uppercase opacity-70">Impostos / Venda (%)</Label>
+                        <Label
+                          htmlFor="taxRate"
+                          className="text-xs font-semibold uppercase opacity-70"
+                        >
+                          Impostos / Venda (%)
+                        </Label>
                         <Input
                           id="taxRate"
                           name="taxRate"
@@ -548,7 +559,12 @@ export function SettingsForm({
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="cardFeeRate" className="font-semibold text-xs uppercase opacity-70">Taxas de Cartão (%)</Label>
+                        <Label
+                          htmlFor="cardFeeRate"
+                          className="text-xs font-semibold uppercase opacity-70"
+                        >
+                          Taxas de Cartão (%)
+                        </Label>
                         <Input
                           id="cardFeeRate"
                           name="cardFeeRate"
@@ -559,7 +575,12 @@ export function SettingsForm({
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="targetMonthlyProfit" className="font-semibold text-xs uppercase opacity-70">Meta de Lucro Livre (R$)</Label>
+                        <Label
+                          htmlFor="targetMonthlyProfit"
+                          className="text-xs font-semibold uppercase opacity-70"
+                        >
+                          Meta de Lucro Livre (R$)
+                        </Label>
                         <Input
                           id="targetMonthlyProfit"
                           name="targetMonthlyProfit"
@@ -569,8 +590,16 @@ export function SettingsForm({
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="psychologicalPricingPattern" className="font-semibold text-xs uppercase opacity-70">Arredondamento</Label>
-                        <Select name="psychologicalPricingPattern" defaultValue={settings.psychologicalPricingPattern || '90'}>
+                        <Label
+                          htmlFor="psychologicalPricingPattern"
+                          className="text-xs font-semibold uppercase opacity-70"
+                        >
+                          Arredondamento
+                        </Label>
+                        <Select
+                          name="psychologicalPricingPattern"
+                          defaultValue={settings.psychologicalPricingPattern || '90'}
+                        >
                           <SelectTrigger className="h-10 font-bold">
                             <SelectValue placeholder="Selecione..." />
                           </SelectTrigger>
@@ -588,8 +617,9 @@ export function SettingsForm({
                     <Separator className="my-2" />
 
                     <div className="space-y-4 pt-2">
-                      <Label className="flex items-center gap-2 text-lg font-black tracking-tight uppercase text-primary/80">
-                        <Sparkles size={18} className="text-primary" /> Experiência de Uso (UX Financeira)
+                      <Label className="text-primary/80 flex items-center gap-2 text-lg font-black tracking-tight uppercase">
+                        <Sparkles size={18} className="text-primary" /> Experiência de Uso (UX
+                        Financeira)
                       </Label>
                       <p className="text-muted-foreground text-xs leading-relaxed">
                         Como você prefere ver as informações de lucro e rentabilidade?
@@ -597,22 +627,36 @@ export function SettingsForm({
 
                       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                         <div className="grid gap-2">
-                          <Label htmlFor="financialDisplayMode" className="font-semibold text-xs uppercase opacity-70">Modo de Exibição</Label>
-                          <Select name="financialDisplayMode" defaultValue={settings.financialDisplayMode || 'simple'}>
-                            <SelectTrigger className="h-10 font-bold border-primary/20">
+                          <Label
+                            htmlFor="financialDisplayMode"
+                            className="text-xs font-semibold uppercase opacity-70"
+                          >
+                            Modo de Exibição
+                          </Label>
+                          <Select
+                            name="financialDisplayMode"
+                            defaultValue={settings.financialDisplayMode || 'simple'}
+                          >
+                            <SelectTrigger className="border-primary/20 h-10 font-bold">
                               <SelectValue placeholder="Selecione..." />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="simple">
                                 <div className="flex flex-col text-left">
-                                  <span className="font-bold text-primary">Modo Humano (Iniciante)</span>
-                                  <span className="text-[10px] opacity-60">Linguagem clara, cores e alertas diretos. Ideal p/ artesãos.</span>
+                                  <span className="text-primary font-bold">
+                                    Modo Humano (Iniciante)
+                                  </span>
+                                  <span className="text-[10px] opacity-60">
+                                    Linguagem clara, cores e alertas diretos. Ideal p/ artesãos.
+                                  </span>
                                 </div>
                               </SelectItem>
                               <SelectItem value="advanced">
                                 <div className="flex flex-col text-left">
                                   <span className="font-bold">Modo Premium (Técnico)</span>
-                                  <span className="text-[10px] opacity-60">Exibe MC, BEP e dados brutos. Para empreendedores experientes.</span>
+                                  <span className="text-[10px] opacity-60">
+                                    Exibe MC, BEP e dados brutos. Para empreendedores experientes.
+                                  </span>
                                 </div>
                               </SelectItem>
                             </SelectContent>
@@ -621,27 +665,33 @@ export function SettingsForm({
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="grid gap-2">
-                            <Label htmlFor="marginThresholdWarning" className="font-semibold text-[10px] uppercase opacity-70 flex items-center gap-1">
-                              Atenção 🟡 (%)
+                            <Label
+                              htmlFor="marginThresholdWarning"
+                              className="flex items-center gap-1 text-[10px] font-semibold uppercase opacity-70"
+                            >
+                              Atenção (%)
                             </Label>
                             <Input
                               id="marginThresholdWarning"
                               name="marginThresholdWarning"
                               type="number"
                               defaultValue={settings.marginThresholdWarning ?? 20}
-                              className="h-10 font-bold border-yellow-500/20"
+                              className="h-10 border-yellow-500/20 font-bold"
                             />
                           </div>
                           <div className="grid gap-2">
-                            <Label htmlFor="marginThresholdOptimal" className="font-semibold text-[10px] uppercase opacity-70 flex items-center gap-1">
-                              Saudável 🟢 (%)
+                            <Label
+                              htmlFor="marginThresholdOptimal"
+                              className="flex items-center gap-1 text-[10px] font-semibold uppercase opacity-70"
+                            >
+                              Saudável (%)
                             </Label>
                             <Input
                               id="marginThresholdOptimal"
                               name="marginThresholdOptimal"
                               type="number"
                               defaultValue={settings.marginThresholdOptimal ?? 40}
-                              className="h-10 font-bold border-green-500/20"
+                              className="h-10 border-green-500/20 font-bold"
                             />
                           </div>
                         </div>
@@ -651,7 +701,7 @@ export function SettingsForm({
                 </div>
 
                 {/* Right Column: Fixed Costs */}
-                <div className="bg-muted/30 space-y-4 rounded-2xl border border-dashed p-6">
+                <div className="bg-muted/30 space-y-4 rounded-2xl border border-dashed p-4 sm:p-6">
                   <Label className="flex items-center gap-2 text-lg font-semibold">
                     3. Custos Fixos do Ateliê
                     <TooltipProvider>
@@ -680,7 +730,7 @@ export function SettingsForm({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="text-destructive h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+                            className="text-destructive h-8 w-8 opacity-100 transition-opacity sm:h-7 sm:w-7 sm:opacity-0 sm:group-hover:opacity-100"
                             onClick={() => removeFixedCost(cost.id)}
                           >
                             <Trash2 size={14} />
@@ -690,7 +740,7 @@ export function SettingsForm({
                     ))}
                   </div>
 
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex flex-col gap-2 pt-2 sm:flex-row">
                     <div className="grid flex-grow gap-1">
                       <Input
                         placeholder="Ex: Internet"
@@ -699,7 +749,7 @@ export function SettingsForm({
                         className="h-9"
                       />
                     </div>
-                    <div className="grid w-24 gap-1">
+                    <div className="grid w-full gap-1 sm:w-24">
                       <Input
                         type="number"
                         placeholder="0.00"
@@ -712,7 +762,7 @@ export function SettingsForm({
                       type="button"
                       size="icon"
                       onClick={addFixedCost}
-                      className="h-9 w-9 shrink-0"
+                      className="h-10 w-full shrink-0 sm:h-9 sm:w-9"
                     >
                       <Plus size={16} />
                     </Button>
@@ -733,7 +783,7 @@ export function SettingsForm({
         </TabsContent>
 
         {/* Notificações / Mensagens */}
-        <TabsContent value="notifications">
+        <TabsContent value="notifications" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -747,7 +797,7 @@ export function SettingsForm({
                 <Textarea
                   id="msgQuotation"
                   name="msgQuotation"
-                  className="min-h-[80px]"
+                  className="min-h-[96px]"
                   defaultValue={
                     settings.msgQuotation ||
                     'Olá {cliente}, aqui está o orçamento dos seus produtos...'
@@ -765,7 +815,7 @@ export function SettingsForm({
                 <Textarea
                   id="msgApproved"
                   name="msgApproved"
-                  className="min-h-[80px]"
+                  className="min-h-[96px]"
                   defaultValue={
                     settings.msgApproved ||
                     'Olá {cliente}, seu pedido foi aprovado e iniciamos a produção!'
@@ -778,7 +828,7 @@ export function SettingsForm({
                 <Textarea
                   id="msgReady"
                   name="msgReady"
-                  className="min-h-[80px]"
+                  className="min-h-[96px]"
                   defaultValue={
                     settings.msgReady || 'Olá {cliente}, boas notícias! Seu pedido está prontinho.'
                   }
@@ -786,11 +836,11 @@ export function SettingsForm({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="msgFinished">4. Agradecimento Pós-Entrega</Label>
+                <Label htmlFor="msgFinished">4. Agradecimento Pós-entrega</Label>
                 <Textarea
                   id="msgFinished"
                   name="msgFinished"
-                  className="min-h-[80px]"
+                  className="min-h-[96px]"
                   defaultValue={
                     settings.msgFinished ||
                     'Olá {cliente}, muito obrigado por sua compra! Espero que tenha gostado.'
@@ -799,7 +849,6 @@ export function SettingsForm({
               </div>
 
               <Separator />
-
             </CardContent>
           </Card>
         </TabsContent>
@@ -878,10 +927,15 @@ export function SettingsForm({
 
         {/* Actions - Only visible for main tabs */}
         {isMainTab && (
-          <div className="sticky bottom-4 z-10 flex flex-col items-end gap-2 pt-4 transition-all duration-300">
-            <Button type="submit" size="lg" className="shadow-xl" disabled={isPending}>
+          <div className="sticky bottom-4 z-10 flex flex-col items-stretch gap-2 pt-4 transition-all duration-300 sm:items-end">
+            <Button
+              type="submit"
+              size="lg"
+              className="h-11 w-full shadow-xl sm:w-auto"
+              disabled={isPending}
+            >
               <Save className="mr-2 h-5 w-5" />{' '}
-              {isPending ? 'Salvando...' : 'Salvar Todas as Configurações'}
+              {isPending ? 'Salvando...' : 'Salvar todas as configurações'}
             </Button>
           </div>
         )}
@@ -923,7 +977,7 @@ export function SettingsForm({
                 pedidos.
               </p>
               <Button asChild size="lg" className="w-full font-bold sm:w-auto">
-                <Link href={`/${workspaceSlug}/app/upgrade`}>Ver Opções de Upgrade →</Link>
+                <Link href={`/${workspaceSlug}/app/upgrade`}>Ver Opções de upgrade →</Link>
               </Button>
             </div>
           </CardContent>

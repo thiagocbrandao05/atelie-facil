@@ -1,5 +1,5 @@
-import { PLANS } from '@/features/subscription/constants'
-import { Check, X, ArrowLeft, Crown } from 'lucide-react'
+﻿import { PLANS } from '@/features/subscription/constants'
+import { Check, ArrowLeft, Crown } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,7 +23,11 @@ export default async function UpgradePage({
 }) {
   const { workspaceSlug } = await params
   const user = await getCurrentUser()
-  if (!user) redirect('/auth/login')
+  if (!user) redirect('/login')
+
+  const appBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
   const supabase = await createClient()
   const { data: workspace } = await supabase
@@ -53,10 +57,10 @@ export default async function UpgradePage({
       </Link>
 
       <div className="mb-16 space-y-4 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">Escale seu Ateliê</h1>
+        <h1 className="text-4xl font-bold tracking-tight">Escolha o próximo passo do seu ateliê</h1>
         <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-          Desbloqueie recursos avançados de IA, aumente seus limites de mensagens e profissionalize
-          sua gestão.
+          Ganhe mais tempo com automações, aumente seus limites de mensagens e acompanhe melhor a
+          saúde do negócio.
         </p>
       </div>
 
@@ -80,12 +84,12 @@ export default async function UpgradePage({
                     href="/planos/pro"
                     className="text-primary mt-2 block text-xs font-bold hover:underline"
                   >
-                    Saiba mais sobre este plano →
+                    Saiba mais sobre este plano
                   </Link>
                 </CardDescription>
               </div>
               <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                Mais Popular
+                Mais popular
               </Badge>
             </div>
           </CardHeader>
@@ -107,13 +111,13 @@ export default async function UpgradePage({
                   mensagens de campanha
                 </li>
                 <li className="flex gap-3">
-                  <Check className="text-primary h-5 w-5 flex-none" /> IA: Previsão de Demanda
+                  <Check className="text-primary h-5 w-5 flex-none" /> IA: Previsão de demanda
                 </li>
                 <li className="flex gap-3">
-                  <Check className="text-primary h-5 w-5 flex-none" /> IA: Sugestão de Compras
+                  <Check className="text-primary h-5 w-5 flex-none" /> IA: Sugestão de compras
                 </li>
                 <li className="flex gap-3">
-                  <Check className="text-primary h-5 w-5 flex-none" /> Imagens em Campanhas
+                  <Check className="text-primary h-5 w-5 flex-none" /> Imagens em campanhas
                 </li>
                 <li className="flex gap-3">
                   <Check className="text-primary h-5 w-5 flex-none" /> Até 3 usuários
@@ -124,7 +128,7 @@ export default async function UpgradePage({
           <CardFooter>
             {currentPlan === 'pro' ? (
               <Button disabled className="w-full opacity-50">
-                Plano Atual
+                Plano atual
               </Button>
             ) : (
               <form
@@ -133,14 +137,14 @@ export default async function UpgradePage({
                   await createStripeCheckoutSession({
                     workspaceId: (workspace as any).id,
                     plan: 'pro',
-                    successUrl: `${process.env.NEXTAUTH_URL}/${workspaceSlug}/app/configuracoes?success=upgrade`,
-                    cancelUrl: `${process.env.NEXTAUTH_URL}/${workspaceSlug}/app/upgrade`,
+                    successUrl: `${appBaseUrl}/${workspaceSlug}/app/configuracoes?success=upgrade`,
+                    cancelUrl: `${appBaseUrl}/${workspaceSlug}/app/upgrade`,
                   }).then(res => redirect(res.url))
                 }}
                 className="w-full"
               >
                 <Button className="w-full font-bold" size="lg">
-                  Fazer Upgrade para Pro
+                  Quero o Pro
                 </Button>
               </form>
             )}
@@ -168,7 +172,7 @@ export default async function UpgradePage({
                     href="/planos/premium"
                     className="text-warning mt-2 block text-xs font-bold hover:underline"
                   >
-                    Saiba mais sobre este plano →
+                    Saiba mais sobre este plano
                   </Link>
                 </CardDescription>
               </div>
@@ -192,13 +196,13 @@ export default async function UpgradePage({
                   campanha
                 </li>
                 <li className="flex gap-3">
-                  <Check className="text-primary h-5 w-5 flex-none" /> IA Avançada (Sazonalidade)
+                  <Check className="text-primary h-5 w-5 flex-none" /> IA avançada (sazonalidade)
                 </li>
                 <li className="flex gap-3">
-                  <Check className="text-primary h-5 w-5 flex-none" /> Usuários Ilimitados
+                  <Check className="text-primary h-5 w-5 flex-none" /> Usuários ilimitados
                 </li>
                 <li className="flex gap-3">
-                  <Check className="text-primary h-5 w-5 flex-none" /> Suporte Prioritário
+                  <Check className="text-primary h-5 w-5 flex-none" /> Suporte prioritário
                 </li>
               </ul>
             </div>
@@ -206,7 +210,7 @@ export default async function UpgradePage({
           <CardFooter>
             {currentPlan === 'premium' ? (
               <Button disabled className="w-full opacity-50">
-                Plano Atual
+                Plano atual
               </Button>
             ) : (
               <form
@@ -215,8 +219,8 @@ export default async function UpgradePage({
                   await createStripeCheckoutSession({
                     workspaceId: (workspace as any).id,
                     plan: 'premium',
-                    successUrl: `${process.env.NEXTAUTH_URL}/${workspaceSlug}/app/configuracoes?success=upgrade`,
-                    cancelUrl: `${process.env.NEXTAUTH_URL}/${workspaceSlug}/app/upgrade`,
+                    successUrl: `${appBaseUrl}/${workspaceSlug}/app/configuracoes?success=upgrade`,
+                    cancelUrl: `${appBaseUrl}/${workspaceSlug}/app/upgrade`,
                   }).then(res => redirect(res.url))
                 }}
                 className="w-full"
@@ -226,7 +230,7 @@ export default async function UpgradePage({
                   className="w-full border-gray-300 font-bold hover:bg-gray-50"
                   size="lg"
                 >
-                  Assinar Premium
+                  Quero o Premium
                 </Button>
               </form>
             )}
@@ -236,9 +240,9 @@ export default async function UpgradePage({
 
       <p className="text-muted-foreground mt-12 text-center text-sm">
         Dúvidas sobre os planos?{' '}
-        <a href="#" className="hover:text-primary underline">
-          Fale com nosso suporte
-        </a>
+        <Link href={`/${workspaceSlug}/app/configuracoes`} className="hover:text-primary underline">
+          Fale com o suporte no painel
+        </Link>
         .
       </p>
     </div>

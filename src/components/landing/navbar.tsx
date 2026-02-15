@@ -39,8 +39,8 @@ export function LandingNavbar() {
         className={cn(
           'container mx-auto flex h-14 max-w-7xl items-center justify-between rounded-2xl px-6 transition-all duration-300',
           scrolled
-            ? 'bg-background/70 text-foreground border-border/40 border shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-background/60'
-            : 'bg-transparent text-foreground'
+            ? 'bg-background/70 text-foreground border-border/40 supports-[backdrop-filter]:bg-background/60 border shadow-sm backdrop-blur-xl'
+            : 'text-foreground bg-transparent'
         )}
       >
         <div className="flex items-center gap-2">
@@ -49,7 +49,7 @@ export function LandingNavbar() {
           </div>
           <Link
             href="/"
-            className="text-lg font-bold tracking-tight text-foreground transition-colors hover:text-primary"
+            className="text-foreground hover:text-primary text-lg font-bold tracking-tight transition-colors"
           >
             Atelis
           </Link>
@@ -59,19 +59,19 @@ export function LandingNavbar() {
         <div className="hidden items-center gap-8 md:flex">
           <Link
             href={getHref('#funcionalidades')}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
           >
             Funcionalidades
           </Link>
           <Link
             href={getHref('#planos')}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
           >
             Planos
           </Link>
           <Link
             href="/about"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+            className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
           >
             Sobre
           </Link>
@@ -81,14 +81,14 @@ export function LandingNavbar() {
         <div className="hidden items-center gap-3 md:flex">
           <Link
             href="/login"
-            className="px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:text-primary"
+            className="text-foreground hover:text-primary px-4 py-2 text-sm font-semibold transition-colors"
           >
             Entrar
           </Link>
           <Link
             href="/register"
             className={cn(
-              'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 rounded-xl px-5 py-2 text-sm font-bold transition-all hover:-translate-y-0.5 active:scale-95'
+              'bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20 rounded-xl px-5 py-2 text-sm font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-95'
             )}
           >
             Começar Grátis
@@ -99,26 +99,53 @@ export function LandingNavbar() {
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className={cn("p-2 rounded-lg transition-colors", scrolled ? "hover:bg-primary-foreground/20 text-primary-foreground" : "hover:bg-muted text-foreground")}>
+              <button
+                className={cn(
+                  'rounded-lg p-2 transition-colors',
+                  scrolled
+                    ? 'hover:bg-primary-foreground/20 text-primary-foreground'
+                    : 'hover:bg-muted text-foreground'
+                )}
+              >
                 <Menu size={24} />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[200px] glass-card border-white/20">
+            <DropdownMenuContent align="end" className="glass-card w-[200px] border-white/20">
               <DropdownMenuItem asChild>
-                <Link href={getHref('#funcionalidades')} className="w-full justify-start cursor-pointer font-medium p-3">Funcionalidades</Link>
+                <Link
+                  href={getHref('#funcionalidades')}
+                  className="w-full cursor-pointer justify-start p-3 font-medium"
+                >
+                  Funcionalidades
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href={getHref('#planos')} className="w-full justify-start cursor-pointer font-medium p-3">Planos</Link>
+                <Link
+                  href={getHref('#planos')}
+                  className="w-full cursor-pointer justify-start p-3 font-medium"
+                >
+                  Planos
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/about" className="w-full justify-start cursor-pointer font-medium p-3">Sobre</Link>
+                <Link href="/about" className="w-full cursor-pointer justify-start p-3 font-medium">
+                  Sobre
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem asChild>
-                <Link href="/login" className="w-full justify-start cursor-pointer font-bold p-3 text-primary">Entrar</Link>
+                <Link
+                  href="/login"
+                  className="text-primary w-full cursor-pointer justify-start p-3 font-bold"
+                >
+                  Entrar
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/register" className="w-full justify-center cursor-pointer font-black p-3 bg-primary text-primary-foreground rounded-lg mt-1 text-center hover:bg-primary/90 focus:bg-primary/90">
+                <Link
+                  href="/register"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90 mt-1 w-full cursor-pointer justify-center rounded-lg p-3 text-center font-black"
+                >
                   Criar Conta
                 </Link>
               </DropdownMenuItem>

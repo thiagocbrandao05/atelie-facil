@@ -30,8 +30,18 @@ export const ProductMaterialSchema = z.object({
 export const ProductSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
   imageUrl: z.string().url('URL inválida').optional().or(z.literal('')).or(z.null()),
-  description: z.string().max(MAX_STRING_LENGTH, 'Descrição muito longa').optional().or(z.literal('')).or(z.null()),
-  price: z.coerce.number().min(0, 'Preço deve ser positivo').max(MAX_PRICE, 'Preço muito alto').optional().or(z.null()),
+  description: z
+    .string()
+    .max(MAX_STRING_LENGTH, 'Descrição muito longa')
+    .optional()
+    .or(z.literal(''))
+    .or(z.null()),
+  price: z.coerce
+    .number()
+    .min(0, 'Preço deve ser positivo')
+    .max(MAX_PRICE, 'Preço muito alto')
+    .optional()
+    .or(z.null()),
   laborTime: z.coerce
     .number()
     .int('Tempo deve ser um número inteiro')
@@ -41,9 +51,7 @@ export const ProductSchema = z.object({
     .number()
     .min(0, 'Margem de lucro deve ser positiva')
     .max(1000, 'Margem muito alta (máx: 1000%)'),
-  materials: z
-    .array(ProductMaterialSchema)
-    .max(50, 'Máximo 50 materiais por produto'),
+  materials: z.array(ProductMaterialSchema).max(50, 'Máximo 50 materiais por produto'),
 })
 
 export const OrderItemSchema = z.object({

@@ -1,12 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from '@hello-pangea/dnd'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { updateOrderStatus } from '@/features/orders/actions'
@@ -24,7 +19,10 @@ const STATUS_CONFIG = {
   QUOTATION: { label: 'Orçamentos', color: 'border-orange-200 bg-orange-50/50 text-orange-700' },
   PENDING: { label: 'Aguardando', color: 'border-blue-200 bg-blue-50/50 text-blue-700' },
   PRODUCING: { label: 'Na Bancada', color: 'border-primary/30 bg-primary/5 text-primary' },
-  READY: { label: 'Pronto para Entrega', color: 'border-emerald-200 bg-emerald-50/50 text-emerald-700' },
+  READY: {
+    label: 'Pronto para Entrega',
+    color: 'border-emerald-200 bg-emerald-50/50 text-emerald-700',
+  },
   DELIVERED: { label: 'Finalizados', color: 'border-slate-200 bg-slate-50/50 text-slate-500' },
 }
 
@@ -65,14 +63,16 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex h-full min-h-[700px] items-start gap-8 overflow-x-auto pb-12 scrollbar-hide pt-4">
+      <div className="scrollbar-hide flex h-full min-h-[700px] items-start gap-8 overflow-x-auto pt-4 pb-12">
         {Object.entries(STATUS_CONFIG).map(([statusKey, config]) => (
           <div key={statusKey} className="flex w-full min-w-[320px] flex-col gap-6">
             <div
-              className={`flex items-center justify-between rounded-[2rem] border-b-2 bg-white/40 p-5 backdrop-blur-md shadow-sm ${config.color.split(' ')[0]}`}
+              className={`flex items-center justify-between rounded-[2rem] border-b-2 bg-white/40 p-5 shadow-sm backdrop-blur-md ${config.color.split(' ')[0]}`}
             >
               <div className="flex flex-col gap-1">
-                <h3 className="text-[10px] font-black tracking-[0.2em] uppercase opacity-40">{statusKey}</h3>
+                <h3 className="text-[10px] font-black tracking-[0.2em] uppercase opacity-40">
+                  {statusKey}
+                </h3>
                 <p className="text-sm font-black">{config.label}</p>
               </div>
               <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-black shadow-inner">
@@ -94,9 +94,9 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
                           ref={providedSnapshot.innerRef}
                           {...providedSnapshot.draggableProps}
                           {...providedSnapshot.dragHandleProps}
-                          className={`bg-white/80 group relative overflow-hidden rounded-[2rem] border border-white/40 p-6 shadow-sm backdrop-blur-md transition-all hover:bg-white hover:shadow-xl hover:shadow-primary/5 ${snapshot.isDragging ? 'ring-primary/40 scale-105 rotate-2 shadow-2xl ring-4' : ''}`}
+                          className={`group hover:shadow-primary/5 relative overflow-hidden rounded-[2rem] border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-all hover:bg-white hover:shadow-xl ${snapshot.isDragging ? 'ring-primary/40 scale-105 rotate-2 shadow-2xl ring-4' : ''}`}
                         >
-                          <div className="absolute right-[-10px] top-[-10px] opacity-0 transition-opacity group-hover:opacity-5">
+                          <div className="absolute top-[-10px] right-[-10px] opacity-0 transition-opacity group-hover:opacity-5">
                             <PackageIcon size={64} className="text-primary" />
                           </div>
 
@@ -105,13 +105,15 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
                               <span className="text-muted-foreground font-mono text-[9px] font-bold tracking-widest uppercase opacity-40">
                                 #{order.id.slice(-4)}
                               </span>
-                              <div className="bg-primary/5 text-primary rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-tight">
-                                {order.dueDate ? format(new Date(order.dueDate), 'dd MMM', { locale: ptBR }) : 'Pendente'}
+                              <div className="bg-primary/5 text-primary rounded-full px-3 py-1 text-[9px] font-black tracking-tight uppercase">
+                                {order.dueDate
+                                  ? format(new Date(order.dueDate), 'dd MMM', { locale: ptBR })
+                                  : 'Pendente'}
                               </div>
                             </div>
 
                             <div className="space-y-1">
-                              <div className="text-foreground group-hover:text-primary text-base font-black leading-tight transition-colors">
+                              <div className="text-foreground group-hover:text-primary text-base leading-tight font-black transition-colors">
                                 {order.customer?.name || 'Cliente'}
                               </div>
                               <div className="text-muted-foreground line-clamp-1 text-[11px] font-medium italic">
@@ -121,14 +123,14 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between border-t border-primary/5 pt-3">
+                            <div className="border-primary/5 flex items-center justify-between border-t pt-3">
                               <div className="text-primary text-sm font-black tracking-tight">
                                 {new Intl.NumberFormat('pt-BR', {
                                   style: 'currency',
                                   currency: 'BRL',
                                 }).format(Number(order.totalValue))}
                               </div>
-                              <div className="bg-success h-1.5 w-1.5 rounded-full shadow-glow" />
+                              <div className="bg-success shadow-glow h-1.5 w-1.5 rounded-full" />
                             </div>
                           </div>
                         </div>

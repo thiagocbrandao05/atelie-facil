@@ -14,7 +14,7 @@ const AuditLogTable = dynamic(
 )
 
 export const metadata = {
-  title: 'Auditoria | AteliêFácil',
+  title: 'Auditoria | Atelis',
   description: 'Histórico de ações e auditoria do sistema',
 }
 

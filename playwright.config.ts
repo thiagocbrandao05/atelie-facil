@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
+import nextEnv from '@next/env'
+
+const { loadEnvConfig } = nextEnv
+loadEnvConfig(process.cwd())
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -23,6 +27,10 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
+    env: {
+      ...process.env,
+      E2E_DISABLE_RATE_LIMIT: 'true',
+    },
   },
 })

@@ -177,9 +177,7 @@ export function MaterialForm({ suppliers = [], initialData, trigger }: MaterialF
               But kept error messages.
             */}
             {localState.message && !localState.success && (
-              <p className="text-sm text-red-500">
-                {localState.message}
-              </p>
+              <p className="text-sm text-red-500">{localState.message}</p>
             )}
           </div>
           <div className="flex justify-end">

@@ -1,20 +1,19 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import * as XLSX from 'xlsx'
+import { type ChangeEvent, useRef, useState } from 'react'
 import {
-  Upload,
-  FileSpreadsheet,
-  CheckCircle2,
   AlertCircle,
   ArrowRight,
+  CheckCircle2,
   Download,
+  FileSpreadsheet,
   Loader2,
   Table as TableIcon,
+  Upload,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
 import {
   Select,
   SelectContent,
@@ -24,14 +23,16 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import {
+  importCustomersAction,
   importMaterialsAction,
   importStockAction,
-  importCustomersAction,
   importSuppliersAction,
 } from '@/features/bulk-import/actions'
 import { cn } from '@/lib/utils'
 
 type ImportType = 'materials' | 'stock' | 'customers' | 'suppliers'
+
+type CsvRow = Record<string, string>
 
 interface MappingField {
   label: string
@@ -39,27 +40,29 @@ interface MappingField {
   required: boolean
 }
 
+const MAX_CSV_SIZE_BYTES = 2 * 1024 * 1024
+
 const FIELDS_MAP: Record<ImportType, MappingField[]> = {
   materials: [
     { label: 'Nome', key: 'name', required: true },
     { label: 'Unidade (ex: un, m, kg)', key: 'unit', required: true },
-    { label: 'Custo Unitário', key: 'cost', required: true },
-    { label: 'Estoque Mínimo', key: 'minQuantity', required: false },
+    { label: 'Custo Unitario', key: 'cost', required: true },
+    { label: 'Estoque Minimo', key: 'minQuantity', required: false },
   ],
   customers: [
     { label: 'Nome', key: 'name', required: true },
     { label: 'Telefone', key: 'phone', required: false },
     { label: 'Email', key: 'email', required: false },
-    { label: 'Endereço', key: 'address', required: false },
-    { label: 'Observações', key: 'notes', required: false },
+    { label: 'Endereco', key: 'address', required: false },
+    { label: 'Observacoes', key: 'notes', required: false },
   ],
   suppliers: [
     { label: 'Nome', key: 'name', required: true },
     { label: 'Contato', key: 'contact', required: false },
     { label: 'Telefone', key: 'phone', required: false },
     { label: 'Email', key: 'email', required: false },
-    { label: 'Endereço', key: 'address', required: false },
-    { label: 'Observações', key: 'notes', required: false },
+    { label: 'Endereco', key: 'address', required: false },
+    { label: 'Observacoes', key: 'notes', required: false },
   ],
   stock: [
     { label: 'Nome do Material', key: 'materialName', required: true },
@@ -68,59 +71,142 @@ const FIELDS_MAP: Record<ImportType, MappingField[]> = {
   ],
 }
 
+function normalizeLabel(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim()
+}
+
+function parseCsv(content: string): CsvRow[] {
+  const rows: string[][] = []
+  let row: string[] = []
+  let field = ''
+  let quoted = false
+
+  for (let i = 0; i < content.length; i += 1) {
+    const char = content[i]
+
+    if (char === '"') {
+      if (quoted && content[i + 1] === '"') {
+        field += '"'
+        i += 1
+      } else {
+        quoted = !quoted
+      }
+      continue
+    }
+
+    if (char === ',' && !quoted) {
+      row.push(field.trim())
+      field = ''
+      continue
+    }
+
+    if ((char === '\n' || char === '\r') && !quoted) {
+      if (char === '\r' && content[i + 1] === '\n') {
+        i += 1
+      }
+      row.push(field.trim())
+      field = ''
+      if (row.some(column => column.length > 0)) {
+        rows.push(row)
+      }
+      row = []
+      continue
+    }
+
+    field += char
+  }
+
+  if (field.length > 0 || row.length > 0) {
+    row.push(field.trim())
+    if (row.some(column => column.length > 0)) {
+      rows.push(row)
+    }
+  }
+
+  if (rows.length < 2) {
+    return []
+  }
+
+  const headers = rows[0].map(header => header.replace(/^\uFEFF/, '').trim())
+
+  return rows.slice(1).map(columns => {
+    const item: CsvRow = {}
+    headers.forEach((header, index) => {
+      item[header] = columns[index] ?? ''
+    })
+    return item
+  })
+}
+
 export function BulkImport() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [type, setType] = useState<ImportType>('materials')
-  const [fileData, setFileData] = useState<any[]>([])
+  const [fileData, setFileData] = useState<CsvRow[]>([])
   const [headers, setHeaders] = useState<string[]>([])
   const [mapping, setMapping] = useState<Record<string, string>>({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (!file) return
 
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      toast.error('Formato invalido. Envie um arquivo .csv.')
+      return
+    }
+
+    if (file.size > MAX_CSV_SIZE_BYTES) {
+      toast.error('Arquivo grande demais. Limite de 2 MB por importacao.')
+      return
+    }
+
     const reader = new FileReader()
-    reader.onload = event => {
-      const data = new Uint8Array(event.target?.result as ArrayBuffer)
-      const workbook = XLSX.read(data, { type: 'array' })
-      const sheetName = workbook.SheetNames[0]
-      const worksheet = workbook.Sheets[sheetName]
-      const json = XLSX.utils.sheet_to_json(worksheet)
+    reader.onload = fileEvent => {
+      const content = String(fileEvent.target?.result ?? '')
+      const json = parseCsv(content)
 
       if (json.length === 0) {
-        toast.error('Arquivo vazio ou formato inválido.')
+        toast.error('Arquivo vazio ou formato invalido.')
         return
       }
 
-      const fileHeaders = Object.keys(json[0] as any)
+      const fileHeaders = Object.keys(json[0])
       setFileData(json)
       setHeaders(fileHeaders)
 
-      // Auto-mapping attempt
       const initialMapping: Record<string, string> = {}
       FIELDS_MAP[type].forEach(field => {
-        const match = fileHeaders.find(
-          h =>
-            h.toLowerCase().includes(field.label.toLowerCase()) ||
-            h.toLowerCase().includes(field.key.toLowerCase())
-        )
-        if (match) initialMapping[field.key] = match
+        const normalizedFieldLabel = normalizeLabel(field.label)
+        const normalizedFieldKey = normalizeLabel(field.key)
+        const match = fileHeaders.find(header => {
+          const normalizedHeader = normalizeLabel(header)
+          return (
+            normalizedHeader.includes(normalizedFieldLabel) ||
+            normalizedHeader.includes(normalizedFieldKey)
+          )
+        })
+
+        if (match) {
+          initialMapping[field.key] = match
+        }
       })
 
       setMapping(initialMapping)
       setStep(3)
     }
-    reader.readAsArrayBuffer(file)
+    reader.readAsText(file, 'utf-8')
   }
 
   const handleImport = async () => {
-    // Check required mappings
-    const missing = FIELDS_MAP[type].filter(f => f.required && !mapping[f.key])
+    const missing = FIELDS_MAP[type].filter(field => field.required && !mapping[field.key])
     if (missing.length > 0) {
-      toast.error(`Mapeie os campos obrigatórios: ${missing.map(m => m.label).join(', ')}`)
+      toast.error(`Mapeie os campos obrigatorios: ${missing.map(item => item.label).join(', ')}`)
       return
     }
 
@@ -129,24 +215,23 @@ export function BulkImport() {
 
     try {
       const preparedData = fileData.map(row => {
-        const item: any = {}
+        const item: Record<string, string> = {}
         FIELDS_MAP[type].forEach(field => {
-          const excelColumn = mapping[field.key]
-          if (excelColumn) {
-            item[field.key] = row[excelColumn]
+          const csvColumn = mapping[field.key]
+          if (csvColumn) {
+            item[field.key] = row[csvColumn]
           }
         })
         return item
       })
 
-      // Process in chunks of 50
-      const CHUNK_SIZE = 50
-      const totalChunks = Math.ceil(preparedData.length / CHUNK_SIZE)
+      const chunkSize = 50
+      const totalChunks = Math.ceil(preparedData.length / chunkSize)
       let successCount = 0
       const errors: string[] = []
 
-      for (let i = 0; i < totalChunks; i++) {
-        const chunk = preparedData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)
+      for (let i = 0; i < totalChunks; i += 1) {
+        const chunk = preparedData.slice(i * chunkSize, (i + 1) * chunkSize)
 
         let result
         switch (type) {
@@ -165,34 +250,31 @@ export function BulkImport() {
         }
 
         if (result.success) {
-          // Extract success count from message if available or assume chunk size
-          // Since actions return aggregate messages, we'll assume chunk success for progress
           successCount += chunk.length
         } else {
           errors.push(`Erro no lote ${i + 1}: ${result.message}`)
         }
 
-        // Update progress
         setProgress(Math.round(((i + 1) / totalChunks) * 100))
       }
 
       if (errors.length === 0) {
-        toast.success(`Importação concluída! ${preparedData.length} registros processados.`)
+        toast.success(`Importacao concluida! ${preparedData.length} registros processados.`)
         setStep(1)
         setFileData([])
         setType('materials')
       } else if (successCount > 0) {
         toast.warning(
-          `Importação parcial: ${successCount} sucessos. ${errors.length} lotes com erro.`
+          `Importacao parcial: ${successCount} sucessos. ${errors.length} lotes com erro.`
         )
         console.error('Import errors:', errors)
       } else {
-        toast.error('Falha na importação. Verifique o console para detalhes.')
+        toast.error('Falha na importacao. Verifique o console para detalhes.')
         console.error('All chunks failed:', errors)
       }
-    } catch (err) {
-      console.error('Import exception:', err)
-      toast.error('Erro ao processar importação.')
+    } catch (error) {
+      console.error('Import exception:', error)
+      toast.error('Erro ao processar importacao.')
     } finally {
       setIsProcessing(false)
       setProgress(0)
@@ -201,12 +283,11 @@ export function BulkImport() {
 
   const downloadTemplate = () => {
     try {
-      const fields = FIELDS_MAP[type].map(f => f.label)
+      const fields = FIELDS_MAP[type].map(field => field.label)
+      const sampleData: string[][] = [fields]
 
-      // Generate some sample data for each type to make it more useful
-      const sampleData = [fields]
       if (type === 'materials') {
-        sampleData.push(['Papelão Cinza 2mm', 'un', '15.00', '5'])
+        sampleData.push(['Papelao Cinza 2mm', 'un', '15.00', '5'])
         sampleData.push(['Tecido Tricoline', 'm', '28.00', '2'])
       } else if (type === 'customers') {
         sampleData.push([
@@ -214,41 +295,35 @@ export function BulkImport() {
           '(11) 99999-8888',
           'maria@email.com',
           'Rua das Flores, 123',
-          'Gosta de cores pastéis',
+          'Gosta de cores pasteis',
         ])
       } else if (type === 'suppliers') {
         sampleData.push([
-          'Comercial Papéis',
-          'João',
+          'Comercial Papeis',
+          'Joao',
           '(11) 4444-5555',
           'vendas@compapeis.com',
           'Av. Industrial, 500',
           'Entrega semanal',
         ])
       } else if (type === 'stock') {
-        sampleData.push(['Papelão Cinza 2mm', '10', 'Carga inicial'])
+        sampleData.push(['Papelao Cinza 2mm', '10', 'Carga inicial'])
       }
 
-      const ws = XLSX.utils.aoa_to_sheet(sampleData)
-      const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, 'Template')
-
-      // Use a more robust download method to ensure filename and extension
-      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
-      const dataBlob = new Blob([excelBuffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      })
+      const escapeCsv = (value: string) => `"${String(value).replace(/"/g, '""')}"`
+      const csvContent = sampleData.map(line => line.map(escapeCsv).join(',')).join('\n')
+      const dataBlob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(dataBlob)
 
       const link = document.createElement('a')
       link.href = url
-      link.download = `modelo_importacao_${type}.xlsx`
+      link.download = `modelo_importacao_${type}.csv`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
 
-      toast.success('Modelo baixado com sucesso! Use-o como base para seus dados.')
+      toast.success('Modelo baixado com sucesso!')
     } catch (error) {
       console.error('Error downloading template:', error)
       toast.error('Erro ao gerar o arquivo de modelo.')
@@ -262,40 +337,38 @@ export function BulkImport() {
           <FileSpreadsheet className="text-primary" /> Carga em Lote
         </CardTitle>
         <CardDescription>
-          Importe dados rapidamente através de arquivos Excel (.xlsx ou .csv).
+          Importe dados rapidamente por arquivo CSV. Para mais seguranca, o app nao aceita XLSX.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Step Indicators */}
         <div className="mb-8 flex items-center justify-between px-4">
-          {[1, 2, 3].map(s => (
-            <div key={s} className="flex items-center gap-2">
+          {[1, 2, 3].map(stepNumber => (
+            <div key={stepNumber} className="flex items-center gap-2">
               <div
                 className={cn(
                   'flex h-8 w-8 items-center justify-center rounded-full font-bold transition-all',
-                  step === s
+                  step === stepNumber
                     ? 'bg-primary text-primary-foreground scale-110 shadow-lg'
-                    : step > s
+                    : step > stepNumber
                       ? 'bg-success text-white'
                       : 'bg-muted text-muted-foreground'
                 )}
               >
-                {step > s ? <CheckCircle2 size={16} /> : s}
+                {step > stepNumber ? <CheckCircle2 size={16} /> : stepNumber}
               </div>
               <span
                 className={cn(
                   'hidden text-xs font-bold tracking-wider uppercase sm:block',
-                  step === s ? 'text-primary' : 'text-muted-foreground'
+                  step === stepNumber ? 'text-primary' : 'text-muted-foreground'
                 )}
               >
-                {s === 1 ? 'Tipo' : s === 2 ? 'Upload' : 'De/Para'}
+                {stepNumber === 1 ? 'Tipo' : stepNumber === 2 ? 'Upload' : 'De/Para'}
               </span>
-              {s < 3 && <div className="bg-muted mx-2 h-[2px] w-8 sm:w-16" />}
+              {stepNumber < 3 && <div className="bg-muted mx-2 h-[2px] w-8 sm:w-16" />}
             </div>
           ))}
         </div>
 
-        {/* STEP 1: SELECT TYPE */}
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {[
@@ -314,7 +387,7 @@ export function BulkImport() {
               {
                 id: 'customers',
                 label: 'Clientes',
-                sub: 'Dados de contato e endereços',
+                sub: 'Dados de contato e enderecos',
                 icon: <Upload />,
               },
               {
@@ -323,36 +396,35 @@ export function BulkImport() {
                 sub: 'Rede de fornecimento',
                 icon: <FileSpreadsheet />,
               },
-            ].map(t => (
+            ].map(item => (
               <button
-                key={t.id}
+                key={item.id}
                 onClick={() => {
-                  setType(t.id as ImportType)
+                  setType(item.id as ImportType)
                   setStep(2)
                 }}
                 className="hover:border-primary/40 group flex items-start gap-4 rounded-2xl border-2 border-transparent bg-white p-6 text-left transition-all hover:shadow-xl active:scale-95"
               >
                 <div className="bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground rounded-xl p-3 transition-colors">
-                  {t.id === 'materials' ? (
+                  {item.id === 'materials' ? (
                     <CheckCircle2 size={24} />
-                  ) : t.id === 'stock' ? (
+                  ) : item.id === 'stock' ? (
                     <TableIcon size={24} />
-                  ) : t.id === 'customers' ? (
+                  ) : item.id === 'customers' ? (
                     <Upload size={24} />
                   ) : (
                     <FileSpreadsheet size={24} />
                   )}
                 </div>
                 <div>
-                  <p className="text-foreground font-black">{t.label}</p>
-                  <p className="text-muted-foreground text-xs">{t.sub}</p>
+                  <p className="text-foreground font-black">{item.label}</p>
+                  <p className="text-muted-foreground text-xs">{item.sub}</p>
                 </div>
               </button>
             ))}
           </div>
         )}
 
-        {/* STEP 2: UPLOAD FILE */}
         {step === 2 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6">
             <div
@@ -364,18 +436,15 @@ export function BulkImport() {
                 ref={fileInputRef}
                 onChange={handleFileUpload}
                 className="hidden"
-                accept=".xlsx, .xls, .csv"
+                accept=".csv,text/csv"
               />
               <div className="bg-primary/5 mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full transition-transform group-hover:scale-110">
                 <Upload className="text-primary h-10 w-10" />
               </div>
-              <h3 className="text-foreground mb-2 text-xl font-black">Selecione o arquivo Excel</h3>
+              <h3 className="text-foreground mb-2 text-xl font-black">Selecione o arquivo CSV</h3>
               <p className="text-muted-foreground mx-auto max-w-xs">
-                Arraste ou clique para carregar sua planilha de{' '}
-                <span className="text-primary font-bold">
-                  {FIELDS_MAP[type].map(f => f.label).length} campos
-                </span>
-                .
+                Arraste ou clique para carregar sua planilha com{' '}
+                <span className="text-primary font-bold">{FIELDS_MAP[type].length} campos</span>.
               </p>
             </div>
 
@@ -388,19 +457,18 @@ export function BulkImport() {
                 onClick={downloadTemplate}
                 className="border-primary/20 gap-2 font-bold"
               >
-                <Download size={16} /> Baixar Modelo
+                <Download size={16} /> Baixar modelo CSV
               </Button>
             </div>
           </div>
         )}
 
-        {/* STEP 3: MAPPING */}
         {step === 3 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6">
             <div className="rounded-3xl border bg-white p-6">
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-foreground flex items-center gap-2 font-black">
-                  <TableIcon size={18} /> Mapeamento de Colunas
+                  <TableIcon size={18} /> Mapeamento de colunas
                 </h3>
                 <span className="bg-success/10 text-success rounded-full px-3 py-1 text-xs font-bold">
                   {fileData.length} registros encontrados
@@ -419,16 +487,18 @@ export function BulkImport() {
                     </div>
                     <Select
                       value={mapping[field.key] || ''}
-                      onValueChange={val => setMapping(prev => ({ ...prev, [field.key]: val }))}
+                      onValueChange={value =>
+                        setMapping(previous => ({ ...previous, [field.key]: value }))
+                      }
                       disabled={isProcessing}
                     >
                       <SelectTrigger className="border-primary/20 bg-primary/5 h-11 rounded-xl">
                         <SelectValue placeholder="Selecione a coluna..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {headers.map(h => (
-                          <SelectItem key={h} value={h}>
-                            {h}
+                        {headers.map(header => (
+                          <SelectItem key={header} value={header}>
+                            {header}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -441,7 +511,7 @@ export function BulkImport() {
             {isProcessing && (
               <div className="space-y-2">
                 <div className="text-muted-foreground flex justify-between text-sm">
-                  <span>Processando importação...</span>
+                  <span>Processando importacao...</span>
                   <span>{progress}%</span>
                 </div>
                 <Progress value={progress} className="h-2" />
@@ -455,7 +525,7 @@ export function BulkImport() {
                 className="font-bold"
                 disabled={isProcessing}
               >
-                Alterar Arquivo
+                Alterar arquivo
               </Button>
               <Button
                 onClick={handleImport}
@@ -463,9 +533,23 @@ export function BulkImport() {
                 className="shadow-primary/20 h-12 gap-2 rounded-2xl px-8 font-black shadow-lg"
               >
                 {isProcessing ? <Loader2 className="animate-spin" /> : <CheckCircle2 size={20} />}
-                {isProcessing ? 'Importando...' : 'Confirmar Importação'}
+                {isProcessing ? 'Importando...' : 'Confirmar importacao'}
               </Button>
             </div>
+
+            {step === 3 && headers.length === 0 && (
+              <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                <AlertCircle className="h-4 w-4" />
+                Nao foi possivel ler o cabecalho do arquivo CSV.
+              </div>
+            )}
+
+            {fileData.length > 5000 && (
+              <div className="text-muted-foreground flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm">
+                <ArrowRight className="h-4 w-4" />
+                Arquivo grande: a importacao pode levar alguns minutos.
+              </div>
+            )}
           </div>
         )}
       </CardContent>

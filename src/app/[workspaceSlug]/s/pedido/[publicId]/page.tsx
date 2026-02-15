@@ -47,7 +47,9 @@ export default async function PublicTrackingPage({ params }: Props) {
         <CardContent className="pt-8 pb-8">
           <div className="mb-8 text-center">
             <h3 className="text-lg font-semibold">Olá, {data.customerName}</h3>
-            <p className="text-muted-foreground text-sm">Pedido #{data.orderNumber || data.id.slice(0, 8)}</p>
+            <p className="text-muted-foreground text-sm">
+              Pedido #{data.orderNumber || data.id.slice(0, 8)}
+            </p>
           </div>
 
           <div className="relative space-y-8 pl-4">

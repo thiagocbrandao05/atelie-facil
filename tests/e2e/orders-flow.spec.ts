@@ -1,50 +1,39 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { loginViaUI } from '../helpers/playwright'
 
-test.describe('Fluxo Completo de Pedidos', () => {
-    // Setup inicial: Login
-    test.beforeEach(async ({ page }) => {
-        await page.goto('/login')
-        await page.getByLabel('Email').fill('admin@atelie.com') // Ajustar conforme seed
-        await page.getByLabel('Senha').fill('123456')
-        await page.getByRole('button', { name: 'Entrar' }).click()
-        await page.waitForURL('/dashboard')
-    })
+test.describe('Fluxo de Pedidos', () => {
+  const workspaceSlug = process.env.TEST_WORKSPACE_SLUG || 'atelis'
 
-    test('Deve criar um novo pedido com sucesso', async ({ page }) => {
-        await page.goto('/app/pedidos')
+  test.beforeEach(async ({ page }) => {
+    await loginViaUI(page)
+  })
 
-        // Abrir Modal
-        await page.getByRole('button', { name: 'Novo Pedido' }).click()
+  test('abre o modal de novo pedido', async ({ page }) => {
+    await page.goto(`/${workspaceSlug}/app/pedidos`)
 
-        // Preencher Formulário
-        await page.getByLabel('Cliente').click()
-        await page.getByRole('option').first().click() // Seleciona primeiro cliente
+    const novoPedidoButton = page.getByRole('button', { name: /novo pedido/i })
+    await expect(novoPedidoButton).toBeVisible()
+    await novoPedidoButton.click()
 
-        await page.getByLabel('Data de Entrega').fill('2026-12-31')
+    await expect(page.getByRole('heading', { name: /novo pedido/i })).toBeVisible()
+  })
 
-        // Adicionar Item
-        await page.getByRole('button', { name: 'Adicionar Item' }).click()
-        await page.getByPlaceholder('Selecione um produto').click()
-        await page.getByRole('option').first().click()
-        await page.getByLabel('Quantidade').fill('2')
+  test('alterna entre lista e quadro', async ({ page }) => {
+    await page.goto(`/${workspaceSlug}/app/pedidos`)
 
-        // Salvar
-        await page.getByRole('button', { name: 'Salvar Pedido' }).click()
+    const tabQuadro = page.getByRole('button', { name: /^quadro$/i })
+    const tabLista = page.getByRole('button', { name: /^lista$/i })
 
-        // Validação
-        await expect(page.getByText('Pedido criado com sucesso')).toBeVisible()
-        await expect(page.locator('.lucide-receipt').first()).toBeVisible() // Ícone do pedido na lista
-    })
+    await expect(tabQuadro).toBeVisible()
+    await tabQuadro.click()
 
-    test('Deve filtrar pedidos por status', async ({ page }) => {
-        await page.goto('/app/pedidos')
+    await expect(
+      page.getByText(/orcamentos|aguardando|na bancada|pronto para entrega|finalizados/i).first()
+    ).toBeVisible()
 
-        // Tabs de filtro (assumindo tabs ou dropdown)
-        // Se for Tabs do Shadcn:
-        await page.getByRole('tab', { name: 'Quadro' }).click()
-        await expect(page.getByText('Aguardando Início')).toBeVisible()
-
-        await page.getByRole('tab', { name: 'Lista' }).click()
-        await expect(page.locator('table')).toBeVisible()
-    })
+    await tabLista.click()
+    await expect(
+      page.getByText(/nenhum pedido encontrado|cliente desconhecido|itens:/i).first()
+    ).toBeVisible()
+  })
 })

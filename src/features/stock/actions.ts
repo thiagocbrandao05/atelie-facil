@@ -159,25 +159,6 @@ export async function addManualStockMovement(
   return { success: true, message: 'Movimentação registrada com sucesso!' }
 }
 
-export async function getStockBalance(materialId: string) {
-  const user = await getCurrentUser()
-  if (!user) return 0
-
-  const supabase = await createClient()
-
-  // Calculate simple balance: (ENTRADA + ENTRADA_AJUSTE) - (SAIDA + SAIDA_AJUSTE + PERDA + RETIRADA)
-  // We can do this via RPC for performance or a raw query.
-  // RPC `get_material_stock` would be ideal.
-
-  const { data, error } = await (supabase as any).rpc('get_material_balance', {
-    p_tenant_id: user.tenantId,
-    p_material_id: materialId,
-  })
-
-  if (error) return 0
-  return data as number
-}
-
 export async function getStockReport() {
   const user = await getCurrentUser()
   if (!user) return []
@@ -213,13 +194,13 @@ export async function getStockReport() {
 
   // It seems we have a mix of `InventoryMovement` (core) and `stock_movements` (legacy/manual?).
   // If `stock_movements` table does not exist, then `addManualStockMovement` is failing too (unless it wasn't tested).
-  // The user said "visão geral não está retornando". 
+  // The user said "visão geral não está retornando".
 
   // I need to verify if `InventoryMovement` has a color column.
   // If not, I need to add it or join with StockEntryItem.
   // Since `addManualStockMovement` tries to insert `color`, it implies expectation of color.
 
-  // HACK: For now, I will fix the table name to `InventoryMovement`. 
+  // HACK: For now, I will fix the table name to `InventoryMovement`.
   // If `color` column is missing, I will need to ADD IT via migration.
 
   // Let's assume for a moment `InventoryMovement` is the intended table.

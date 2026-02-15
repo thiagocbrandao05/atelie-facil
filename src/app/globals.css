@@ -155,7 +155,7 @@
 
   /* Glass Utility Classes */
   .glass {
-    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
+    @apply border border-white/20 bg-white/70 shadow-sm backdrop-blur-md;
   }
 
   .glass-card {

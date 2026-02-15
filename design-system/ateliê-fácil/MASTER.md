@@ -16,13 +16,13 @@
 
 ### Color Palette
 
-| Role | Hex | CSS Variable |
-|------|-----|--------------|
-| Primary | `#EC4899` | `--color-primary` |
-| Secondary | `#F472B6` | `--color-secondary` |
-| CTA/Accent | `#06B6D4` | `--color-cta` |
+| Role       | Hex       | CSS Variable         |
+| ---------- | --------- | -------------------- |
+| Primary    | `#EC4899` | `--color-primary`    |
+| Secondary  | `#F472B6` | `--color-secondary`  |
+| CTA/Accent | `#06B6D4` | `--color-cta`        |
 | Background | `#FDF2F8` | `--color-background` |
-| Text | `#831843` | `--color-text` |
+| Text       | `#831843` | `--color-text`       |
 
 **Color Notes:** Bold primaries + artistic freedom
 
@@ -35,27 +35,28 @@
 - **Google Fonts:** [Plus Jakarta Sans + Outfit](https://fonts.google.com/share?selection.family=Plus+Jakarta+Sans:wght@400;700;800|Outfit:wght@400;500;600;700)
 
 **CSS Import:**
+
 ```css
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&family=Outfit:wght@400;500;600;700&display=swap');
 ```
 
 ### Spacing & Proportions (Refined)
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--space-xs` | `4px` | Tiny gaps |
-| `--space-sm` | `8px` | Small gaps |
-| `--space-md` | `16px` | Standard padding |
-| `--space-lg` | `24px` | Large padding (cards) |
-| `--space-xl` | `32px` | Section gaps |
-| `--radius` | `1.25rem`| Soft organic corners |
+| Token        | Value     | Usage                 |
+| ------------ | --------- | --------------------- |
+| `--space-xs` | `4px`     | Tiny gaps             |
+| `--space-sm` | `8px`     | Small gaps            |
+| `--space-md` | `16px`    | Standard padding      |
+| `--space-lg` | `24px`    | Large padding (cards) |
+| `--space-xl` | `32px`    | Section gaps          |
+| `--radius`   | `1.25rem` | Soft organic corners  |
 
 ### Shadow Depths (Crisp)
 
-| Level | Value | Usage |
-|-------|-------|-------|
-| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.03)` | Subtle lift |
-| `--shadow-md` | `0 4px 12px rgba(0,0,0,0.05)` | Regular cards |
+| Level         | Value                         | Usage          |
+| ------------- | ----------------------------- | -------------- |
+| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.03)`  | Subtle lift    |
+| `--shadow-md` | `0 4px 12px rgba(0,0,0,0.05)` | Regular cards  |
 | `--shadow-lg` | `0 8px 24px rgba(0,0,0,0.08)` | Featured items |
 
 ---
@@ -67,7 +68,7 @@
 ```css
 /* Primary Button */
 .btn-primary {
-  background: #06B6D4;
+  background: #06b6d4;
   color: white;
   padding: 12px 24px;
   border-radius: 8px;
@@ -84,8 +85,8 @@
 /* Secondary Button */
 .btn-secondary {
   background: transparent;
-  color: #EC4899;
-  border: 2px solid #EC4899;
+  color: #ec4899;
+  border: 2px solid #ec4899;
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
@@ -98,7 +99,7 @@
 
 ```css
 .card {
-  background: #FDF2F8;
+  background: #fdf2f8;
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-md);
@@ -117,16 +118,16 @@
 ```css
 .input {
   padding: 12px 16px;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 200ms ease;
 }
 
 .input:focus {
-  border-color: #EC4899;
+  border-color: #ec4899;
   outline: none;
-  box-shadow: 0 0 0 3px #EC489920;
+  box-shadow: 0 0 0 3px #ec489920;
 }
 ```
 

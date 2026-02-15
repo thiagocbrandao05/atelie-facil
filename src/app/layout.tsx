@@ -67,7 +67,7 @@ export default async function RootLayout({
     // suppressHydrationWarning is required by next-themes
     <html lang="pt-BR" data-theme={resolveThemeKey(settings.primaryColor)} suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} ${outfit.variable} font-sans text-foreground min-h-screen antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} ${outfit.variable} text-foreground min-h-screen font-sans antialiased`}
       >
         <ThemeProvider
           attribute="class"

@@ -9,7 +9,7 @@ import {
 import { DollarSign, Package, TrendingUp, Activity } from 'lucide-react'
 
 export const metadata = {
-  title: 'Analytics | AteliêFácil',
+  title: 'Analytics | Atelis',
   description: 'Métricas e análises do negócio',
 }
 

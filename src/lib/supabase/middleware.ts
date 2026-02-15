@@ -34,6 +34,7 @@ export async function updateSession(request: NextRequest) {
   // Public Routes (Marketing, Auth, Public shared links)
   const isPublicRoute =
     pathname === '/' ||
+    pathname.startsWith('/api') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
     pathname.startsWith('/about') ||

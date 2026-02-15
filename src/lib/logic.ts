@@ -44,40 +44,43 @@ export function calculateSuggestedPrice(
   product:
     | ProductWithMaterials
     | {
-      laborTime: number
-      profitMargin: number
-      materials: (ProductMaterial & { material: Material })[]
-      price?: number | null
-      cost?: number
-      lastCost?: number
-    },
+        laborTime: number
+        profitMargin: number
+        materials: (ProductMaterial & { material: Material })[]
+        price?: number | null
+        cost?: number
+        lastCost?: number
+      },
   hourlyRate: number = HOURLY_RATE,
   monthlyFixedCosts: any[] = [],
   workingHoursPerMonth: number = 160,
   taxRate: number = 0,
   cardFeeRate: number = 0
 ): PriceCalculation {
+  const laborTime = Number(product.laborTime || 0)
+  const profitMargin = Number((product as any).profitMargin ?? 0)
+
   // Use Product.cost (MPM) preferably, fallback to lastCost (legacy/deprecated)
   const purchaseCost = product.cost ?? (product as any).lastCost ?? 0
   const materialCost = calculateMaterialCost(product.materials)
 
-  const laborCostTotal = calculateLaborCost(product.laborTime, hourlyRate)
+  const laborCostTotal = calculateLaborCost(laborTime, hourlyRate)
 
   // Calculate fixed cost distribution
   const totalMonthlyFixed = Array.isArray(monthlyFixedCosts)
     ? monthlyFixedCosts.reduce(
-      (acc, item: any) =>
-        acc + (Number(item.value || item.amount || item.valor || item.custo) || 0),
-      0
-    )
+        (acc, item: any) =>
+          acc + (Number(item.value || item.amount || item.valor || item.custo) || 0),
+        0
+      )
     : 0
 
   const fixedRate = Finance.calculateFixedCostRate(totalMonthlyFixed, workingHoursPerMonth)
-  const fixedCost = Finance.formatInternal(fixedRate.times(product.laborTime / 60))
+  const fixedCost = Finance.formatInternal(fixedRate.times(laborTime / 60))
 
   const baseCostTotal = materialCost + purchaseCost + laborCostTotal + fixedCost
 
-  const suggestedPriceDecimal = Finance.calculateSuggestedPrice(baseCostTotal, product.profitMargin)
+  const suggestedPriceDecimal = Finance.calculateSuggestedPrice(baseCostTotal, profitMargin)
   const suggestedPrice = Finance.formatDisplay(suggestedPriceDecimal)
   const marginValue = Finance.formatDisplay(suggestedPriceDecimal.minus(baseCostTotal))
 
