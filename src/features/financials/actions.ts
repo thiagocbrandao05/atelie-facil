@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
@@ -19,31 +19,33 @@ export const TransactionSchema = z.object({
 })
 
 export type TransactionInput = z.infer<typeof TransactionSchema>
+type FinancialSummaryRow = { amount: number | string; type: 'IN' | 'OUT'; status: string }
+
+async function getDb() {
+  const supabase = await createClient()
+  return supabase as any
+}
 
 async function getTenantId() {
-  const supabase = (await createClient()) as any
+  const db = await getDb()
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await db.auth.getUser()
   if (!user) return null
 
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id')
-    .eq('owner_id', user.id)
-    .single()
+  const { data: tenant } = await db.from('tenants').select('id').eq('owner_id', user.id).single()
 
-  return tenant?.id
+  return tenant?.id ?? null
 }
 
 export async function getTransactions(month: number, year: number) {
-  const supabase = (await createClient()) as any
+  const db = await getDb()
 
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`
   const lastDay = new Date(year, month, 0).getDate()
   const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('financial_transactions')
     .select(
       `
@@ -65,14 +67,14 @@ export async function getTransactions(month: number, year: number) {
 }
 
 export async function createTransaction(input: TransactionInput) {
-  const supabase = (await createClient()) as any
+  const db = await getDb()
   const tenantId = await getTenantId()
   const user = await getCurrentUser()
   const workspaceSlug = user?.tenant?.slug
 
   if (!tenantId) throw new Error('Unauthorized')
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('financial_transactions')
     .insert({
       ...input,
@@ -93,11 +95,11 @@ export async function createTransaction(input: TransactionInput) {
 }
 
 export async function updateTransaction(id: string, input: Partial<TransactionInput>) {
-  const supabase = (await createClient()) as any
+  const db = await getDb()
   const user = await getCurrentUser()
   const workspaceSlug = user?.tenant?.slug
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('financial_transactions')
     .update(input)
     .eq('id', id)
@@ -116,11 +118,11 @@ export async function updateTransaction(id: string, input: Partial<TransactionIn
 }
 
 export async function deleteTransaction(id: string) {
-  const supabase = (await createClient()) as any
+  const db = await getDb()
   const user = await getCurrentUser()
   const workspaceSlug = user?.tenant?.slug
 
-  const { error } = await supabase.from('financial_transactions').delete().eq('id', id)
+  const { error } = await db.from('financial_transactions').delete().eq('id', id)
 
   if (error) {
     console.error('Error deleting transaction:', error)
@@ -133,9 +135,9 @@ export async function deleteTransaction(id: string) {
 }
 
 export async function getCategories() {
-  const supabase = (await createClient()) as any
+  const db = await getDb()
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('transaction_categories')
     .select('*')
     .eq('active', true)
@@ -150,12 +152,12 @@ export async function getCategories() {
 }
 
 export async function getFinancialSummary(month: number, year: number) {
-  const supabase = (await createClient()) as any
+  const db = await getDb()
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`
   const lastDay = new Date(year, month, 0).getDate()
   const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`
 
-  const { data: transactions, error } = await supabase
+  const { data: transactions, error } = await db
     .from('financial_transactions')
     .select('amount, type, status')
     .gte('date', startDate)
@@ -164,13 +166,15 @@ export async function getFinancialSummary(month: number, year: number) {
 
   if (error) throw new Error('Failed to fetch summary')
 
-  const income = transactions
-    .filter((t: any) => t.type === 'IN')
-    .reduce((sum: number, t: any) => sum + Number(t.amount), 0)
+  const rows = (transactions || []) as FinancialSummaryRow[]
 
-  const expenses = transactions
-    .filter((t: any) => t.type === 'OUT')
-    .reduce((sum: number, t: any) => sum + Number(t.amount), 0)
+  const income = rows
+    .filter(transaction => transaction.type === 'IN')
+    .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
+
+  const expenses = rows
+    .filter(transaction => transaction.type === 'OUT')
+    .reduce((sum, transaction) => sum + Number(transaction.amount), 0)
 
   const balance = income - expenses
 

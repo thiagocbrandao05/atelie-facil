@@ -10,11 +10,13 @@ class WhatsAppLimitError extends Error {
 }
 
 type WhatsAppLimitType = 'transactional' | 'campaign' | 'test'
+type UsageRow = { type: string; count: number }
 
 export async function getWhatsAppUsageSummary(tenantId: string): Promise<UsageSummary> {
   const supabase = await createClient()
+  const db = supabase as any
 
-  const { data: workspacePlan } = await (supabase as any)
+  const { data: workspacePlan } = await db
     .from('WorkspacePlans')
     .select('plan')
     .eq('workspaceId', tenantId)
@@ -22,7 +24,7 @@ export async function getWhatsAppUsageSummary(tenantId: string): Promise<UsageSu
 
   const currentPlan: PlanType = workspacePlan?.plan || 'start'
 
-  const { data: dbLimits } = await (supabase as any)
+  const { data: dbLimits } = await db
     .from('WhatsAppLimits')
     .select('*')
     .eq('plan', currentPlan)
@@ -35,13 +37,13 @@ export async function getWhatsAppUsageSummary(tenantId: string): Promise<UsageSu
     .toISOString()
     .split('T')[0]
 
-  const { data: dailyUsage } = await (supabase as any)
+  const { data: dailyUsage } = await db
     .from('WhatsAppUsageDaily')
     .select('type, count')
     .eq('tenantId', tenantId)
     .eq('date', today)
 
-  const { data: monthlyUsage } = await (supabase as any)
+  const { data: monthlyUsage } = await db
     .from('WhatsAppUsageDaily')
     .select('type, count')
     .eq('tenantId', tenantId)
@@ -53,13 +55,12 @@ export async function getWhatsAppUsageSummary(tenantId: string): Promise<UsageSu
     limits,
   }
 
-  dailyUsage?.forEach((row: any) => {
+  ;(dailyUsage as UsageRow[] | null)?.forEach(row => {
     if (row.type in summary.daily) {
       summary.daily[row.type as WhatsAppLimitType] += row.count
     }
   })
-
-  monthlyUsage?.forEach((row: any) => {
+  ;(monthlyUsage as UsageRow[] | null)?.forEach(row => {
     if (row.type in summary.monthly) {
       summary.monthly[row.type as WhatsAppLimitType] += row.count
     }
@@ -106,9 +107,10 @@ export async function incrementWhatsAppUsage(
   count: number = 1
 ) {
   const supabase = await createClient()
+  const db = supabase as any
   const today = new Date().toISOString().split('T')[0]
 
-  const { error } = await (supabase as any).rpc('increment_whatsapp_usage', {
+  const { error } = await db.rpc('increment_whatsapp_usage', {
     p_tenant_id: tenantId,
     p_date: today,
     p_type: type,
