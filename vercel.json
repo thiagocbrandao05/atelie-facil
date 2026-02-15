@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/internal/cron/whatsapp-notifications",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/internal/cron/financial-recurrence",
+      "schedule": "5 3 * * *"
+    }
+  ]
+}

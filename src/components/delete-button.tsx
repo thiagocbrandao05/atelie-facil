@@ -22,6 +22,9 @@ interface DeleteButtonProps {
   label?: string
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
   className?: string
+  confirmTitle?: string
+  confirmDescription?: string
+  confirmActionLabel?: string
 }
 
 export function DeleteButton({
@@ -30,6 +33,9 @@ export function DeleteButton({
   label,
   variant = 'ghost',
   className,
+  confirmTitle = 'Tem certeza?',
+  confirmDescription = 'Esta acao nao pode ser desfeita.',
+  confirmActionLabel = 'Confirmar exclusao',
 }: DeleteButtonProps) {
   const [isPending, startTransition] = useTransition()
   const [showConfirm, setShowConfirm] = useState(false)
@@ -60,10 +66,8 @@ export function DeleteButton({
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente o item do sistema.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -71,7 +75,7 @@ export function DeleteButton({
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Confirmar exclusão
+              {confirmActionLabel}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

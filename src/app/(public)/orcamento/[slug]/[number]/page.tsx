@@ -69,6 +69,10 @@ export default async function FriendlyQuotationPage(props: {
   }
 
   const order = data[0] as unknown as PublicOrderRpc
+  const routeNumber = Number(number)
+  if (!Number.isInteger(routeNumber) || routeNumber <= 0 || routeNumber !== order.orderNumber) {
+    notFound()
+  }
 
   // Fallback tenantId fetch if RPC one is ambiguous (RPC returns order.id as "id")
   // Actually, let's just use the order.id from the RPC which is o."id" (the order id).

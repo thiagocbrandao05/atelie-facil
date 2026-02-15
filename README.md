@@ -55,5 +55,6 @@ Checklist rapido antes de merge:
 ## Documentacao util
 
 - `docs/CREATE_TEST_USER.md`
+- `docs/CRON_SETUP.md`
 - `docs/whatsapp-automatic-notifications.md`
 - `docs/PWA_ICONS_SETUP.md`
