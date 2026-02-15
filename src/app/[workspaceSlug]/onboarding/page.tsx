@@ -24,7 +24,7 @@ const STEPS_BY_PLAN: Partial<Record<PlanType, OnboardingStep[]>> = {
       id: 'material',
       title: 'Cadastrar material',
       description: 'Registre seu primeiro insumo',
-      link: 'app/materiais',
+      link: 'app/estoque',
     },
     {
       id: 'product',
@@ -58,12 +58,15 @@ const STEPS_BY_PLAN: Partial<Record<PlanType, OnboardingStep[]>> = {
       id: 'seasonality',
       title: 'Sazonalidade avançada',
       description: 'Descubra padrões de compra dos clientes',
-      link: 'app/dashboard/automacoes',
+      link: 'app/automacoes',
     },
   ],
 }
 
-export default async function OnboardingPage({ params }: { params: { workspaceSlug: string } }) {
+export default async function OnboardingPage(props: {
+  params: Promise<{ workspaceSlug: string }>
+}) {
+  const params = await props.params
   const supabase = await createClient()
   const { data: workspace } = await supabase
     .from('Tenant')

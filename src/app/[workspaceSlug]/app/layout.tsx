@@ -37,7 +37,7 @@ export default async function AppLayout({
           <div className="container mx-auto px-6 py-6 md:px-8 lg:px-10">{children}</div>
         </main>
       </div>
-      <CommandPalette />
+      <CommandPalette user={user as any} />
     </div>
   )
 }
