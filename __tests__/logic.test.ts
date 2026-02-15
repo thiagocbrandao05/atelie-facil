@@ -52,7 +52,7 @@ describe('Business Logic', () => {
         },
       ]
 
-      const cost = calculateMaterialCost(materials)
+      const cost = calculateMaterialCost(materials as any)
       expect(cost).toBe(105) // (2 * 50) + (1 * 5)
     })
 
@@ -97,13 +97,13 @@ describe('Business Logic', () => {
         ],
       }
 
-      const result = calculateSuggestedPrice(product)
+      const result = calculateSuggestedPrice(product as any)
 
       expect(result.materialCost).toBe(100)
       expect(result.laborCost).toBe(20)
       expect(result.baseCost).toBe(120)
-      expect(result.marginValue).toBe(60) // 50% of 120
-      expect(result.suggestedPrice).toBe(180)
+      expect(result.marginValue).toBe(120) // margem de contribuicao de 50% no preco
+      expect(result.suggestedPrice).toBe(240)
     })
 
     it('should handle zero margin', () => {
@@ -221,7 +221,7 @@ describe('Business Logic', () => {
         },
       ]
 
-      const summary = summarizeFinancials(orders)
+      const summary = summarizeFinancials(orders as any)
 
       expect(summary.totalRevenue).toBe(200)
       expect(summary.totalCosts).toBe(70) // 50 (material) + 20 (labor)
@@ -244,7 +244,7 @@ describe('Business Logic', () => {
         },
       ]
       const fixedCosts = [{ value: 160 }]
-      const summary = summarizeFinancials(orders, 20, fixedCosts, 160)
+      const summary = summarizeFinancials(orders as any, 20, fixedCosts, 160)
 
       // Revenue = 200
       // Material = 50
@@ -256,8 +256,13 @@ describe('Business Logic', () => {
     })
 
     it('should handle non-array fixed costs gracefully', () => {
-      const orders = [{ totalValue: 100, items: [{ quantity: 1, product: { laborTime: 0, materials: [] } as any }] }]
-      const summary = summarizeFinancials(orders, 20, null as any)
+      const orders = [
+        {
+          totalValue: 100,
+          items: [{ quantity: 1, product: { laborTime: 0, materials: [] } as any }],
+        },
+      ]
+      const summary = summarizeFinancials(orders as any, 20, null as any)
       expect(summary.totalRevenue).toBe(100)
     })
 

@@ -83,7 +83,14 @@ export default async function PlanDetailsPage({ params }: PlanDetailsPageProps) 
     },
   }
 
-  const content = educationalContent[slug]
+  const canonicalSlug =
+    slug === 'start' || slug === 'free_creative' || slug === 'free_reseller'
+      ? 'start'
+      : slug === 'pro' || slug === 'paid_creative' || slug === 'paid_reseller'
+        ? 'pro'
+        : 'premium'
+
+  const content = educationalContent[canonicalSlug]
 
   return (
     <div className="min-h-screen bg-slate-50/50">
@@ -121,7 +128,7 @@ export default async function PlanDetailsPage({ params }: PlanDetailsPageProps) 
 
           {/* Didactic Highlights */}
           <div className="grid gap-6 sm:grid-cols-2">
-            {content.highlights.map((item, i) => {
+            {content.highlights.map((item: (typeof content.highlights)[number], i: number) => {
               const Icon = item.icon
               return (
                 <div key={i} className="space-y-4 rounded-3xl border bg-white p-8 shadow-sm">

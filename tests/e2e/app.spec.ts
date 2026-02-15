@@ -1,98 +1,65 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Customer Management', () => {
-    // Note: These tests require authentication
-    // In a real scenario, you'd use a test user or mock authentication
+  const workspaceSlug = process.env.TEST_WORKSPACE_SLUG || 'atelis'
 
-    test.skip('should create a new customer', async ({ page }) => {
-        // TODO: Implement authentication setup
-        await page.goto('/app/clientes')
+  test.skip('should create a new customer', async ({ page }) => {
+    await page.goto(`/${workspaceSlug}/app/clientes`)
+    await page.getByRole('button', { name: /novo.*cliente|adicionar/i }).click()
 
-        // Click "New Customer" button
-        await page.getByRole('button', { name: /novo.*cliente|adicionar/i }).click()
+    await page.getByLabel(/nome/i).fill('Joao da Silva')
+    await page.getByLabel(/telefone|phone/i).fill('11999887766')
+    await page.getByLabel(/email/i).fill('joao@example.com')
 
-        // Fill customer form
-        await page.getByLabel(/nome/i).fill('João da Silva')
-        await page.getByLabel(/telefone|phone/i).fill('11999887766')
-        await page.getByLabel(/email/i).fill('joao@example.com')
+    await page.getByRole('button', { name: /salvar|criar/i }).click()
 
-        // Submit form
-        await page.getByRole('button', { name: /salvar|criar/i }).click()
+    await expect(page.getByText(/cliente.*criado|sucesso/i)).toBeVisible({ timeout: 5000 })
+  })
 
-        // Should show success message or redirect
-        await expect(page.getByText(/cliente.*criado|sucesso/i)).toBeVisible({
-            timeout: 5000,
-        })
-    })
+  test.skip('should list customers', async ({ page }) => {
+    await page.goto(`/${workspaceSlug}/app/clientes`)
+    await expect(page.getByRole('table')).toBeVisible()
+  })
 
-    test.skip('should list customers', async ({ page }) => {
-        await page.goto('/app/clientes')
+  test.skip('should search customers', async ({ page }) => {
+    await page.goto(`/${workspaceSlug}/app/clientes`)
 
-        // Should show customers table or list
-        await expect(page.getByRole('table')).toBeVisible()
-    })
-
-    test.skip('should search customers', async ({ page }) => {
-        await page.goto('/app/clientes')
-
-        // Find search input
-        const searchInput = page.getByPlaceholder(/buscar|pesquisar/i)
-        await expect(searchInput).toBeVisible()
-
-        // Type search query
-        await searchInput.fill('João')
-
-        // Wait for results to filter
-        await page.waitForTimeout(500)
-
-        // Check that results are filtered
-        // (This depends on your implementation)
-    })
+    const searchInput = page.getByPlaceholder(/buscar|pesquisar/i)
+    await expect(searchInput).toBeVisible()
+    await searchInput.fill('Joao')
+    await page.waitForTimeout(500)
+  })
 })
 
 test.describe('Order Management', () => {
-    test.skip('should display orders page when authenticated', async ({ page }) => {
-        await page.goto('/app/pedidos')
+  const workspaceSlug = process.env.TEST_WORKSPACE_SLUG || 'atelis'
 
-        // Should show orders view (table, kanban, etc.)
-        await expect(
-            page.locator('text=/pedidos|orders/i').first()
-        ).toBeVisible()
-    })
+  test.skip('should display orders page when authenticated', async ({ page }) => {
+    await page.goto(`/${workspaceSlug}/app/pedidos`)
+    await expect(page.locator('text=/pedidos|orders/i').first()).toBeVisible()
+  })
 
-    test.skip('should create a new order', async ({ page }) => {
-        await page.goto('/app/pedidos')
+  test.skip('should create a new order', async ({ page }) => {
+    await page.goto(`/${workspaceSlug}/app/pedidos`)
+    await page.getByRole('button', { name: /novo.*pedido|criar/i }).click()
 
-        // Click new order button
-        await page.getByRole('button', { name: /novo.*pedido|criar/i }).click()
+    await page.getByLabel(/cliente/i).click()
+    await page.getByRole('option', { name: /joao/i }).click()
+    await page.getByRole('button', { name: /criar|salvar/i }).click()
 
-        // Fill order form
-        // (Details depend on your form structure)
-        await page.getByLabel(/cliente/i).click()
-        await page.getByRole('option', { name: /joão/i }).click()
-
-        // Submit
-        await page.getByRole('button', { name: /criar|salvar/i }).click()
-
-        // Verify success
-        await expect(page.getByText(/pedido.*criado|sucesso/i)).toBeVisible({
-            timeout: 5000,
-        })
-    })
+    await expect(page.getByText(/pedido.*criado|sucesso/i)).toBeVisible({ timeout: 5000 })
+  })
 })
 
 test.describe('Inventory Management', () => {
-    test.skip('should display inventory page', async ({ page }) => {
-        await page.goto('/app/estoque')
+  const workspaceSlug = process.env.TEST_WORKSPACE_SLUG || 'atelis'
 
-        // Should show materials or inventory items
-        await expect(page.getByRole('table')).toBeVisible()
-    })
+  test.skip('should display inventory page', async ({ page }) => {
+    await page.goto(`/${workspaceSlug}/app/estoque`)
+    await expect(page.getByRole('table')).toBeVisible()
+  })
 
-    test.skip('should show low stock alerts', async ({ page }) => {
-        await page.goto('/app/dashboard')
-
-        // Should display low stock alert if any materials are low
-        // (This test depends on test data)
-    })
+  test.skip('should show low stock alerts', async ({ page }) => {
+    await page.goto(`/${workspaceSlug}/app/dashboard`)
+  })
 })

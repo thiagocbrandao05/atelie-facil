@@ -1,4 +1,4 @@
-import { getOrdersPaginated, getOrdersForKanban, deleteOrder } from '@/features/orders/actions'
+﻿import { getOrdersPaginated, getOrdersForKanban, deleteOrder } from '@/features/orders/actions'
 import { getProducts } from '@/features/products/actions'
 import { OrderDialog } from '@/components/order-dialog'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -13,11 +13,27 @@ import { LayoutGrid, List } from 'lucide-react'
 import { WhatsAppNotifyWrapper } from '@/features/whatsapp/components/WhatsAppNotifyWrapper'
 import { getCurrentTenantPlan } from '@/features/subscription/actions'
 
+const STATUS_LABELS: Record<string, string> = {
+  QUOTATION: 'Orçamento',
+  PENDING: 'Aguardando início',
+  PRODUCING: 'Em produção',
+  READY: 'Pronto para entrega',
+  DELIVERED: 'Entregue',
+}
+
+function getSafePage(value: string | string[] | undefined): number {
+  const raw = Array.isArray(value) ? value[0] : value
+  const parsed = Number(raw)
+  if (!Number.isFinite(parsed) || parsed < 1) return 1
+  return Math.floor(parsed)
+}
+
 export default async function PedidosPage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const searchParams = await props.searchParams
-  const page = Number(searchParams.page) || 1
+  const page = getSafePage(searchParams.page)
+
   const [
     { data: orders, totalPages, page: currentPage },
     kanbanOrders,
@@ -104,17 +120,7 @@ export default async function PedidosPage(props: {
                                       : 'outline'
                             }
                           >
-                            {order.status === 'QUOTATION'
-                              ? 'Orçamento'
-                              : order.status === 'PENDING'
-                                ? 'Aguardando início'
-                                : order.status === 'PRODUCING'
-                                  ? 'Em produção'
-                                  : order.status === 'READY'
-                                    ? 'Pronto p/ entrega'
-                                    : order.status === 'DELIVERED'
-                                      ? 'Entregue'
-                                      : order.status}
+                            {STATUS_LABELS[order.status] || order.status}
                           </Badge>
 
                           {order.status === 'QUOTATION' && (

@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
 import { calculateStockAlerts } from '@/lib/inventory'
+import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 // Self-import removed
 
 // Helper to get start/end of period
@@ -176,16 +178,22 @@ export async function getLowStockMaterials() {
   const user = await getCurrentUser()
   if (!user) return []
 
-  // Use shared utility for consistency
-  const alerts = await calculateStockAlerts(user.tenantId)
-
-  // Map to the format expected by the dashboard if different,
-  // but the alert format from lib/inventory.ts should be compatible or better.
-  return alerts.map(a => ({
-    id: a.id,
-    name: a.name,
-    unit: a.unit,
-    quantity: a.currentQuantity,
-    minQuantity: a.minQuantity,
-  }))
+  return getLowStockMaterialsCached(user.tenantId)
 }
+
+const getLowStockMaterialsCached = cache(
+  unstable_cache(
+    async (tenantId: string) => {
+      const alerts = await calculateStockAlerts(tenantId)
+      return alerts.map(a => ({
+        id: a.id,
+        name: a.name,
+        unit: a.unit,
+        quantity: a.currentQuantity,
+        minQuantity: a.minQuantity,
+      }))
+    },
+    ['low-stock-materials'],
+    { revalidate: 60 }
+  )
+)

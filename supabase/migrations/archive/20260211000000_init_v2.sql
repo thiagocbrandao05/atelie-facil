@@ -1491,7 +1491,7 @@ COMMENT ON COLUMN "Supplier".email_encrypted IS 'AES-256-GCM encrypted email (LG
 -- =====================================================
 
 -- 1. Run this migration in staging first
--- 2. Run data migration script (scripts/migrate-encrypt-data.ts)
+-- 2. Run the approved data backfill process for encrypted fields
 -- 3. Verify encrypted data works correctly (1 week testing)
 -- 4. Deploy to production
 -- 5. After 2 weeks of validation, drop original columns:
