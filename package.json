@@ -11,7 +11,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "analyze": "ANALYZE=true npm run build",
-    "lighthouse": "npx @lhci/cli autorun",
     "test": "vitest run",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
@@ -69,7 +68,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@lhci/cli": "^0.15.1",
     "@next/bundle-analyzer": "^16.1.6",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",

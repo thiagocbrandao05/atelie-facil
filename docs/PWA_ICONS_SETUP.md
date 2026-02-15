@@ -33,7 +33,7 @@ public/
 
 1. Abra DevTools > Application > Manifest.
 2. Confirme que todos os icones foram carregados.
-3. Rode `npm run lighthouse` e valide installability/performance.
+3. Rode auditoria manual no Chrome Lighthouse para validar installability/performance.
 
 ## Observacao
 
