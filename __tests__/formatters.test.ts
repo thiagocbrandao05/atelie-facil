@@ -87,7 +87,7 @@ describe('Formatters Utilities', () => {
 
     it('should handle NaN and null', () => {
       expect(formatNumber(NaN)).toBe('0,00')
-      expect(formatNumber(null as any)).toBe('0,00')
+      expect(formatNumber(null as unknown as number)).toBe('0,00')
     })
   })
 

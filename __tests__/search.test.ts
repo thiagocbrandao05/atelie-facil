@@ -13,6 +13,11 @@ import {
 } from '@/lib/search'
 import { calculateLaborCost, HOURLY_RATE } from '@/lib/logic'
 
+type SearchOrder = Parameters<typeof searchOrders>[0][number]
+type SearchProduct = Parameters<typeof searchProducts>[0][number]
+type SearchMaterial = Parameters<typeof searchMaterials>[0][number]
+type SearchCustomer = Parameters<typeof searchCustomers>[0][number]
+
 describe('Search Utilities', () => {
   const mockOrders = [
     {
@@ -20,7 +25,7 @@ describe('Search Utilities', () => {
       tenantId: 't1',
       orderNumber: 1,
       customerId: 'c1',
-      status: 'PENDING' as any,
+      status: 'PENDING',
       dueDate: new Date('2026-02-01'),
       totalValue: 100,
       createdAt: new Date('2026-01-20'),
@@ -57,7 +62,7 @@ describe('Search Utilities', () => {
             materials: [],
             createdAt: new Date(),
             updatedAt: new Date(),
-          } as any,
+          } as unknown as SearchOrder['items'][number]['product'],
         },
       ],
     },
@@ -66,7 +71,7 @@ describe('Search Utilities', () => {
       tenantId: 't1',
       orderNumber: 2,
       customerId: 'c2',
-      status: 'DELIVERED' as any,
+      status: 'DELIVERED',
       dueDate: new Date('2026-01-25'),
       totalValue: 200,
       createdAt: new Date('2026-01-15'),
@@ -103,7 +108,7 @@ describe('Search Utilities', () => {
             materials: [],
             createdAt: new Date(),
             updatedAt: new Date(),
-          } as any,
+          } as unknown as SearchOrder['items'][number]['product'],
         },
       ],
     },
@@ -112,7 +117,7 @@ describe('Search Utilities', () => {
       tenantId: 't1',
       orderNumber: 3,
       customerId: 'c1',
-      status: 'PENDING' as any,
+      status: 'PENDING',
       dueDate: new Date(),
       totalValue: 50,
       createdAt: new Date(),
@@ -144,11 +149,11 @@ describe('Search Utilities', () => {
             tenantId: 't1',
             name: 'Polo Shirt', // Prefix match for 'Polo'
             materials: [],
-          } as any,
+          } as unknown as SearchOrder['items'][number]['product'],
         },
       ],
     },
-  ]
+  ] as unknown as SearchOrder[]
 
   describe('searchOrders', () => {
     it('should search by customer name', () => {
@@ -222,7 +227,7 @@ describe('Search Utilities', () => {
   })
 
   describe('searchProducts', () => {
-    const mockProducts: any[] = [
+    const mockProducts = [
       {
         id: 'p1',
         tenantId: 't1',
@@ -245,7 +250,7 @@ describe('Search Utilities', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ]
+    ] as unknown as SearchProduct[]
 
     it('should find exact matches', () => {
       const results = searchProducts(mockProducts, 'Camisa')
@@ -268,7 +273,7 @@ describe('Search Utilities', () => {
         { name: 'Paper Rolls', materials: [] }, // StartsWith
         { name: 'Artistic Paper', materials: [] }, // Includes
         { name: 'P_a_p_e_r', materials: [] }, // Fuzzy
-      ] as any
+      ] as unknown as SearchProduct[]
 
       const results = searchProducts(items, 'Paper')
       expect(results[0].name).toBe('Paper')
@@ -285,7 +290,7 @@ describe('Search Utilities', () => {
           name: 'Prod',
           materials: [{ material: { name: 'Gold' } }],
         },
-      ] as any
+      ] as unknown as SearchProduct[]
       const results = searchProducts(prodWithMats, 'Gold')
       expect(results).toHaveLength(1)
     })
@@ -294,14 +299,14 @@ describe('Search Utilities', () => {
       const products = [
         { id: '1', name: 'Apple', materials: [] },
         { id: '2', name: 'Pineapple', materials: [] },
-      ] as any
+      ] as unknown as SearchProduct[]
       const results = searchProducts(products, 'Apple')
       expect(results[0].id).toBe('1') // Exact match first
     })
   })
 
   describe('searchMaterials', () => {
-    const mockMaterials: any[] = [
+    const mockMaterials: SearchMaterial[] = [
       {
         id: 'm1',
         tenantId: 't1',
@@ -345,14 +350,14 @@ describe('Search Utilities', () => {
       const mats = [
         { id: '1', name: 'Cotton Fabric', colors: [] },
         { id: '2', name: 'Cotton', colors: [] },
-      ] as any
+      ] as unknown as SearchMaterial[]
       const results = searchMaterials(mats, 'Cotton')
       expect(results[0].name).toBe('Cotton') // Exact match first
     })
   })
 
   describe('searchCustomers', () => {
-    const mockCustomers: any[] = [
+    const mockCustomers: SearchCustomer[] = [
       {
         id: 'c1',
         tenantId: 't1',
@@ -401,7 +406,7 @@ describe('Search Utilities', () => {
       const customers = [
         { id: '1', name: 'John Doe' },
         { id: '2', name: 'John' },
-      ] as any
+      ] as unknown as SearchCustomer[]
       const results = searchCustomers(customers, 'John')
       expect(results[0].name).toBe('John') // Exact match first
     })

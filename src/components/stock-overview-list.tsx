@@ -41,7 +41,10 @@ export function StockOverviewList({ items }: StockOverviewListProps) {
         </TableHeader>
         <TableBody>
           {items.map((item, idx) => (
-            <TableRow key={`${item.materialId}-${item.color || 'default'}-${idx}`}>
+            <TableRow
+              key={`${item.materialId}-${item.color || 'default'}-${idx}`}
+              className="hover:backdrop-blur-0 hover:bg-transparent"
+            >
               <TableCell className="font-medium">{item.materialName}</TableCell>
               <TableCell>
                 {item.color ? (

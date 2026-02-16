@@ -22,6 +22,9 @@ export const TransactionSchema = z.object({
 export type TransactionInput = z.infer<typeof TransactionSchema>
 type FinancialSummaryRow = { amount: number | string; type: 'IN' | 'OUT'; status: string }
 type FinancialRecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
+const MonthSchema = z.number().int().min(1).max(12)
+const YearSchema = z.number().int().min(2000).max(2100)
+const TransactionUpdateSchema = TransactionSchema.partial()
 
 type FinancialRecurrenceTemplateRow = {
   id: string
@@ -207,6 +210,15 @@ export async function processRecurringFinancialTransactions(options?: {
 }
 
 export async function getTransactions(month: number, year: number) {
+  const validMonth = MonthSchema.safeParse(month)
+  const validYear = YearSchema.safeParse(year)
+  if (!validMonth.success || !validYear.success) {
+    throw new Error('Invalid month/year range')
+  }
+
+  const tenantId = await getTenantId()
+  if (!tenantId) throw new Error('Unauthorized')
+
   const db = await getDb()
 
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`
@@ -223,6 +235,7 @@ export async function getTransactions(month: number, year: number) {
     )
     .gte('date', startDate)
     .lte('date', endDate)
+    .eq('tenant_id', tenantId)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
 
@@ -242,11 +255,16 @@ export async function createTransaction(input: TransactionInput) {
 
   if (!tenantId) throw new Error('Unauthorized')
 
+  const validated = TransactionSchema.safeParse(input)
+  if (!validated.success) {
+    throw new Error('Invalid transaction payload')
+  }
+
   const { data, error } = await db
     .from('financial_transactions')
     // @ts-expect-error legacy table typing missing in generated Database type
     .insert({
-      ...input,
+      ...validated.data,
       tenant_id: tenantId,
     })
     .select()
@@ -265,14 +283,28 @@ export async function createTransaction(input: TransactionInput) {
 
 export async function updateTransaction(id: string, input: Partial<TransactionInput>) {
   const db = await getDb()
+  const tenantId = await getTenantId()
   const user = await getCurrentUser()
   const workspaceSlug = user?.tenant?.slug
+
+  if (!tenantId) throw new Error('Unauthorized')
+  if (!id || id.trim() === '') throw new Error('Invalid transaction id')
+
+  const validated = TransactionUpdateSchema.safeParse(input)
+  if (!validated.success) {
+    throw new Error('Invalid transaction payload')
+  }
+
+  if (Object.keys(validated.data).length === 0) {
+    throw new Error('No fields to update')
+  }
 
   const { data, error } = await db
     .from('financial_transactions')
     // @ts-expect-error legacy table typing missing in generated Database type
-    .update(input)
+    .update(validated.data)
     .eq('id', id)
+    .eq('tenant_id', tenantId)
     .select()
     .single()
 
@@ -289,10 +321,18 @@ export async function updateTransaction(id: string, input: Partial<TransactionIn
 
 export async function deleteTransaction(id: string) {
   const db = await getDb()
+  const tenantId = await getTenantId()
   const user = await getCurrentUser()
   const workspaceSlug = user?.tenant?.slug
 
-  const { error } = await db.from('financial_transactions').delete().eq('id', id)
+  if (!tenantId) throw new Error('Unauthorized')
+  if (!id || id.trim() === '') throw new Error('Invalid transaction id')
+
+  const { error } = await db
+    .from('financial_transactions')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
 
   if (error) {
     console.error('Error deleting transaction:', error)
@@ -322,6 +362,15 @@ export async function getCategories() {
 }
 
 export async function getFinancialSummary(month: number, year: number) {
+  const validMonth = MonthSchema.safeParse(month)
+  const validYear = YearSchema.safeParse(year)
+  if (!validMonth.success || !validYear.success) {
+    throw new Error('Invalid month/year range')
+  }
+
+  const tenantId = await getTenantId()
+  if (!tenantId) throw new Error('Unauthorized')
+
   const db = await getDb()
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`
   const lastDay = new Date(year, month, 0).getDate()
@@ -332,6 +381,7 @@ export async function getFinancialSummary(month: number, year: number) {
     .select('amount, type, status')
     .gte('date', startDate)
     .lte('date', endDate)
+    .eq('tenant_id', tenantId)
     .eq('status', 'paid')
 
   if (error) throw new Error('Failed to fetch summary')

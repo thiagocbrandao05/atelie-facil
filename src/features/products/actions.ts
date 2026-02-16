@@ -34,21 +34,48 @@ function normalizeProducts(rawData: ProductQueryResponse[]): ProductWithMaterial
 }
 
 function parseMaterials(formData: FormData): ProductMaterialInput[] {
-  const materialsJson = formData.get('materials') as string
-  const parsed = JSON.parse(materialsJson || '[]') as ProductMaterialInput[]
+  const materialsRaw = formData.get('materials')
+  if (typeof materialsRaw !== 'string') return []
+
+  let parsedUnknown: unknown
+  try {
+    parsedUnknown = JSON.parse(materialsRaw || '[]')
+  } catch {
+    throw new Error('Composicao de materiais invalida.')
+  }
+
+  if (!Array.isArray(parsedUnknown)) {
+    throw new Error('Composicao de materiais invalida.')
+  }
+
+  const parsed = parsedUnknown as ProductMaterialInput[]
+  const seen = new Set<string>()
 
   for (const material of parsed) {
     if (!material.id || material.id.trim() === '') {
-      throw new Error('Erro: material sem ID válido encontrado.')
+      throw new Error('Material sem identificador valido.')
     }
+
+    const key = material.id.trim()
+    if (seen.has(key)) {
+      throw new Error('Material duplicado na composicao do produto.')
+    }
+    seen.add(key)
   }
 
   return parsed
 }
 
 function parsePrice(formData: FormData): number | null {
-  const priceRaw = formData.get('price') as string
-  return priceRaw && priceRaw.trim() !== '' ? parseFloat(priceRaw) : null
+  const priceRaw = formData.get('price')
+  if (typeof priceRaw !== 'string' || priceRaw.trim() === '') return null
+
+  const parsed = parseFloat(priceRaw)
+  if (!Number.isFinite(parsed)) {
+    throw new Error('Preco invalido.')
+  }
+
+  return parsed
 }
 
 function mapMaterialsForRpc(materials: ProductMaterialInput[]) {
@@ -147,8 +174,6 @@ export async function createProduct(
   if (!user) return unauthorizedAction()
 
   try {
-    const materials = parseMaterials(formData)
-
     const data = {
       name: formData.get('name'),
       imageUrl: formData.get('imageUrl') || undefined,
@@ -156,13 +181,13 @@ export async function createProduct(
       price: parsePrice(formData),
       laborTime: formData.get('laborTime'),
       profitMargin: formData.get('profitMargin'),
-      materials,
+      materials: parseMaterials(formData),
     }
 
     const validatedFields = ProductSchema.safeParse(data)
     if (!validatedFields.success) {
       return actionError(
-        'Dados inválidos. Verifique os campos.',
+        'Dados invalidos. Verifique os campos.',
         validatedFields.error.flatten().fieldErrors
       )
     }
@@ -204,22 +229,22 @@ export async function updateProduct(
   const user = await getCurrentUser()
   if (!user) return unauthorizedAction()
 
-  const data = {
-    name: formData.get('name'),
-    imageUrl: formData.get('imageUrl') || undefined,
-    description: formData.get('description') || undefined,
-    price: parsePrice(formData),
-    laborTime: formData.get('laborTime'),
-    profitMargin: formData.get('profitMargin'),
-    materials: parseMaterials(formData),
-  }
-
-  const validatedFields = ProductSchema.safeParse(data)
-  if (!validatedFields.success) {
-    return actionError('Dados inválidos.', validatedFields.error.flatten().fieldErrors)
-  }
-
   try {
+    const data = {
+      name: formData.get('name'),
+      imageUrl: formData.get('imageUrl') || undefined,
+      description: formData.get('description') || undefined,
+      price: parsePrice(formData),
+      laborTime: formData.get('laborTime'),
+      profitMargin: formData.get('profitMargin'),
+      materials: parseMaterials(formData),
+    }
+
+    const validatedFields = ProductSchema.safeParse(data)
+    if (!validatedFields.success) {
+      return actionError('Dados invalidos.', validatedFields.error.flatten().fieldErrors)
+    }
+
     const supabase = await createClient()
     const db = supabase
     const workspaceSlug = user.tenant?.slug
@@ -272,6 +297,6 @@ export async function deleteProduct(id: string): Promise<ActionResponse> {
     }
     return actionSuccess('Produto removido!')
   } catch {
-    return actionError('Erro ao remover produto. Verifique se ele está em pedidos.')
+    return actionError('Erro ao remover produto. Verifique se ele esta em pedidos.')
   }
 }

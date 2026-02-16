@@ -12,15 +12,31 @@ export function useFormHandler<T>(
   const [state, formAction, isPending] = useActionState(action, initialState)
 
   const prevPending = useRef(isPending)
+  const awaitingResult = useRef(false)
+  const onSuccessRef = useRef(onSuccess)
 
   useEffect(() => {
-    // Only trigger if we just finished loading (was pending, now not) AND it was successful
-    if (prevPending.current && !isPending && state.success) {
-      setOpen(false)
-      onSuccess?.(state)
+    onSuccessRef.current = onSuccess
+  }, [onSuccess])
+
+  useEffect(() => {
+    if (!prevPending.current && isPending) {
+      // Track explicit submissions; avoid reacting to stale success state.
+      awaitingResult.current = true
     }
+
     prevPending.current = isPending
-  }, [isPending, state, onSuccess])
+  }, [isPending])
+
+  useEffect(() => {
+    if (isPending || !awaitingResult.current) return
+
+    awaitingResult.current = false
+    if (!state.success) return
+
+    setOpen(false)
+    onSuccessRef.current?.(state)
+  }, [isPending, state])
 
   return {
     open,

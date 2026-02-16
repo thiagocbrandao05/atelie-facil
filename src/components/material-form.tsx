@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,9 +24,7 @@ import { createMaterial, updateMaterial } from '@/features/materials/actions'
 import { useFormHandler } from '@/hooks/use-form-handler'
 import { useRouter } from 'next/navigation'
 import { UNITS } from '@/lib/units'
-import { Supplier, Material } from '@/lib/types'
-import { ActionResponse } from '@/lib/types'
-import { Pencil } from 'lucide-react'
+import type { Supplier, Material, ActionResponse } from '@/lib/types'
 
 interface MaterialFormProps {
   suppliers?: Supplier[]
@@ -34,45 +32,101 @@ interface MaterialFormProps {
   trigger?: React.ReactNode
 }
 
+type MaterialFormActionData = {
+  name?: string
+  unit?: string
+  minQuantity?: string
+  supplierId?: string
+  colors?: string
+  duplicateType?: 'possible'
+  canForce?: boolean
+  candidates?: Array<{
+    id: string
+    name: string
+    unit: string
+    reasons: string[]
+  }>
+}
+
+function toMinQuantityValue(value?: number | null) {
+  if (value === null || value === undefined) return ''
+  return String(value)
+}
+
 export function MaterialForm({ suppliers = [], initialData, trigger }: MaterialFormProps) {
   const router = useRouter()
-  // Determine which action to use
   const action = initialData ? updateMaterial.bind(null, initialData.id) : createMaterial
 
   const { open, setOpen, state, formAction, isPending } = useFormHandler(
     action,
     { success: false, message: '' },
-    state => {
-      toast.success(state.message)
+    successState => {
+      toast.success(successState.message)
       router.refresh()
     }
   )
-  const formRef = useRef<HTMLFormElement>(null)
 
-  // Local state to shadow server action state, allowing us to clear messages on close
   const [localState, setLocalState] = useState<ActionResponse>(state)
 
+  const [name, setName] = useState(initialData?.name || '')
+  const [unit, setUnit] = useState(initialData?.unit || '')
   const [colors, setColors] = useState(initialData?.colors?.join(', ') || '')
+  const [minQuantity, setMinQuantity] = useState(toMinQuantityValue(initialData?.minQuantity))
+  const [supplierId, setSupplierId] = useState(initialData?.supplierId || '')
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false)
 
-  // Sync local state with server state
+  const duplicateData = (state?.data as MaterialFormActionData | undefined) ?? undefined
+  const possibleDuplicates =
+    !state?.success && duplicateData?.duplicateType === 'possible' && duplicateData?.canForce
+      ? (duplicateData.candidates ?? [])
+      : []
+  const hasPossibleDuplicate = possibleDuplicates.length > 0
+  const formId = initialData ? `material-form-${initialData.id}` : 'material-form-new'
+
   useEffect(() => {
     setLocalState(state)
-  }, [state])
 
-  // Reset form and local state when dialog closes
+    const actionData = duplicateData
+    if (!state.success && actionData) {
+      if (typeof actionData.name === 'string') setName(actionData.name)
+      if (typeof actionData.unit === 'string') setUnit(actionData.unit)
+      if (typeof actionData.colors === 'string') setColors(actionData.colors)
+      if (typeof actionData.minQuantity === 'string') setMinQuantity(actionData.minQuantity)
+      if (typeof actionData.supplierId === 'string') setSupplierId(actionData.supplierId)
+    }
+  }, [duplicateData, state])
+
+  useEffect(() => {
+    if (state.success) {
+      setIsDuplicateModalOpen(false)
+      return
+    }
+
+    if (hasPossibleDuplicate) {
+      setIsDuplicateModalOpen(true)
+    }
+  }, [hasPossibleDuplicate, state.success])
+
   useEffect(() => {
     if (!open) {
       setLocalState({ success: false, message: '' })
+      setIsDuplicateModalOpen(false)
       if (!initialData) {
-        // Only reset form fields if in create mode
+        setName('')
+        setUnit('')
         setColors('')
-        formRef.current?.reset()
+        setMinQuantity('')
+        setSupplierId('')
       }
-    } else {
-      // When opening, reset to initial values if in edit mode
-      if (initialData) {
-        setColors(initialData.colors?.join(', ') || '')
-      }
+      return
+    }
+
+    if (initialData) {
+      setName(initialData.name || '')
+      setUnit(initialData.unit || '')
+      setColors(initialData.colors?.join(', ') || '')
+      setMinQuantity(toMinQuantityValue(initialData.minQuantity))
+      setSupplierId(initialData.supplierId || '')
     }
   }, [open, initialData])
 
@@ -84,45 +138,46 @@ export function MaterialForm({ suppliers = [], initialData, trigger }: MaterialF
           <DialogTitle>{initialData ? 'Editar Material' : 'Cadastrar Material'}</DialogTitle>
           <DialogDescription>
             {initialData
-              ? 'Atualize as informações do material.'
-              : 'Cadastre os materiais que você utiliza. O controle de estoque (entradas/saídas) é feito em abas específicas.'}
+              ? 'Atualize as informacoes do material.'
+              : 'Cadastre os materiais que voce utiliza. O controle de estoque (entradas/saidas) e feito em abas especificas.'}
           </DialogDescription>
         </DialogHeader>
-        <form action={formAction} ref={formRef}>
+
+        <form id={formId} action={formAction}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Nome do Material</Label>
               <Input
                 id="name"
                 name="name"
-                placeholder="Ex: Tecido Algodão"
+                placeholder="Ex: Tecido Algodao"
                 required
-                defaultValue={initialData?.name}
+                value={name}
+                onChange={e => setName(e.target.value)}
               />
               {localState.errors?.name && (
                 <p className="text-xs text-red-500">{localState.errors.name[0]}</p>
               )}
             </div>
 
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="unit">Unidade de Medida</Label>
-                <Select name="unit" required defaultValue={initialData?.unit}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UNITS.map(u => (
-                      <SelectItem key={u.value} value={u.value}>
-                        {u.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {localState.errors?.unit && (
-                  <p className="text-xs text-red-500">{localState.errors.unit[0]}</p>
-                )}
-              </div>
+            <div className="grid gap-2">
+              <Label htmlFor="unit">Unidade de Medida</Label>
+              <input type="hidden" name="unit" value={unit} />
+              <Select value={unit || undefined} onValueChange={setUnit}>
+                <SelectTrigger id="unit">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNITS.map(u => (
+                    <SelectItem key={u.value} value={u.value}>
+                      {u.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {localState.errors?.unit && (
+                <p className="text-xs text-red-500">{localState.errors.unit[0]}</p>
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -130,27 +185,28 @@ export function MaterialForm({ suppliers = [], initialData, trigger }: MaterialF
               <Input
                 id="colors"
                 name="colors"
-                placeholder="Separe por vírgula: Azul, Vermelho, Branco"
+                placeholder="Separe por virgula: Azul, Vermelho, Branco"
                 value={colors}
                 onChange={e => setColors(e.target.value)}
               />
               <p className="text-muted-foreground text-[10px]">
-                Opcional. Liste as cores disponíveis.
+                Opcional. Liste as cores disponiveis.
               </p>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="minQuantity">Alerta de Estoque Mínimo</Label>
+              <Label htmlFor="minQuantity">Alerta de Estoque Minimo</Label>
               <Input
                 id="minQuantity"
                 name="minQuantity"
                 type="number"
                 step="0.01"
                 placeholder="Opcional"
-                defaultValue={initialData?.minQuantity !== null ? initialData?.minQuantity : ''}
+                value={minQuantity}
+                onChange={e => setMinQuantity(e.target.value)}
               />
               <p className="text-muted-foreground text-[10px]">
-                Você será avisado quando o estoque estiver abaixo deste valor.
+                Voce sera avisado quando o estoque estiver abaixo deste valor.
               </p>
               {localState.errors?.minQuantity && (
                 <p className="text-xs text-red-500">{localState.errors.minQuantity[0]}</p>
@@ -158,12 +214,17 @@ export function MaterialForm({ suppliers = [], initialData, trigger }: MaterialF
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="supplierId">Fornecedor Padrão</Label>
-              <Select name="supplierId" defaultValue={initialData?.supplierId || undefined}>
-                <SelectTrigger>
+              <Label htmlFor="supplierId">Fornecedor Padrao</Label>
+              <input type="hidden" name="supplierId" value={supplierId} />
+              <Select
+                value={supplierId || '__NONE__'}
+                onValueChange={value => setSupplierId(value === '__NONE__' ? '' : value)}
+              >
+                <SelectTrigger id="supplierId">
                   <SelectValue placeholder="Selecione um fornecedor (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__NONE__">Sem fornecedor padrao</SelectItem>
                   {suppliers.map(s => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.name}
@@ -172,20 +233,63 @@ export function MaterialForm({ suppliers = [], initialData, trigger }: MaterialF
                 </SelectContent>
               </Select>
             </div>
-            {/* 
-              Optionally removed inline success message since we are toasting and closing. 
-              But kept error messages.
-            */}
-            {localState.message && !localState.success && (
+
+            {localState.message && !localState.success && !hasPossibleDuplicate && (
               <p className="text-sm text-red-500">{localState.message}</p>
             )}
           </div>
+
           <div className="flex justify-end">
             <Button type="submit" disabled={isPending}>
               {isPending ? 'Salvando...' : 'Salvar'}
             </Button>
           </div>
         </form>
+
+        <Dialog open={isDuplicateModalOpen} onOpenChange={setIsDuplicateModalOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Possivel material duplicado</DialogTitle>
+              <DialogDescription>
+                Encontramos material com nome parecido. Revise os dados antes de continuar.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="max-h-[45vh] space-y-2 overflow-y-auto pr-1">
+              {possibleDuplicates.map(candidate => (
+                <div
+                  key={candidate.id}
+                  className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-sm"
+                >
+                  <p className="font-semibold text-slate-900">{candidate.name}</p>
+                  <p className="text-slate-600">Unidade: {candidate.unit || '-'}</p>
+                  <p className="text-amber-900">{candidate.reasons.join(', ')}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                className="sm:min-w-36"
+                onClick={() => setIsDuplicateModalOpen(false)}
+              >
+                Revisar dados
+              </Button>
+              <Button
+                type="submit"
+                form={formId}
+                name="forceDuplicate"
+                value="1"
+                className="sm:min-w-44"
+                disabled={isPending}
+              >
+                Salvar mesmo assim
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   )

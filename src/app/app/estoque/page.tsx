@@ -86,34 +86,34 @@ export default async function EstoquePage() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6 sm:space-y-8">
-        <TabsList className="bg-muted/10 h-auto w-full justify-start gap-1 overflow-x-auto rounded-2xl border-none p-1.5 backdrop-blur-md md:w-fit">
+        <TabsList className="bg-background h-auto w-full justify-start gap-1 overflow-x-auto border p-1 md:grid md:grid-cols-5 md:overflow-visible">
           <TabsTrigger
             value="overview"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground min-h-10 shrink-0 rounded-xl px-4 py-2 text-xs font-black tracking-tight transition-all data-[state=active]:shadow-md"
+            className="min-h-10 shrink-0 px-3 text-sm md:w-full md:justify-center"
           >
             Visão geral
           </TabsTrigger>
           <TabsTrigger
             value="register"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground min-h-10 shrink-0 rounded-xl px-4 py-2 text-xs font-black tracking-tight transition-all data-[state=active]:shadow-md"
+            className="min-h-10 shrink-0 px-3 text-sm md:w-full md:justify-center"
           >
             Cadastro
           </TabsTrigger>
           <TabsTrigger
             value="purchases"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground min-h-10 shrink-0 rounded-xl px-4 py-2 text-xs font-black tracking-tight transition-all data-[state=active]:shadow-md"
+            className="min-h-10 shrink-0 px-3 text-sm md:w-full md:justify-center"
           >
             Entradas
           </TabsTrigger>
           <TabsTrigger
             value="manual"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground min-h-10 shrink-0 rounded-xl px-4 py-2 text-xs font-black tracking-tight transition-all data-[state=active]:shadow-md"
+            className="min-h-10 shrink-0 px-3 text-sm md:w-full md:justify-center"
           >
             Ajustes
           </TabsTrigger>
           <TabsTrigger
             value="history"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground min-h-10 shrink-0 rounded-xl px-4 py-2 text-xs font-black tracking-tight transition-all data-[state=active]:shadow-md"
+            className="min-h-10 shrink-0 px-3 text-sm md:w-full md:justify-center"
           >
             Histórico
           </TabsTrigger>

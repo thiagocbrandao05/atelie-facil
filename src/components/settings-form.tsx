@@ -42,7 +42,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner'
 import { DEFAULT_THEME, THEME_OPTIONS, resolveThemeKey } from '@/lib/theme-tokens'
 import { AppSettings } from '@/lib/types'
-import { UsageSummary } from '@/features/subscription/types'
+import {
+  CurrentSubscription,
+  PlanType,
+  SubscriptionStatus,
+  UsageSummary,
+} from '@/features/subscription/types'
+import { PLANS } from '@/features/subscription/constants'
+import { isFreePlan } from '@/features/subscription/utils'
 
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -74,6 +81,17 @@ const WhatsAppSettingsTab = dynamic(
 
 const initialState = { success: false, message: '' }
 
+const SUBSCRIPTION_STATUS_LABELS: Record<SubscriptionStatus, string> = {
+  active: 'Ativa',
+  trialing: 'Período de teste',
+  past_due: 'Pagamento pendente',
+  canceled: 'Cancelada',
+  incomplete: 'Pagamento incompleto',
+  incomplete_expired: 'Pagamento expirado',
+  unpaid: 'Pagamento em atraso',
+  paused: 'Pausada',
+}
+
 interface FixedCostItem {
   id: string
   label: string
@@ -83,9 +101,11 @@ interface FixedCostItem {
 export function SettingsForm({
   settings,
   whatsappUsage,
+  currentSubscription,
 }: {
   settings: AppSettings
   whatsappUsage?: UsageSummary | null
+  currentSubscription?: CurrentSubscription | null
 }) {
   const [state, action, isPending] = useActionState(updateSettings, initialState)
   const [activeTab, setActiveTab] = useState('general')
@@ -150,6 +170,25 @@ export function SettingsForm({
   }, [state])
 
   const isMainTab = ['general', 'financial', 'notifications', 'appearance'].includes(activeTab)
+  const plan = (currentSubscription?.plan || 'free_creative') as PlanType
+  const planMeta = PLANS[plan]
+  const status = currentSubscription?.status || null
+  const statusLabel = status ? (SUBSCRIPTION_STATUS_LABELS[status] ?? status) : 'Sem cobrança ativa'
+  const profileLabel =
+    currentSubscription?.profile === 'RESELLER'
+      ? 'Revenda'
+      : currentSubscription?.profile === 'HYBRID'
+        ? 'Híbrido'
+        : 'Criativo'
+  const renewalDateRaw = currentSubscription?.currentPeriodEnd
+  const renewalDate = renewalDateRaw
+    ? (() => {
+        const parsed = new Date(renewalDateRaw)
+        if (Number.isNaN(parsed.getTime())) return null
+        return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(parsed)
+      })()
+    : null
+  const shouldShowUpgradeCard = isFreePlan(plan) || status === 'canceled' || status === 'unpaid'
 
   return (
     <Tabs
@@ -967,19 +1006,55 @@ export function SettingsForm({
             <CardDescription>Visualize seu plano atual e descubra novos recursos.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col items-center space-y-4 rounded-2xl border bg-white p-6 text-center shadow-sm">
-              <div className="bg-primary/10 text-primary rounded-full p-4">
-                <TrendingUp size={32} />
-              </div>
-              <h3 className="text-xl font-bold">Quer levar seu ateliê para o próximo nível?</h3>
-              <p className="text-muted-foreground max-w-sm">
-                Desbloqueie automações inteligentes, maior limite de mensagens e gestão avançada de
-                pedidos.
+            <div className="space-y-3 rounded-2xl border bg-white p-4 shadow-sm sm:p-5">
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                Plano atual
               </p>
-              <Button asChild size="lg" className="w-full font-bold sm:w-auto">
-                <Link href="/app/upgrade">Ver Opções de upgrade →</Link>
-              </Button>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black">{planMeta?.label || plan}</h3>
+                  <p className="text-muted-foreground text-sm">
+                    {planMeta?.description || 'Plano ativo para sua loja no Atelis.'}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 sm:items-end">
+                  <span className="bg-primary/10 text-primary inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold">
+                    Perfil: {profileLabel}
+                  </span>
+                  <span className="bg-muted inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold">
+                    Status: {statusLabel}
+                  </span>
+                  {renewalDate && (
+                    <span className="text-muted-foreground text-xs">Renovação: {renewalDate}</span>
+                  )}
+                </div>
+              </div>
             </div>
+
+            {shouldShowUpgradeCard ? (
+              <div className="flex flex-col items-center space-y-4 rounded-2xl border bg-white p-6 text-center shadow-sm">
+                <div className="bg-primary/10 text-primary rounded-full p-4">
+                  <TrendingUp size={32} />
+                </div>
+                <h3 className="text-xl font-bold">Quer levar seu ateliê para o próximo nível?</h3>
+                <p className="text-muted-foreground max-w-sm">
+                  Desbloqueie automações inteligentes, maior limite de mensagens e gestão avançada
+                  de pedidos.
+                </p>
+                <Button asChild size="lg" className="w-full font-bold sm:w-auto">
+                  <Link href="/app/upgrade">Ver opções de upgrade →</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="bg-background flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-muted-foreground text-sm">
+                  Sua assinatura já está ativa. Você pode comparar planos e alterar quando quiser.
+                </p>
+                <Button asChild variant="outline" className="w-full sm:w-auto">
+                  <Link href="/app/upgrade">Gerenciar plano</Link>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </TabsContent>

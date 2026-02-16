@@ -22,7 +22,7 @@ global.Blob = class Blob {
     this.content = content
     this.options = options
   }
-} as any
+} as unknown as typeof Blob
 
 describe('Lib Advanced Coverage', () => {
   describe('export', () => {
@@ -37,9 +37,13 @@ describe('Lib Advanced Coverage', () => {
         setAttribute: vi.fn(),
         style: {},
         click: clickMock,
-      } as any)
-      appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => ({}) as any)
-      removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => ({}) as any)
+      } as unknown as HTMLAnchorElement)
+      appendChildSpy = vi
+        .spyOn(document.body, 'appendChild')
+        .mockImplementation(() => document.body)
+      removeChildSpy = vi
+        .spyOn(document.body, 'removeChild')
+        .mockImplementation(() => document.body)
     })
 
     afterEach(() => {
