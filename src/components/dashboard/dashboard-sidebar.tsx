@@ -84,7 +84,7 @@ export function DashboardSidebar({
                 </span>
 
                 {!isActive && (
-                  <div className="bg-foreground text-background absolute left-full ml-4 scale-0 rounded-lg px-2 py-1 text-[10px] transition-all group-hover/item:scale-100 group-hover/item:group-hover/sidebar:hidden">
+                  <div className="bg-foreground text-background absolute left-full ml-4 scale-0 rounded-lg px-2 py-1 text-xs transition-all group-hover/item:scale-100 group-hover/item:group-hover/sidebar:hidden">
                     {item.label}
                   </div>
                 )}
@@ -108,11 +108,11 @@ export function DashboardSidebar({
                 {userInitials}
               </div>
               <div className="flex max-w-[140px] flex-col items-start overflow-hidden whitespace-nowrap opacity-0 transition-all duration-500 group-hover/sidebar:opacity-100">
-                <span className="max-w-[120px] truncate text-[10px] font-black tracking-tight uppercase">
+                <span className="max-w-[120px] truncate text-xs font-black tracking-tight uppercase">
                   {userName}
                 </span>
-                <span className="text-[8px] opacity-70">
-                  Tier: {plan.replace('_', ' ').toUpperCase()}
+                <span className="text-xs opacity-70">
+                  Plano: {plan.replace('_', ' ').toUpperCase()}
                 </span>
               </div>
             </button>

@@ -262,7 +262,7 @@ export function SettingsForm({
               <CardContent className="space-y-4">
                 <div className="grid gap-2">
                   <Label htmlFor="phone" className="flex items-center gap-2">
-                    <Instagram size={14} /> WhatsApp
+                    <MessageSquare size={14} /> WhatsApp
                   </Label>
                   <Input
                     id="phone"

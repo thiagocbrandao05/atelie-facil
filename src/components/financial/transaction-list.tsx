@@ -103,16 +103,14 @@ function TransactionItem({ transaction, isLast }: { transaction: Transaction; is
 
   return (
     <div
-      className={`hover:bg-muted/30 flex min-h-[68px] items-center justify-between p-3.5 transition-colors sm:p-4 ${
+      className={`flex min-h-[68px] items-center justify-between p-3.5 sm:p-4 ${
         !isLast ? 'border-border/20 border-b' : ''
       }`}
     >
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <div
           className={`rounded-full p-2.5 ${
-            isIncome
-              ? 'bg-emerald-100/50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400'
-              : 'bg-red-100/50 text-red-600 dark:bg-red-900/40 dark:text-red-400'
+            isIncome ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger'
           }`}
         >
           <Icon size={18} strokeWidth={2.5} />
@@ -121,7 +119,7 @@ function TransactionItem({ transaction, isLast }: { transaction: Transaction; is
           <p className="text-foreground/90 truncate text-sm leading-none font-bold">
             {transaction.description || transaction.category?.name || 'Sem descrição'}
           </p>
-          <p className="text-muted-foreground/70 text-[10px] font-bold tracking-wider uppercase">
+          <p className="text-muted-foreground/70 text-xs font-bold tracking-wide uppercase">
             {transaction.category?.name || 'Geral'}
           </p>
         </div>
@@ -129,7 +127,7 @@ function TransactionItem({ transaction, isLast }: { transaction: Transaction; is
       <div className="text-right">
         <p
           className={`text-sm font-black tracking-tight sm:text-base ${
-            isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
+            isIncome ? 'text-success' : 'text-foreground'
           }`}
         >
           {isIncome ? '+' : '-'}{' '}
@@ -137,7 +135,7 @@ function TransactionItem({ transaction, isLast }: { transaction: Transaction; is
         </p>
         <div className="mt-0.5 flex items-center justify-end gap-1 opacity-40">
           {isIncome ? <ArrowUpRight size={10} /> : <ArrowDownLeft size={10} />}
-          <span className="text-[9px] font-bold uppercase">
+          <span className="text-xs font-bold uppercase">
             {transaction.payment_method === 'credit' ? 'Crédito' : transaction.payment_method}
           </span>
         </div>

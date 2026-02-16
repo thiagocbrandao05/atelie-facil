@@ -55,7 +55,7 @@ export default async function ProdutosPage() {
             value="sandbox"
             className="min-h-10 gap-2 rounded-lg px-4 py-2 text-sm font-bold"
           >
-            <TrendingUp size={16} /> Simulador (Sandbox)
+            <TrendingUp size={16} /> Simulador de preço
           </TabsTrigger>
         </TabsList>
 
@@ -90,7 +90,7 @@ export default async function ProdutosPage() {
             return (
               <div
                 key={product.id}
-                className="group relative overflow-hidden rounded-2xl border border-white/40 bg-white/90 p-6 shadow-sm backdrop-blur-md transition-all hover:bg-white hover:shadow-lg"
+                className="relative overflow-hidden rounded-2xl border border-white/40 bg-white/90 p-6 shadow-sm backdrop-blur-md"
               >
                 <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex flex-1 items-start gap-4">
@@ -100,7 +100,7 @@ export default async function ProdutosPage() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg leading-tight font-black">{product.name}</h3>
-                        <div className="flex gap-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
+                        <div className="flex gap-1">
                           <ProductForm
                             availableMaterials={materials}
                             product={product}
@@ -110,11 +110,11 @@ export default async function ProdutosPage() {
                           <DeleteButton
                             id={product.id}
                             onDelete={deleteProduct}
-                            className="h-7 w-7 rounded-full border-none transition-colors hover:bg-red-50 hover:text-red-500"
+                            className="hover:bg-danger/10 hover:text-danger h-7 w-7 rounded-full border-none transition-colors"
                           />
                         </div>
                       </div>
-                      <div className="text-muted-foreground flex items-center gap-3 text-[10px] font-bold tracking-widest uppercase opacity-60">
+                      <div className="text-muted-foreground flex items-center gap-3 text-xs font-bold tracking-wide uppercase opacity-60">
                         {!isReseller(plan) ? (
                           <>
                             <span>{product.laborTime} min de carinho</span>
@@ -137,16 +137,16 @@ export default async function ProdutosPage() {
                     <div className="flex items-center gap-2">
                       {contributionMarginPercentage >=
                       (appSettings.marginThresholdOptimal || 40) ? (
-                        <Badge className="border-green-200 bg-green-100 px-2 text-[9px] font-black tracking-widest text-green-700 uppercase hover:bg-green-100">
+                        <Badge className="border-success/30 bg-success/10 text-success px-2 text-xs font-black tracking-wide uppercase">
                           Saudável
                         </Badge>
                       ) : contributionMarginPercentage >=
                         (appSettings.marginThresholdWarning || 20) ? (
-                        <Badge className="border-yellow-200 bg-yellow-100 px-2 text-[9px] font-black tracking-widest text-yellow-700 uppercase hover:bg-yellow-100">
+                        <Badge className="border-warning/40 bg-warning/15 text-foreground px-2 text-xs font-black tracking-wide uppercase">
                           Alerta
                         </Badge>
                       ) : (
-                        <Badge className="border-red-200 bg-red-100 px-2 text-[9px] font-black tracking-widest text-red-700 uppercase hover:bg-red-100">
+                        <Badge className="border-danger/30 bg-danger/10 text-danger px-2 text-xs font-black tracking-wide uppercase">
                           Crítico
                         </Badge>
                       )}
@@ -159,11 +159,11 @@ export default async function ProdutosPage() {
                         })}
                       </div>
                     </div>
-                    <div className="text-muted-foreground text-[9px] font-black tracking-[0.2em] uppercase opacity-40">
+                    <div className="text-muted-foreground text-xs font-black tracking-[0.18em] uppercase opacity-40">
                       {isManual ? 'Ajuste manual' : 'Preço sugerido'}
                     </div>
                     {isManual && (
-                      <div className="text-primary text-[10px] font-bold italic opacity-60">
+                      <div className="text-primary text-xs font-bold italic opacity-60">
                         Sugestão:{' '}
                         {suggestedPrice.toLocaleString('pt-BR', {
                           style: 'currency',
@@ -175,24 +175,24 @@ export default async function ProdutosPage() {
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-                  <div className="bg-primary/5 border-primary/5 hover:bg-primary/10 rounded-xl border p-3 transition-colors">
-                    <p className="text-muted-foreground mb-1 text-[8px] font-black tracking-widest uppercase opacity-60">
+                  <div className="bg-primary/5 border-primary/5 rounded-xl border p-3">
+                    <p className="text-muted-foreground mb-1 text-xs font-black tracking-wide uppercase opacity-60">
                       {isReseller(plan) ? 'Custo de Compra' : 'Insumos'}
                     </p>
                     <p className="text-foreground text-sm font-black">
                       {materialCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </p>
                   </div>
-                  <div className="bg-primary/5 border-primary/5 hover:bg-primary/10 rounded-xl border p-3 transition-colors">
-                    <p className="text-muted-foreground mb-1 text-[8px] font-black tracking-widest uppercase opacity-60">
+                  <div className="bg-primary/5 border-primary/5 rounded-xl border p-3">
+                    <p className="text-muted-foreground mb-1 text-xs font-black tracking-wide uppercase opacity-60">
                       Mão de obra
                     </p>
                     <p className="text-foreground text-sm font-black">
                       {laborCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </p>
                   </div>
-                  <div className="bg-primary/5 border-primary/5 hover:bg-primary/10 rounded-xl border p-3 transition-colors">
-                    <p className="text-muted-foreground mb-1 text-[8px] font-black tracking-widest uppercase opacity-60">
+                  <div className="bg-primary/5 border-primary/5 rounded-xl border p-3">
+                    <p className="text-muted-foreground mb-1 text-xs font-black tracking-wide uppercase opacity-60">
                       Custos Fixos
                     </p>
                     <p className="text-foreground text-sm font-black">
@@ -202,20 +202,20 @@ export default async function ProdutosPage() {
                   <div
                     className={`bg-primary/10 flex flex-col justify-center rounded-xl border p-3 shadow-inner ${
                       contributionMarginPercentage >= (appSettings.marginThresholdOptimal || 40)
-                        ? 'border-green-500/20 bg-green-50/50'
+                        ? 'border-success/30 bg-success/10'
                         : contributionMarginPercentage >= (appSettings.marginThresholdWarning || 20)
-                          ? 'border-yellow-500/20 bg-yellow-50/50'
-                          : 'border-red-500/20 bg-red-50/50'
+                          ? 'border-warning/40 bg-warning/15'
+                          : 'border-danger/30 bg-danger/10'
                     }`}
                   >
                     <p
-                      className={`mb-1 text-[8px] font-black tracking-widest uppercase ${
+                      className={`mb-1 text-xs font-black tracking-wide uppercase ${
                         contributionMarginPercentage >= (appSettings.marginThresholdOptimal || 40)
-                          ? 'text-green-700'
+                          ? 'text-success'
                           : contributionMarginPercentage >=
                               (appSettings.marginThresholdWarning || 20)
-                            ? 'text-yellow-700'
-                            : 'text-red-700'
+                            ? 'text-foreground'
+                            : 'text-danger'
                       }`}
                     >
                       {appSettings.financialDisplayMode === 'advanced'
@@ -225,11 +225,11 @@ export default async function ProdutosPage() {
                     <p
                       className={`text-base font-black tracking-tighter ${
                         contributionMarginPercentage >= (appSettings.marginThresholdOptimal || 40)
-                          ? 'text-green-700'
+                          ? 'text-success'
                           : contributionMarginPercentage >=
                               (appSettings.marginThresholdWarning || 20)
-                            ? 'text-yellow-700'
-                            : 'text-red-700'
+                            ? 'text-foreground'
+                            : 'text-danger'
                       }`}
                     >
                       +{' '}
@@ -249,7 +249,7 @@ export default async function ProdutosPage() {
                     {product.materials.map(pm => (
                       <div
                         key={pm.materialId}
-                        className="bg-background border-border/50 flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold shadow-sm"
+                        className="bg-background border-border/50 flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold shadow-sm"
                       >
                         <div className="bg-primary/40 h-1.5 w-1.5 rounded-full" />
                         {pm.quantity} {pm.unit} {pm.material.name}

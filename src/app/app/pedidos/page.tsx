@@ -148,7 +148,7 @@ export default async function PedidosPage(props: {
                             })}
                           </div>
                           {(order.discount ?? 0) > 0 && (
-                            <div className="text-[10px] font-medium text-red-500">
+                            <div className="text-danger text-xs font-medium">
                               Desc. total:{' '}
                               {order.discount?.toLocaleString('pt-BR', {
                                 style: 'currency',
@@ -167,7 +167,7 @@ export default async function PedidosPage(props: {
                             <li key={idx}>
                               {item.quantity}x {item.product.name}
                               {(item.discount ?? 0) > 0 && (
-                                <span className="ml-2 text-[10px] font-medium text-red-500">
+                                <span className="text-danger ml-2 text-xs font-medium">
                                   (-
                                   {(item.discount ?? 0).toLocaleString('pt-BR', {
                                     style: 'currency',
