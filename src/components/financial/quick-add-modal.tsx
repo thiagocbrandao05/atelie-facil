@@ -96,7 +96,7 @@ export function QuickAddTransactionModal() {
           className={cn(
             'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-black tracking-wider uppercase transition-all',
             type === 'IN'
-              ? 'bg-emerald-100 text-emerald-700 shadow-sm'
+              ? 'bg-success/15 text-success shadow-sm'
               : 'text-muted-foreground hover:bg-background/50'
           )}
         >
@@ -110,7 +110,7 @@ export function QuickAddTransactionModal() {
           className={cn(
             'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-black tracking-wider uppercase transition-all',
             type === 'OUT'
-              ? 'bg-red-100 text-red-700 shadow-sm'
+              ? 'bg-danger/15 text-danger shadow-sm'
               : 'text-muted-foreground hover:bg-background/50'
           )}
         >
@@ -167,13 +167,13 @@ export function QuickAddTransactionModal() {
                     'flex min-h-24 flex-col items-center justify-center gap-1 rounded-xl border p-2 transition-all',
                     isSelected
                       ? type === 'IN'
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                        : 'border-red-500 bg-red-50 text-red-700'
+                        ? 'border-success/40 bg-success/10 text-success'
+                        : 'border-danger/40 bg-danger/10 text-danger'
                       : 'border-border/40 bg-card text-muted-foreground hover:bg-accent/50'
                   )}
                 >
                   <Icon size={20} />
-                  <span className="line-clamp-2 text-center text-[10px] leading-tight font-bold">
+                  <span className="line-clamp-2 text-center text-xs leading-tight font-bold">
                     {cat.name}
                   </span>
                 </button>
@@ -216,7 +216,7 @@ export function QuickAddTransactionModal() {
         className={cn(
           'h-12 w-full rounded-xl text-lg font-bold text-white shadow-lg transition-all active:scale-[0.98]',
           !isAmountValid || isSubmitting ? 'cursor-not-allowed opacity-50' : '',
-          type === 'IN' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'
+          type === 'IN' ? 'bg-success hover:bg-success/90' : 'bg-danger hover:bg-danger/90'
         )}
         disabled={!isAmountValid || isSubmitting}
       >

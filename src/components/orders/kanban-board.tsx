@@ -1,13 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { updateOrderStatus } from '@/features/orders/actions'
 import { toast } from 'sonner'
 import type { OrderStatus } from '@/lib/types'
-import { Package as PackageIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -25,14 +22,14 @@ type KanbanBoardProps = {
 }
 
 const STATUS_CONFIG = {
-  QUOTATION: { label: 'Orçamentos', color: 'border-orange-200 bg-orange-50/50 text-orange-700' },
-  PENDING: { label: 'Aguardando', color: 'border-blue-200 bg-blue-50/50 text-blue-700' },
-  PRODUCING: { label: 'Na Bancada', color: 'border-primary/30 bg-primary/5 text-primary' },
+  QUOTATION: { label: 'Orçamentos', color: 'border-accent/40' },
+  PENDING: { label: 'Aguardando', color: 'border-info/35' },
+  PRODUCING: { label: 'Em produção', color: 'border-primary/30' },
   READY: {
-    label: 'Pronto para Entrega',
-    color: 'border-emerald-200 bg-emerald-50/50 text-emerald-700',
+    label: 'Pronto para entrega',
+    color: 'border-success/40',
   },
-  DELIVERED: { label: 'Finalizados', color: 'border-slate-200 bg-slate-50/50 text-slate-500' },
+  DELIVERED: { label: 'Finalizado', color: 'border-border' },
 }
 
 export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
@@ -72,18 +69,13 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="scrollbar-hide flex h-full min-h-[700px] items-start gap-8 overflow-x-auto pt-4 pb-12">
+      <div className="grid h-full min-h-[700px] grid-cols-1 gap-4 pt-4 pb-12 md:grid-cols-2 xl:grid-cols-5">
         {Object.entries(STATUS_CONFIG).map(([statusKey, config]) => (
-          <div key={statusKey} className="flex w-full min-w-[320px] flex-col gap-6">
+          <div key={statusKey} className="flex w-full min-w-0 flex-col gap-4">
             <div
-              className={`flex items-center justify-between rounded-[2rem] border-b-2 bg-white/40 p-5 shadow-sm backdrop-blur-md ${config.color.split(' ')[0]}`}
+              className={`flex items-center justify-between rounded-[2rem] border-b-2 bg-white/40 p-5 shadow-sm backdrop-blur-md ${config.color}`}
             >
-              <div className="flex flex-col gap-1">
-                <h3 className="text-[10px] font-black tracking-[0.2em] uppercase opacity-40">
-                  {statusKey}
-                </h3>
-                <p className="text-sm font-black">{config.label}</p>
-              </div>
+              <p className="text-sm font-black">{config.label}</p>
               <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-full text-xs font-black shadow-inner">
                 {getOrdersByStatus(statusKey).length}
               </div>
@@ -94,7 +86,7 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className={`flex flex-1 flex-col gap-4 rounded-[2.5rem] border border-dashed p-3 transition-all duration-300 ${snapshot.isDraggingOver ? 'bg-primary/5 border-primary/30' : 'bg-muted/5 border-border/40'}`}
+                  className={`flex min-h-[280px] flex-1 flex-col gap-4 rounded-[2.5rem] border border-dashed p-3 transition-all duration-300 md:min-h-[420px] ${snapshot.isDraggingOver ? 'bg-primary/5 border-primary/30' : 'bg-muted/5 border-border/40'}`}
                 >
                   {getOrdersByStatus(statusKey).map((order, index) => (
                     <Draggable key={order.id} draggableId={order.id} index={index}>
@@ -103,18 +95,14 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
                           ref={providedSnapshot.innerRef}
                           {...providedSnapshot.draggableProps}
                           {...providedSnapshot.dragHandleProps}
-                          className={`group hover:shadow-primary/5 relative overflow-hidden rounded-[2rem] border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-all hover:bg-white hover:shadow-xl ${snapshot.isDragging ? 'ring-primary/40 scale-105 rotate-2 shadow-2xl ring-4' : ''}`}
+                          className={`relative overflow-hidden rounded-[2rem] border border-white/40 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-all ${snapshot.isDragging ? 'ring-primary/40 scale-105 rotate-2 shadow-2xl ring-4' : ''}`}
                         >
-                          <div className="absolute top-[-10px] right-[-10px] opacity-0 transition-opacity group-hover:opacity-5">
-                            <PackageIcon size={64} className="text-primary" />
-                          </div>
-
                           <div className="relative z-10 space-y-4">
                             <div className="flex items-start justify-between">
-                              <span className="text-muted-foreground font-mono text-[9px] font-bold tracking-widest uppercase opacity-40">
+                              <span className="text-muted-foreground font-mono text-xs font-bold tracking-wide uppercase opacity-40">
                                 #{order.id.slice(-4)}
                               </span>
-                              <div className="bg-primary/5 text-primary rounded-full px-3 py-1 text-[9px] font-black tracking-tight uppercase">
+                              <div className="bg-primary/5 text-primary rounded-full px-3 py-1 text-xs font-black tracking-tight uppercase">
                                 {order.dueDate
                                   ? format(new Date(order.dueDate), 'dd MMM', { locale: ptBR })
                                   : 'Pendente'}
@@ -122,7 +110,7 @@ export function KanbanBoard({ initialOrders }: KanbanBoardProps) {
                             </div>
 
                             <div className="space-y-1">
-                              <div className="text-foreground group-hover:text-primary text-base leading-tight font-black transition-colors">
+                              <div className="text-foreground text-base leading-tight font-black">
                                 {order.customer?.name || 'Cliente'}
                               </div>
                               <div className="text-muted-foreground line-clamp-1 text-[11px] font-medium italic">

@@ -26,10 +26,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    --primary: 254 56% 65%;
-    /* #8A72D8 */
+    --primary: 254 56% 60%;
+    /* #7B5FD2 */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 254 56% 55%;
+    --primary-hover: 254 56% 52%;
     --primary-soft: 254 56% 96%;
 
     --secondary: 210 20% 96%;
@@ -40,7 +40,7 @@
 
     --accent: 35 77% 60%;
     /* #E6A44B */
-    --accent-foreground: 0 0% 100%;
+    --accent-foreground: 24 10% 10%;
     --accent-soft: 35 77% 96%;
 
     --destructive: 0 84% 60%;
@@ -56,7 +56,7 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 254 56% 65%;
+    --ring: 254 56% 60%;
 
     --radius: 1.25rem;
 
@@ -68,7 +68,7 @@
 
   /* Lavanda Ateliê overrides */
   [data-theme='lavanda-atelie'] {
-    --primary: 254 56% 65%;
+    --primary: 254 56% 60%;
     --accent: 35 77% 60%;
     --background: 30 20% 98%;
     --border: 30 18% 90%;
@@ -85,6 +85,7 @@
   /* Algodão Doce (Cotton Candy) */
   [data-theme='algodao-doce'] {
     --primary: 340 54% 74%;
+    --primary-foreground: 224 71% 4%;
     --accent: 340 100% 87%;
     --background: 330 80% 97%;
     --border: 343 45% 90%;

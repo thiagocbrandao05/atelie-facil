@@ -19,7 +19,7 @@ export function FinancialDashboardCard() {
   const isPositiveBalance = summary.balance >= 0
 
   return (
-    <Card className="overflow-hidden border-none bg-gradient-to-br from-white to-gray-50 shadow-lg dark:from-gray-900 dark:to-gray-950">
+    <Card className="border-border/70 bg-card/95 overflow-hidden shadow-sm">
       <CardHeader className="px-4 pb-2 sm:px-6">
         <div className="flex items-center justify-between">
           <CardTitle className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
@@ -30,9 +30,7 @@ export function FinancialDashboardCard() {
         <div className="mt-2 flex items-baseline gap-2">
           <h2
             className={`text-3xl font-extrabold tracking-tight sm:text-4xl ${
-              isPositiveBalance
-                ? 'text-emerald-600 dark:text-emerald-400'
-                : 'text-red-600 dark:text-red-400'
+              isPositiveBalance ? 'text-success' : 'text-danger'
             }`}
           >
             {summary.balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
@@ -44,26 +42,26 @@ export function FinancialDashboardCard() {
       </CardHeader>
 
       <CardContent className="grid grid-cols-1 gap-3 px-4 pt-4 sm:grid-cols-2 sm:gap-4 sm:px-6">
-        <div className="flex flex-col gap-1 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/20">
-          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-            <div className="rounded-full bg-emerald-100 p-1.5 dark:bg-emerald-900/50">
+        <div className="border-success/25 bg-success/10 flex flex-col gap-1 rounded-xl border p-3">
+          <div className="text-success flex items-center gap-2">
+            <div className="bg-success/20 rounded-full p-1.5">
               <TrendingUp size={14} />
             </div>
             <span className="text-xs font-bold uppercase">Entrou</span>
           </div>
-          <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">
+          <p className="text-success mt-1 text-lg font-bold">
             {summary.income.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </p>
         </div>
 
-        <div className="flex flex-col gap-1 rounded-xl border border-red-100 bg-red-50/50 p-3 dark:border-red-900/50 dark:bg-red-950/20">
-          <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-            <div className="rounded-full bg-red-100 p-1.5 dark:bg-red-900/50">
+        <div className="border-danger/25 bg-danger/10 flex flex-col gap-1 rounded-xl border p-3">
+          <div className="text-danger flex items-center gap-2">
+            <div className="bg-danger/20 rounded-full p-1.5">
               <TrendingDown size={14} />
             </div>
             <span className="text-xs font-bold uppercase">Saiu</span>
           </div>
-          <p className="mt-1 text-lg font-bold text-red-700 dark:text-red-300">
+          <p className="text-danger mt-1 text-lg font-bold">
             {summary.expenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </p>
         </div>
