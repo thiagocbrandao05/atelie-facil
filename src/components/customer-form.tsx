@@ -11,16 +11,27 @@ import type { ActionResponse, Customer } from '@/lib/types'
 export function CustomerForm({ customer }: { customer?: Customer }) {
   const formRef = useRef<HTMLFormElement>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [cep, setCep] = useState('')
+  const [address, setAddress] = useState(customer?.address || '')
+  const [cepFeedback, setCepFeedback] = useState<string | null>(null)
+  const [isFetchingCep, setIsFetchingCep] = useState(false)
   const initialState: ActionResponse = { success: false, message: '' }
   const actionWithId = customer ? updateCustomer.bind(null, customer.id) : createCustomer
   const [state, action, isPending] = useActionState(actionWithId, initialState)
   const errors = state?.errors
 
   useEffect(() => {
+    setAddress(customer?.address || '')
+  }, [customer?.id, customer?.address])
+
+  useEffect(() => {
     if (state?.success) {
       setShowSuccess(true)
       if (!customer) {
         formRef.current?.reset()
+        setAddress('')
+        setCep('')
+        setCepFeedback(null)
       }
       const timer = setTimeout(() => {
         setShowSuccess(false)
@@ -28,6 +39,71 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
       return () => clearTimeout(timer)
     }
   }, [state?.success, customer])
+
+  const normalizeCep = (value: string) => value.replace(/\D/g, '').slice(0, 8)
+
+  const formatCep = (value: string) => {
+    const digits = normalizeCep(value)
+    if (digits.length <= 5) return digits
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`
+  }
+
+  const handleCepChange = (value: string) => {
+    setCep(formatCep(value))
+    if (cepFeedback) setCepFeedback(null)
+  }
+
+  const lookupCep = async (rawCep?: string) => {
+    const digits = normalizeCep(rawCep ?? cep)
+    if (digits.length !== 8) {
+      setCepFeedback('Digite um CEP com 8 números para buscar.')
+      return
+    }
+
+    try {
+      setIsFetchingCep(true)
+      setCepFeedback(null)
+
+      const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      })
+
+      if (!response.ok) {
+        throw new Error('Falha ao consultar CEP')
+      }
+
+      const data = (await response.json()) as {
+        erro?: boolean
+        logradouro?: string
+        bairro?: string
+        localidade?: string
+        uf?: string
+      }
+
+      if (data.erro) {
+        setCepFeedback('CEP não encontrado. Preencha o endereço manualmente.')
+        return
+      }
+
+      const cityUf = [data.localidade, data.uf].filter(Boolean).join(' - ')
+      const composedAddress = [data.logradouro, data.bairro, cityUf].filter(Boolean).join(', ')
+
+      if (!composedAddress) {
+        setCepFeedback('CEP encontrado, mas sem detalhes completos de endereço.')
+        return
+      }
+
+      setCep(formatCep(digits))
+      setAddress(composedAddress)
+      setCepFeedback('Endereço preenchido automaticamente. Confira número e complemento.')
+    } catch (error) {
+      console.error('Erro ao consultar ViaCEP:', error)
+      setCepFeedback('Não foi possível consultar o CEP agora. Tente novamente.')
+    } finally {
+      setIsFetchingCep(false)
+    }
+  }
 
   return (
     <form ref={formRef} action={action} className="space-y-4">
@@ -109,6 +185,41 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
             <p className="text-destructive pl-1 text-[10px] font-bold">{errors.birthday[0]}</p>
           )}
         </div>
+        <div className="space-y-1.5">
+          <Label
+            htmlFor="cep"
+            className="text-muted-foreground pl-1 text-[10px] font-black tracking-widest uppercase"
+          >
+            CEP
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              id="cep"
+              name="cep"
+              value={cep}
+              onChange={e => handleCepChange(e.target.value)}
+              onBlur={e => {
+                void lookupCep(e.target.value)
+              }}
+              placeholder="00000-000"
+              inputMode="numeric"
+              autoComplete="postal-code"
+              className="focus:ring-primary/20 h-10 rounded-xl shadow-sm"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 shrink-0 rounded-xl px-3 text-[11px] font-bold"
+              onClick={() => {
+                void lookupCep()
+              }}
+              disabled={isFetchingCep}
+            >
+              {isFetchingCep ? 'Buscando...' : 'Buscar CEP'}
+            </Button>
+          </div>
+          {cepFeedback && <p className="text-muted-foreground pl-1 text-[10px]">{cepFeedback}</p>}
+        </div>
       </div>
 
       <div className="space-y-1.5">
@@ -121,7 +232,8 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
         <Input
           id="address"
           name="address"
-          defaultValue={customer?.address || ''}
+          value={address}
+          onChange={e => setAddress(e.target.value)}
           placeholder="Rua, número, bairro..."
           className="focus:ring-primary/20 h-10 rounded-xl shadow-sm"
         />
