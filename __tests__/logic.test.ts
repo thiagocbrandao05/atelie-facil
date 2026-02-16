@@ -52,7 +52,9 @@ describe('Business Logic', () => {
         },
       ]
 
-      const cost = calculateMaterialCost(materials as any)
+      const cost = calculateMaterialCost(
+        materials as unknown as Parameters<typeof calculateMaterialCost>[0]
+      )
       expect(cost).toBe(105) // (2 * 50) + (1 * 5)
     })
 
@@ -97,7 +99,9 @@ describe('Business Logic', () => {
         ],
       }
 
-      const result = calculateSuggestedPrice(product as any)
+      const result = calculateSuggestedPrice(
+        product as unknown as Parameters<typeof calculateSuggestedPrice>[0]
+      )
 
       expect(result.materialCost).toBe(100)
       expect(result.laborCost).toBe(20)
@@ -123,8 +127,10 @@ describe('Business Logic', () => {
     })
 
     it('should fallback to 0 material cost if missing', () => {
-      const materials: any = [{ quantity: 1, unit: 'm', material: { unit: 'm' } }]
-      expect(calculateMaterialCost(materials)).toBe(0)
+      const materials = [{ quantity: 1, unit: 'm', material: { unit: 'm' } }]
+      expect(
+        calculateMaterialCost(materials as unknown as Parameters<typeof calculateMaterialCost>[0])
+      ).toBe(0)
     })
 
     it('should handle zero working hours for fixed cost', () => {
@@ -221,7 +227,9 @@ describe('Business Logic', () => {
         },
       ]
 
-      const summary = summarizeFinancials(orders as any)
+      const summary = summarizeFinancials(
+        orders as unknown as Parameters<typeof summarizeFinancials>[0]
+      )
 
       expect(summary.totalRevenue).toBe(200)
       expect(summary.totalCosts).toBe(70) // 50 (material) + 20 (labor)
@@ -237,14 +245,25 @@ describe('Business Logic', () => {
               quantity: 1,
               product: {
                 laborTime: 60,
-                materials: [{ quantity: 1, unit: 'un', material: { cost: 50, unit: 'un' } as any }],
-              } as any,
+                materials: [
+                  {
+                    quantity: 1,
+                    unit: 'un',
+                    material: { cost: 50, unit: 'un' } as unknown as Record<string, unknown>,
+                  },
+                ],
+              } as unknown as Record<string, unknown>,
             },
           ],
         },
       ]
       const fixedCosts = [{ value: 160 }]
-      const summary = summarizeFinancials(orders as any, 20, fixedCosts, 160)
+      const summary = summarizeFinancials(
+        orders as unknown as Parameters<typeof summarizeFinancials>[0],
+        20,
+        fixedCosts,
+        160
+      )
 
       // Revenue = 200
       // Material = 50
@@ -259,10 +278,19 @@ describe('Business Logic', () => {
       const orders = [
         {
           totalValue: 100,
-          items: [{ quantity: 1, product: { laborTime: 0, materials: [] } as any }],
+          items: [
+            {
+              quantity: 1,
+              product: { laborTime: 0, materials: [] } as unknown as Record<string, unknown>,
+            },
+          ],
         },
       ]
-      const summary = summarizeFinancials(orders as any, 20, null as any)
+      const summary = summarizeFinancials(
+        orders as unknown as Parameters<typeof summarizeFinancials>[0],
+        20,
+        null as unknown as Parameters<typeof summarizeFinancials>[2]
+      )
       expect(summary.totalRevenue).toBe(100)
     })
 
@@ -277,13 +305,17 @@ describe('Business Logic', () => {
             },
           ],
         },
-      ] as any
+      ] as unknown as Parameters<typeof summarizeFinancials>[0]
       const fixedCosts = [{ value: 10 }, { amount: 10 }, { valor: 10 }, { custo: 10 }]
       const resultFixed = summarizeFinancials(orders, HOURLY_RATE, fixedCosts)
       // (60/60) * (40/160) = 0.25. Total cost = 0.25 (FC) + HOURLY_RATE (Labor)
       expect(resultFixed.totalCosts).toBe(0.25 + HOURLY_RATE)
 
-      const resultNone = summarizeFinancials(orders, HOURLY_RATE, null as any)
+      const resultNone = summarizeFinancials(
+        orders,
+        HOURLY_RATE,
+        null as unknown as Parameters<typeof summarizeFinancials>[2]
+      )
       expect(resultNone.totalCosts).toBe(HOURLY_RATE)
     })
   })

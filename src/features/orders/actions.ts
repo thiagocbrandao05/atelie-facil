@@ -331,8 +331,9 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
       }
     }
 
-    const { error: updateError } = await (db.from('Order') as any)
-      .update({ status: newStatus })
+    const { error: updateError } = await db
+      .from('Order')
+      .update({ status: newStatus } as never)
       .eq('id', id)
       .eq('tenantId', user.tenantId)
     if (updateError) throw updateError
