@@ -83,16 +83,17 @@ export function InventoryHistory({ movements }: InventoryHistoryProps) {
               : '-'
 
             return (
-              <TableRow key={movement.id || index}>
+              <TableRow
+                key={movement.id || index}
+                className="hover:backdrop-blur-0 hover:bg-transparent"
+              >
                 <TableCell className="whitespace-nowrap">{dateStr}</TableCell>
                 <TableCell className="font-medium">{movement.materialName || 'Sem nome'}</TableCell>
                 <TableCell className="text-muted-foreground">{movement.color || '-'}</TableCell>
                 <TableCell>
                   <Badge
                     variant={badgeVariant}
-                    className={
-                      typeInfo.variant === 'success' ? 'bg-green-600 hover:bg-green-700' : ''
-                    }
+                    className={typeInfo.variant === 'success' ? 'bg-green-600' : ''}
                   >
                     {typeInfo.label}
                   </Badge>

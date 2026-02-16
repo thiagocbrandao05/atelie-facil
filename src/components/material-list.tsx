@@ -41,7 +41,7 @@ export function MaterialList({ materials, suppliers = [] }: MaterialListProps) {
         </TableHeader>
         <TableBody>
           {materials.map(material => (
-            <TableRow key={material.id}>
+            <TableRow key={material.id} className="hover:backdrop-blur-0 hover:bg-transparent">
               <TableCell className="font-medium">{material.name}</TableCell>
               <TableCell>{material.unit}</TableCell>
               <TableCell>
