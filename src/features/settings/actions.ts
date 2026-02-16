@@ -92,6 +92,53 @@ function parseFixedCosts(jsonValue?: string): FixedCostItem[] {
   }
 }
 
+type PostgrestLikeError = {
+  code?: string
+  message?: string
+}
+
+const MISSING_SETTINGS_COLUMN_REGEX =
+  /Could not find the '([^']+)' column of 'Settings' in the schema cache/i
+
+function extractMissingSettingsColumn(error: unknown): string | null {
+  if (!error || typeof error !== 'object') return null
+  const maybeError = error as PostgrestLikeError
+  if (maybeError.code !== 'PGRST204' || !maybeError.message) return null
+  const match = maybeError.message.match(MISSING_SETTINGS_COLUMN_REGEX)
+  return match?.[1] ?? null
+}
+
+type SettingsUpsertPayload = Record<string, unknown>
+
+async function upsertSettingsWithSchemaFallback(
+  db: Awaited<ReturnType<typeof createClient>>,
+  payload: SettingsUpsertPayload
+) {
+  const currentPayload: SettingsUpsertPayload = { ...payload }
+  const removedColumns: string[] = []
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    // @ts-expect-error legacy table typing missing in generated Database type
+    const { error } = await db.from('Settings').upsert(currentPayload, { onConflict: 'tenantId' })
+    if (!error) {
+      return { error: null, removedColumns }
+    }
+
+    const missingColumn = extractMissingSettingsColumn(error)
+    if (!missingColumn || !(missingColumn in currentPayload)) {
+      return { error, removedColumns }
+    }
+
+    delete currentPayload[missingColumn]
+    removedColumns.push(missingColumn)
+  }
+
+  return {
+    error: new Error('Unable to save settings because schema and app are out of sync.'),
+    removedColumns,
+  }
+}
+
 export async function updateProfile(_prevState: unknown, formData: FormData) {
   const csrfError = await assertCSRFValid()
   if (csrfError) return csrfError
@@ -207,53 +254,58 @@ export async function updateSettings(_prevState: unknown, formData: FormData) {
     const db = await createClient()
     const fixedCosts = parseFixedCosts(data.monthlyFixedCosts)
 
-    // @ts-expect-error legacy table typing missing in generated Database type
-    const { error } = await db.from('Settings').upsert(
-      {
-        tenantId,
-        storeName: data.storeName,
-        hourlyRate: data.hourlyRate,
-        phone: data.phone || null,
-        email: data.email || null,
-        instagram: data.instagram || null,
-        facebook: data.facebook || null,
-        msgQuotation: data.msgQuotation || null,
-        msgReady: data.msgReady || null,
-        msgApproved: data.msgApproved || null,
-        msgFinished: data.msgFinished || null,
-        primaryColor: data.primaryColor || DEFAULT_THEME,
-        logoUrl: data.logoUrl || null,
-        addressStreet: data.addressStreet || null,
-        addressNumber: data.addressNumber || null,
-        addressComplement: data.addressComplement || null,
-        addressNeighborhood: data.addressNeighborhood || null,
-        addressCity: data.addressCity || null,
-        addressState: data.addressState || null,
-        addressZip: data.addressZip || null,
-        quotationValidityDays: data.quotationValidityDays || 15,
-        defaultQuotationNotes: data.defaultQuotationNotes || null,
-        monthlyFixedCosts: fixedCosts,
-        desirableSalary: data.desirableSalary || 2000,
-        workingHoursPerMonth: data.workingHoursPerMonth || 160,
-        defaultProfitMargin: data.defaultProfitMargin || 50,
-        taxRate: data.taxRate || 0,
-        cardFeeRate: data.cardFeeRate || 0,
-        targetMonthlyProfit: data.targetMonthlyProfit || 0,
-        psychologicalPricingPattern: data.psychologicalPricingPattern || '90',
-        financialDisplayMode: data.financialDisplayMode || 'simple',
-        marginThresholdWarning: data.marginThresholdWarning ?? 20,
-        marginThresholdOptimal: data.marginThresholdOptimal ?? 40,
-        updatedAt: new Date().toISOString(),
-      },
-      { onConflict: 'tenantId' }
-    )
+    const settingsPayload: SettingsUpsertPayload = {
+      tenantId,
+      storeName: data.storeName,
+      hourlyRate: data.hourlyRate,
+      phone: data.phone || null,
+      email: data.email || null,
+      instagram: data.instagram || null,
+      facebook: data.facebook || null,
+      msgQuotation: data.msgQuotation || null,
+      msgReady: data.msgReady || null,
+      msgApproved: data.msgApproved || null,
+      msgFinished: data.msgFinished || null,
+      primaryColor: data.primaryColor || DEFAULT_THEME,
+      logoUrl: data.logoUrl || null,
+      addressStreet: data.addressStreet || null,
+      addressNumber: data.addressNumber || null,
+      addressComplement: data.addressComplement || null,
+      addressNeighborhood: data.addressNeighborhood || null,
+      addressCity: data.addressCity || null,
+      addressState: data.addressState || null,
+      addressZip: data.addressZip || null,
+      quotationValidityDays: data.quotationValidityDays || 15,
+      defaultQuotationNotes: data.defaultQuotationNotes || null,
+      monthlyFixedCosts: fixedCosts,
+      desirableSalary: data.desirableSalary || 2000,
+      workingHoursPerMonth: data.workingHoursPerMonth || 160,
+      defaultProfitMargin: data.defaultProfitMargin || 50,
+      taxRate: data.taxRate || 0,
+      cardFeeRate: data.cardFeeRate || 0,
+      targetMonthlyProfit: data.targetMonthlyProfit || 0,
+      psychologicalPricingPattern: data.psychologicalPricingPattern || '90',
+      financialDisplayMode: data.financialDisplayMode || 'simple',
+      marginThresholdWarning: data.marginThresholdWarning ?? 20,
+      marginThresholdOptimal: data.marginThresholdOptimal ?? 40,
+      updatedAt: new Date().toISOString(),
+    }
 
+    const { error, removedColumns } = await upsertSettingsWithSchemaFallback(db, settingsPayload)
     if (error) throw error
+
+    if (removedColumns.length > 0) {
+      console.warn('Settings schema mismatch. Ignored missing columns during save:', removedColumns)
+    }
 
     if (slug) {
       revalidateWorkspaceAppPaths(slug, ['/configuracoes'])
     }
-    return actionSuccess('Configurações salvas com sucesso!')
+    return actionSuccess(
+      removedColumns.length > 0
+        ? 'Configuracoes salvas. Atualize as migracoes do banco para liberar todos os campos.'
+        : 'Configuracoes salvas com sucesso!'
+    )
   } catch (error) {
     console.error(error)
     return actionError('Erro ao salvar configurações')

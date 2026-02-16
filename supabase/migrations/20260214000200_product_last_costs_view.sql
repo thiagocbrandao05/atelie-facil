@@ -12,8 +12,8 @@ SELECT DISTINCT ON (psei."productId", psei."tenantId")
     -- If total_cost == freight_cost (shouldn't happen with items), multiplier is 1 or handle division by zero
     CASE 
         WHEN (pse."totalCost" - pse."freightCost") > 0 
-        THEN pse."unitCost" * (pse."totalCost" / (pse."totalCost" - pse."freightCost"))
-        ELSE pse."unitCost"
+        THEN psei."unitCost" * (pse."totalCost" / (pse."totalCost" - pse."freightCost"))
+        ELSE psei."unitCost"
     END as last_cost_with_freight,
     pse."createdAt" as purchased_at
 FROM "ProductStockEntryItem" psei
