@@ -6,9 +6,10 @@ export function actionSuccess<T = unknown>(message: string, data?: T): ActionRes
 
 export function actionError<T = unknown>(
   message: string,
-  errors?: Record<string, string[]>
+  errors?: Record<string, string[]>,
+  data?: T
 ): ActionResponse<T> {
-  return { success: false, message, errors }
+  return { success: false, message, errors, data }
 }
 
 export function unauthorizedAction<T = unknown>(): ActionResponse<T> {

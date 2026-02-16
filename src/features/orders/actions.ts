@@ -31,6 +31,32 @@ type CreateOrderRpcResult = { id: string }
 type DeleteOrderRpcResult = { success?: boolean; message?: string; status?: string }
 type NotificationResult = { success?: boolean; message?: string; error?: string }
 
+const ORDER_STATUSES: OrderStatus[] = [
+  'QUOTATION',
+  'PENDING',
+  'PRODUCING',
+  'READY',
+  'DELIVERED',
+  'CANCELLED',
+]
+
+const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  QUOTATION: ['PENDING', 'PRODUCING', 'READY', 'CANCELLED'],
+  PENDING: ['PRODUCING', 'READY', 'DELIVERED', 'CANCELLED'],
+  PRODUCING: ['READY', 'DELIVERED', 'CANCELLED'],
+  READY: ['DELIVERED', 'CANCELLED'],
+  DELIVERED: [],
+  CANCELLED: [],
+}
+
+function isOrderStatus(value: string): value is OrderStatus {
+  return ORDER_STATUSES.includes(value as OrderStatus)
+}
+
+function canTransitionOrderStatus(current: OrderStatus, next: OrderStatus): boolean {
+  return ORDER_STATUS_TRANSITIONS[current]?.includes(next) ?? false
+}
+
 function notificationErrorMessage(result: unknown, fallback: string): string {
   const parsed = result as NotificationResult
   return parsed?.message || parsed?.error || fallback
@@ -39,7 +65,7 @@ function notificationErrorMessage(result: unknown, fallback: string): string {
 async function assertCSRFValid() {
   const csrf = await validateCSRF()
   if (!csrf.valid) {
-    return actionError(csrf.error || 'CSRF inválido.')
+    return actionError(csrf.error || 'CSRF invalido.')
   }
   return null
 }
@@ -177,12 +203,20 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
   const validatedFields = OrderSchema.safeParse(data)
   if (!validatedFields.success) {
     return actionError(
-      'Dados inválidos. Verifique os campos.',
+      'Dados invalidos. Verifique os campos.',
       validatedFields.error.flatten().fieldErrors
     )
   }
 
   const { customerId, dueDate, items, status, discount } = validatedFields.data
+  const requestedStatus = status || 'PENDING'
+
+  if (requestedStatus === 'DELIVERED' || requestedStatus === 'CANCELLED') {
+    return actionError('Status inicial invalido para criacao de pedido.', {
+      status: ['Use QUOTATION, PENDING, PRODUCING ou READY na criacao.'],
+    })
+  }
+
   const totalValue = calculateOrderTotal(items, discount)
   const supabase = await createClient()
   const db = supabase
@@ -193,7 +227,7 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
     const { data: rpcData, error } = await db.rpc('create_order', {
       p_tenant_id: user.tenantId,
       p_customer_id: customerId,
-      p_status: status || 'PENDING',
+      p_status: requestedStatus,
       p_due_date: new Date(dueDate).toISOString(),
       p_total_value: totalValue,
       p_items: items,
@@ -204,7 +238,7 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
     const createdOrderId = (rpcData as CreateOrderRpcResult).id
 
     const { plan } = await getCurrentTenantPlan()
-    if (isReseller(plan) && (status === 'PENDING' || status === 'PRODUCING')) {
+    if (isReseller(plan) && (requestedStatus === 'PENDING' || requestedStatus === 'PRODUCING')) {
       const stock = await checkFinishedStockAvailability(createdOrderId)
       if (stock.isAvailable) {
         await deductFinishedStockForOrder(createdOrderId)
@@ -215,7 +249,7 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
       revalidateWorkspaceAppPaths(workspaceSlug, ['/pedidos', '/dashboard'])
     }
 
-    if (status === 'QUOTATION' && createdOrderId) {
+    if (requestedStatus === 'QUOTATION' && createdOrderId) {
       const notificationResult = await enqueueOrderStatusNotification({
         orderId: createdOrderId,
         tenantId: user.tenantId,
@@ -225,7 +259,7 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
 
       if (!notificationResult.success) {
         await logError(
-          new Error(notificationErrorMessage(notificationResult, 'Falha ao enviar orçamento.')),
+          new Error(notificationErrorMessage(notificationResult, 'Falha ao enviar orcamento.')),
           {
             action: 'send_order_quotation_notification',
             data: { orderId: createdOrderId },
@@ -252,16 +286,27 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
   const db = supabase
   const workspaceSlug = user.tenant?.slug
 
+  if (!isOrderStatus(newStatus)) {
+    return actionError('Status invalido.')
+  }
+
   try {
     const { data: order, error: fetchError } = await db
       .from('Order')
       .select('status')
       .eq('id', id)
+      .eq('tenantId', user.tenantId)
       .single()
 
     const currentOrder = order as { status: string } | null
-    if (fetchError || !currentOrder) return actionError('Pedido não encontrado.')
-    if (currentOrder.status === newStatus) return actionSuccess('Status já estava atualizado.')
+    if (fetchError || !currentOrder) return actionError('Pedido nao encontrado.')
+    if (!isOrderStatus(currentOrder.status)) return actionError('Status atual do pedido invalido.')
+    if (currentOrder.status === newStatus) return actionSuccess('Status ja estava atualizado.')
+    if (!canTransitionOrderStatus(currentOrder.status, newStatus)) {
+      return actionError(
+        `Transicao de status nao permitida: ${currentOrder.status} -> ${newStatus}.`
+      )
+    }
 
     if (
       newStatus === 'PRODUCING' &&
@@ -286,8 +331,10 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
       }
     }
 
-    // @ts-expect-error legacy schema not fully represented in generated DB types
-    const { error: updateError } = await db.from('Order').update({ status: newStatus }).eq('id', id)
+    const { error: updateError } = await (db.from('Order') as any)
+      .update({ status: newStatus })
+      .eq('id', id)
+      .eq('tenantId', user.tenantId)
     if (updateError) throw updateError
 
     if (workspaceSlug) {
@@ -304,7 +351,7 @@ export async function updateOrderStatus(id: string, newStatus: string): Promise<
     if (!notificationResult.success) {
       await logError(
         new Error(
-          notificationErrorMessage(notificationResult, 'Falha ao enviar notificação de status.')
+          notificationErrorMessage(notificationResult, 'Falha ao enviar notificacao de status.')
         ),
         {
           action: 'send_order_status_notification',
@@ -340,7 +387,7 @@ export async function deleteOrder(id: string): Promise<ActionResponse> {
     if (error) throw error
     const result = data as DeleteOrderRpcResult | null
     if (result && result.success === false) {
-      return actionError(result.message || 'Não foi possível cancelar o pedido.')
+      return actionError(result.message || 'Nao foi possivel cancelar o pedido.')
     }
 
     if (workspaceSlug) {

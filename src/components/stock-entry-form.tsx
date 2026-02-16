@@ -17,6 +17,7 @@ import { useFormHandler } from '@/hooks/use-form-handler'
 import { Material, Supplier } from '@/lib/types'
 import { ActionResponse } from '@/lib/types'
 import { MaterialForm } from '@/components/material-form'
+import { SupplierForm } from '@/components/supplier-form'
 import { useEntryItems } from '@/hooks/use-entry-items'
 
 interface StockEntryFormProps {
@@ -36,6 +37,10 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
   const { open, setOpen, state, formAction, isPending } = useFormHandler(createStockEntry)
   const formRef = useRef<HTMLFormElement>(null)
   const [localState, setLocalState] = useState<ActionResponse>(state)
+  const [supplierOptions, setSupplierOptions] = useState<Array<{ id: string; name: string }>>(() =>
+    suppliers.map(s => ({ id: s.id, name: s.name }))
+  )
+  const [selectedSupplierName, setSelectedSupplierName] = useState('')
 
   const createEmptyItem = useCallback(
     (id: string): EntryItem => ({
@@ -101,11 +106,34 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
   const [paymentMethod, setPaymentMethod] = useState('A_VISTA')
 
   useEffect(() => {
+    setSupplierOptions(suppliers.map(s => ({ id: s.id, name: s.name })))
+  }, [suppliers])
+
+  const handleSupplierSaved = useCallback((supplier: { id: string; name: string }) => {
+    const supplierName = supplier.name.trim()
+    if (!supplierName) return
+
+    setSupplierOptions(prev => {
+      const normalized = supplierName.toLowerCase()
+      if (prev.some(item => item.name.trim().toLowerCase() === normalized)) {
+        return prev
+      }
+
+      const next = [...prev, { id: supplier.id || `local-${Date.now()}`, name: supplierName }]
+      next.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+      return next
+    })
+
+    setSelectedSupplierName(supplierName)
+  }, [])
+
+  useEffect(() => {
     setLocalState(state)
     if (state.success) {
       const timer = setTimeout(() => {
         resetItems()
         setFreight(0)
+        setSelectedSupplierName('')
         formRef.current?.reset()
       }, 1000) // Give user time to see success message
       return () => clearTimeout(timer)
@@ -137,82 +165,52 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
       <div className="p-6">
         <form action={formAction} ref={formRef}>
           <div className="space-y-8">
-            {/* Section 1: Dados Gerais */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
+            {/* Section 1: Fornecedor */}
+            <div className="space-y-2 md:max-w-xl">
+              <div className="flex items-center justify-between gap-2">
                 <Label htmlFor="supplierName">Fornecedor / Loja</Label>
-                {suppliers && suppliers.length > 0 ? (
-                  <Select name="supplierName" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um fornecedor..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {suppliers.map(s => (
-                        <SelectItem key={s.id} value={s.name}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="space-y-1">
-                    <Input
-                      id="supplierName"
-                      name="supplierName"
-                      placeholder="Nome da loja ou fornecedor"
-                      required
-                    />
-                    <p className="text-muted-foreground text-[10px]">
-                      Nenhum fornecedor cadastrado. Digite o nome acima.
-                    </p>
-                  </div>
-                )}
-                {localState.errors?.supplierName && (
-                  <p className="text-xs text-red-500">{localState.errors.supplierName[0]}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="freightCost">Frete (R$)</Label>
-                <Input
-                  id="freightCost"
-                  name="freightCost"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={freight}
-                  onChange={e => setFreight(parseFloat(e.target.value) || 0)}
+                <SupplierForm
+                  onSaved={handleSupplierSaved}
+                  trigger={
+                    <Button type="button" variant="outline" size="sm">
+                      <Plus className="mr-1 h-4 w-4" /> Novo fornecedor
+                    </Button>
+                  }
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="paymentMethod">Forma de Pagamento</Label>
-                <Select name="paymentMethod" value={paymentMethod} onValueChange={setPaymentMethod}>
+              {supplierOptions.length > 0 ? (
+                <Select
+                  name="supplierName"
+                  value={selectedSupplierName}
+                  onValueChange={setSelectedSupplierName}
+                  required
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
+                    <SelectValue placeholder="Selecione um fornecedor..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="A_VISTA">À Vista (Dinheiro/Pix)</SelectItem>
-                    <SelectItem value="CREDIT_CARD">Cartão de Crédito</SelectItem>
-                    <SelectItem value="DEBIT_CARD">Cartão de Débito</SelectItem>
+                    {supplierOptions.map(s => (
+                      <SelectItem key={s.id} value={s.name}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              {paymentMethod === 'CREDIT_CARD' && (
-                <div className="space-y-2">
-                  <Label htmlFor="installments">Parcelas</Label>
+              ) : (
+                <div className="space-y-1">
                   <Input
-                    id="installments"
-                    name="installments"
-                    type="number"
-                    min="1"
-                    max="12"
-                    defaultValue="1"
+                    id="supplierName"
+                    name="supplierName"
+                    placeholder="Nome da loja ou fornecedor"
                     required
                   />
+                  <p className="text-muted-foreground text-[10px]">
+                    Nenhum fornecedor cadastrado. Digite o nome acima.
+                  </p>
                 </div>
+              )}
+              {localState.errors?.supplierName && (
+                <p className="text-xs text-red-500">{localState.errors.supplierName[0]}</p>
               )}
             </div>
 
@@ -335,13 +333,63 @@ export function StockEntryForm({ materials = [], suppliers = [] }: StockEntryFor
               </div>
             </div>
 
+            {/* Section 3: Pagamento e Frete */}
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="freightCost">Frete (R$)</Label>
+                <Input
+                  id="freightCost"
+                  name="freightCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={freight}
+                  onChange={e => setFreight(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="paymentMethod">Forma de Pagamento</Label>
+                <Select name="paymentMethod" value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A_VISTA">A vista (Dinheiro/Pix)</SelectItem>
+                    <SelectItem value="CREDIT_CARD">Cartao de Credito</SelectItem>
+                    <SelectItem value="DEBIT_CARD">Cartao de Debito</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {paymentMethod === 'CREDIT_CARD' && (
+                <div className="space-y-2">
+                  <Label htmlFor="installments">Parcelas</Label>
+                  <Input
+                    id="installments"
+                    name="installments"
+                    type="number"
+                    min="1"
+                    max="12"
+                    defaultValue="1"
+                    required
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="my-6 border-t"></div>
 
-            {/* Section 3: Summary and Submit */}
+            {/* Section 4: Summary and Submit */}
             <div className="grid items-start gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="note">Observações</Label>
-                <Input id="note" name="note" placeholder="Opcional. Ex: Número da Nota Fiscal" />
+                <Label htmlFor="note">{'Observa\u00e7\u00f5es'}</Label>
+                <Input
+                  id="note"
+                  name="note"
+                  placeholder={'Opcional. Ex: N\u00famero da Nota Fiscal'}
+                />
               </div>
 
               <div className="bg-muted/30 flex flex-col gap-2 rounded-lg p-4">

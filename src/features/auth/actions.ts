@@ -7,6 +7,8 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limiter'
 import { getClientIP } from '@/lib/security'
 import { logError, logWarning, logInfo } from '@/lib/logger'
 
+const MIN_PASSWORD_LENGTH = 8
+
 function isNextRedirectError(error: unknown): error is Error {
   return error instanceof Error && error.message === 'NEXT_REDIRECT'
 }
@@ -14,8 +16,14 @@ function isNextRedirectError(error: unknown): error is Error {
 export async function authenticate(prevState: string | undefined, formData: FormData) {
   try {
     const clientIP = await getClientIP()
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+    const emailRaw = formData.get('email')
+    const passwordRaw = formData.get('password')
+    const email = typeof emailRaw === 'string' ? emailRaw.trim().toLowerCase() : ''
+    const password = typeof passwordRaw === 'string' ? passwordRaw : ''
+
+    if (!email || !password) {
+      return 'Invalid credentials.'
+    }
 
     // Rate limit
     const rateLimitResult = await rateLimit(`login:${clientIP}`, rateLimitPresets.login)
@@ -55,13 +63,20 @@ export async function authenticate(prevState: string | undefined, formData: Form
 
 export async function register(prevState: string | undefined, formData: FormData) {
   try {
-    const name = formData.get('name') as string
-    const storeName = formData.get('storeName') as string
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+    const nameRaw = formData.get('name')
+    const storeNameRaw = formData.get('storeName')
+    const emailRaw = formData.get('email')
+    const passwordRaw = formData.get('password')
+    const name = typeof nameRaw === 'string' ? nameRaw.trim() : ''
+    const storeName = typeof storeNameRaw === 'string' ? storeNameRaw.trim() : ''
+    const email = typeof emailRaw === 'string' ? emailRaw.trim().toLowerCase() : ''
+    const password = typeof passwordRaw === 'string' ? passwordRaw : ''
 
     if (!name || !storeName || !email || !password) {
       return 'Please fill in all fields.'
+    }
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
     }
 
     const supabaseAdmin = createAdminClient()
@@ -85,10 +100,11 @@ export async function register(prevState: string | undefined, formData: FormData
     }
 
     // 2. Create Tenant & User Data (using Admin client to bypass RLS)
-    const slug =
-      storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-') +
-      '-' +
-      Math.random().toString(36).substring(2, 6)
+    const slugBase = storeName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    const slug = `${slugBase || 'atelis'}-${Math.random().toString(36).substring(2, 6)}`
 
     // Create Tenant
     const { data: tenant, error: tenantError } = await supabaseAdmin

@@ -7,28 +7,71 @@ import { ActionResponse } from '@/lib/types'
 import { actionError, actionSuccess, unauthorizedAction } from '@/lib/action-response'
 import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 
+const MAX_ENTRY_ITEMS = 200
+const MAX_NOTE_LENGTH = 500
+const MAX_MONEY_VALUE = 1_000_000
+const PAYMENT_METHODS = ['A_VISTA', 'CREDIT_CARD', 'DEBIT_CARD', 'BOLETO'] as const
+
 const stockEntryItemSchema = z.object({
   materialId: z.string().min(1, 'Material e obrigatorio'),
-  quantity: z.coerce.number().positive('Quantidade deve ser maior que zero'),
-  unitCost: z.coerce.number().min(0, 'Custo unitario deve ser positivo'),
+  quantity: z.coerce
+    .number()
+    .positive('Quantidade deve ser maior que zero')
+    .max(MAX_MONEY_VALUE, 'Quantidade muito alta'),
+  unitCost: z.coerce
+    .number()
+    .min(0, 'Custo unitario deve ser positivo')
+    .max(MAX_MONEY_VALUE, 'Custo unitario muito alto'),
   color: z.string().optional().nullable(),
 })
 
-const createStockEntrySchema = z.object({
-  supplierName: z.string().min(1, 'Nome do fornecedor e obrigatorio'),
-  freightCost: z.coerce.number().min(0).default(0),
-  items: z.array(stockEntryItemSchema).min(1, 'Adicione pelo menos um item'),
-  note: z.string().optional(),
-  paymentMethod: z.string().optional(),
-  installments: z.coerce.number().min(1).optional().default(1),
-})
+const createStockEntrySchema = z
+  .object({
+    supplierName: z.string().trim().min(1, 'Nome do fornecedor e obrigatorio').max(120),
+    freightCost: z.coerce.number().min(0).max(MAX_MONEY_VALUE).default(0),
+    items: z
+      .array(stockEntryItemSchema)
+      .min(1, 'Adicione pelo menos um item')
+      .max(MAX_ENTRY_ITEMS, `Maximo de ${MAX_ENTRY_ITEMS} itens por entrada`),
+    note: z.string().max(MAX_NOTE_LENGTH, 'Observacao muito longa').optional(),
+    paymentMethod: z.enum(PAYMENT_METHODS).optional().default('A_VISTA'),
+    installments: z.coerce.number().int().min(1).max(24).optional().default(1),
+  })
+  .superRefine((data, ctx) => {
+    const seen = new Set<string>()
+
+    data.items.forEach((item, index) => {
+      const colorKey = (item.color || '').trim().toLowerCase()
+      const key = `${item.materialId.trim()}::${colorKey}`
+      if (seen.has(key)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['items', index, 'materialId'],
+          message: 'Item duplicado (mesmo material e cor) na mesma entrada.',
+        })
+        return
+      }
+      seen.add(key)
+    })
+
+    if (data.paymentMethod !== 'CREDIT_CARD' && data.installments !== 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['installments'],
+        message: 'Parcelas so podem ser usadas para cartao de credito.',
+      })
+    }
+  })
 
 const manualMovementSchema = z.object({
   materialId: z.string().min(1, 'Material e obrigatorio'),
   type: z.enum(['ENTRADA_AJUSTE', 'SAIDA_AJUSTE', 'PERDA', 'RETIRADA', 'ENTRADA']),
-  quantity: z.coerce.number().positive('Quantidade deve ser maior que zero'),
+  quantity: z.coerce
+    .number()
+    .positive('Quantidade deve ser maior que zero')
+    .max(MAX_MONEY_VALUE, 'Quantidade muito alta'),
   color: z.string().optional().nullable(),
-  note: z.string().optional(),
+  note: z.string().max(MAX_NOTE_LENGTH, 'Observacao muito longa').optional(),
 })
 
 type InventoryMovementRow = {
@@ -51,10 +94,17 @@ export async function createStockEntry(
   if (!user) return unauthorizedAction()
 
   let itemsRaw: z.infer<typeof stockEntryItemSchema>[] = []
+  const itemsPayload = formData.get('items')
+  if (typeof itemsPayload !== 'string') {
+    return actionError('Erro ao processar itens da entrada')
+  }
+
   try {
-    itemsRaw = JSON.parse((formData.get('items') as string) || '[]') as z.infer<
-      typeof stockEntryItemSchema
-    >[]
+    const parsed = JSON.parse(itemsPayload || '[]') as unknown
+    if (!Array.isArray(parsed)) {
+      return actionError('Erro ao processar itens da entrada')
+    }
+    itemsRaw = parsed as z.infer<typeof stockEntryItemSchema>[]
   } catch {
     return actionError('Erro ao processar itens da entrada')
   }

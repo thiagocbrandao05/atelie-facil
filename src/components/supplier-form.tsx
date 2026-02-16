@@ -17,18 +17,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Plus, Pencil } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { Supplier } from '@/lib/types'
+import type { Supplier } from '@/lib/types'
 
 type SupplierFormValues = z.infer<typeof SupplierSchema>
 
 interface SupplierFormProps {
   supplier?: Supplier
   trigger?: React.ReactNode
+  onSaved?: (supplier: { id: string; name: string }) => void
 }
 
-export function SupplierForm({ supplier, trigger }: SupplierFormProps) {
+export function SupplierForm({ supplier, trigger, onSaved }: SupplierFormProps) {
   const [open, setOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const isEditing = !!supplier
@@ -47,6 +48,8 @@ export function SupplierForm({ supplier, trigger }: SupplierFormProps) {
 
   async function onSubmit(data: SupplierFormValues) {
     setIsPending(true)
+    form.clearErrors()
+
     try {
       const result = isEditing
         ? await updateSupplier(supplier.id, data)
@@ -54,12 +57,24 @@ export function SupplierForm({ supplier, trigger }: SupplierFormProps) {
 
       if (result.success) {
         toast.success(result.message)
+
+        const resultData = (result.data as { id?: string; name?: string } | undefined) ?? undefined
+        const savedName = (resultData?.name ?? data.name).trim()
+        const savedId = resultData?.id ?? supplier?.id ?? `local-${Date.now()}`
+        if (savedName) {
+          onSaved?.({ id: savedId, name: savedName })
+        }
+
         setOpen(false)
         if (!isEditing) form.reset()
       } else {
+        const nameError = result.errors?.name?.[0]
+        if (nameError) {
+          form.setError('name', { type: 'server', message: nameError })
+        }
         toast.error(result.message)
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Ocorreu um erro inesperado.')
     } finally {
       setIsPending(false)
@@ -113,12 +128,12 @@ export function SupplierForm({ supplier, trigger }: SupplierFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="address">Endereço</Label>
+            <Label htmlFor="address">{'Endere\u00e7o'}</Label>
             <Input id="address" {...form.register('address')} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Observações</Label>
+            <Label htmlFor="notes">{'Observa\u00e7\u00f5es'}</Label>
             <Textarea
               id="notes"
               {...form.register('notes')}

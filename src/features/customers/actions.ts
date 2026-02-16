@@ -12,11 +12,343 @@ import type { Database } from '@/lib/supabase/types'
 
 type CustomerInsert = Database['public']['Tables']['Customer']['Insert']
 type CustomerUpdate = Database['public']['Tables']['Customer']['Update']
+type ExistingCustomerRow = Pick<
+  Database['public']['Tables']['Customer']['Row'],
+  'id' | 'name' | 'phone' | 'email' | 'address' | 'birthday'
+>
+
+type DuplicateCandidate = {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  address: string | null
+  birthday: string | null
+  reasons: string[]
+  score: number
+}
+
+type DuplicatePayload = {
+  duplicateType: 'strict' | 'possible'
+  canForce: boolean
+  candidates: Array<{
+    id: string
+    name: string
+    phone: string | null
+    email: string | null
+    address: string | null
+    birthday: string | null
+    reasons: string[]
+  }>
+}
+
+type CustomerDuplicateInput = {
+  name: string
+  phone?: string
+  email?: string
+  address?: string
+  birthday?: Date | null
+}
+
+const NAME_STOP_WORDS = new Set(['da', 'de', 'do', 'dos', 'das', 'e'])
+
+type PostgrestLikeError = {
+  code?: string
+  message?: string
+  details?: string
+}
 
 function toNullableIsoDate(value?: Date | null): string | null | undefined {
   if (value === undefined) return undefined
   if (value === null) return null
   return value.toISOString()
+}
+
+function normalizeText(value?: string | null): string {
+  if (!value) return ''
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function normalizeName(value?: string | null): string {
+  return normalizeText(value)
+}
+
+function tokenizeName(value?: string | null): string[] {
+  return normalizeName(value)
+    .split(' ')
+    .map(token => token.trim())
+    .filter(token => token.length > 1 && !NAME_STOP_WORDS.has(token))
+}
+
+function tokenizeText(value?: string | null): string[] {
+  return normalizeText(value)
+    .split(' ')
+    .map(token => token.trim())
+    .filter(token => token.length > 1)
+}
+
+function normalizeEmail(value?: string | null): string {
+  return value?.trim().toLowerCase() || ''
+}
+
+function normalizePhone(value?: string | null): string {
+  const digits = (value || '').replace(/\D/g, '')
+  if (digits.length === 13 && digits.startsWith('55')) return digits.slice(2)
+  if (digits.length > 11) return digits.slice(-11)
+  return digits
+}
+
+function normalizeAddress(value?: string | null): string {
+  return normalizeText(value)
+    .replace(/\bcep\s*\d{5}\s*\d{3}\b/g, '')
+    .trim()
+}
+
+function toDateKey(value?: string | Date | null): string | null {
+  if (!value) return null
+  const parsed = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed.toISOString().slice(0, 10)
+}
+
+function calculateNameSimilarity(a: string, b: string): number {
+  if (!a || !b) return 0
+  if (a === b) return 1
+
+  const tokensA = tokenizeName(a)
+  const tokensB = tokenizeName(b)
+  if (tokensA.length === 0 || tokensB.length === 0) return 0
+
+  const setA = new Set(tokensA)
+  const setB = new Set(tokensB)
+  const intersection = [...setA].filter(token => setB.has(token)).length
+  const unionSize = new Set([...setA, ...setB]).size
+  const jaccard = unionSize === 0 ? 0 : intersection / unionSize
+
+  const sameFirstToken = tokensA[0] === tokensB[0] ? 0.15 : 0
+  const sameLastToken = tokensA[tokensA.length - 1] === tokensB[tokensB.length - 1] ? 0.15 : 0
+
+  return Math.min(1, jaccard + sameFirstToken + sameLastToken)
+}
+
+function calculateTokenSimilarity(a: string, b: string): number {
+  if (!a || !b) return 0
+  if (a === b) return 1
+
+  const tokensA = tokenizeText(a)
+  const tokensB = tokenizeText(b)
+  if (tokensA.length === 0 || tokensB.length === 0) return 0
+
+  const setA = new Set(tokensA)
+  const setB = new Set(tokensB)
+  const intersection = [...setA].filter(token => setB.has(token)).length
+  const unionSize = new Set([...setA, ...setB]).size
+  return unionSize === 0 ? 0 : intersection / unionSize
+}
+
+function buildDuplicatePayload(
+  duplicateType: 'strict' | 'possible',
+  canForce: boolean,
+  candidates: DuplicateCandidate[]
+): DuplicatePayload {
+  return {
+    duplicateType,
+    canForce,
+    candidates: candidates.map(candidate => ({
+      id: candidate.id,
+      name: candidate.name,
+      phone: candidate.phone,
+      email: candidate.email,
+      address: candidate.address,
+      birthday: candidate.birthday,
+      reasons: candidate.reasons,
+    })),
+  }
+}
+
+function buildStrictDuplicateFieldErrors(
+  candidates: DuplicateCandidate[]
+): Record<string, string[]> {
+  const hasPhoneDuplicate = candidates.some(candidate =>
+    candidate.reasons.some(reason => reason.includes('telefone igual'))
+  )
+  const hasEmailDuplicate = candidates.some(candidate =>
+    candidate.reasons.some(reason => reason.includes('e-mail igual'))
+  )
+
+  const errors: Record<string, string[]> = {}
+  if (hasPhoneDuplicate) {
+    errors.phone = ['Já existe cliente com este telefone.']
+  }
+  if (hasEmailDuplicate) {
+    errors.email = ['Já existe cliente com este e-mail.']
+  }
+  if (!hasPhoneDuplicate && !hasEmailDuplicate) {
+    errors.name = ['Cliente duplicado detectado.']
+  }
+  return errors
+}
+
+function parseUniqueViolation(
+  error: unknown
+): { field: 'phone' | 'email'; message: string } | null {
+  if (!error || typeof error !== 'object') return null
+  const pgError = error as PostgrestLikeError
+  if (pgError.code !== '23505') return null
+
+  const fullMessage = `${pgError.message || ''} ${pgError.details || ''}`.toLowerCase()
+
+  if (
+    fullMessage.includes('customer_tenant_phone_norm_uidx') ||
+    fullMessage.includes('normalize_customer_phone')
+  ) {
+    return { field: 'phone', message: 'Já existe cliente com este telefone.' }
+  }
+
+  if (
+    fullMessage.includes('customer_tenant_email_norm_uidx') ||
+    fullMessage.includes('normalize_customer_email')
+  ) {
+    return { field: 'email', message: 'Já existe cliente com este e-mail.' }
+  }
+
+  return null
+}
+
+async function findCustomerDuplicates(params: {
+  db: Awaited<ReturnType<typeof createClient>>
+  tenantId: string
+  input: CustomerDuplicateInput
+  excludeId?: string
+}) {
+  let query = params.db
+    .from('Customer')
+    .select('id, name, phone, email, address, birthday')
+    .eq('tenantId', params.tenantId)
+
+  if (params.excludeId) {
+    query = query.neq('id', params.excludeId)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+
+  const existingCustomers = (data ?? []) as ExistingCustomerRow[]
+  const strict: DuplicateCandidate[] = []
+  const possible: DuplicateCandidate[] = []
+
+  const inputName = normalizeName(params.input.name)
+  const inputPhone = normalizePhone(params.input.phone)
+  const inputEmail = normalizeEmail(params.input.email)
+  const inputAddress = normalizeAddress(params.input.address)
+  const inputBirthday = toDateKey(params.input.birthday)
+
+  for (const existing of existingCustomers) {
+    const existingName = normalizeName(existing.name)
+    const existingPhone = normalizePhone(existing.phone)
+    const existingEmail = normalizeEmail(existing.email)
+    const existingAddress = normalizeAddress(existing.address)
+    const existingBirthday = toDateKey(existing.birthday)
+
+    const strictReasons: string[] = []
+    if (inputPhone && existingPhone && inputPhone === existingPhone) {
+      strictReasons.push('telefone igual')
+    }
+    if (inputEmail && existingEmail && inputEmail === existingEmail) {
+      strictReasons.push('e-mail igual')
+    }
+
+    if (strictReasons.length > 0) {
+      strict.push({
+        id: existing.id,
+        name: existing.name,
+        phone: existing.phone,
+        email: existing.email,
+        address: existing.address,
+        birthday: existingBirthday,
+        reasons: strictReasons,
+        score: 10,
+      })
+      continue
+    }
+
+    const nameSimilarity = calculateNameSimilarity(inputName, existingName)
+    if (nameSimilarity < 0.5) continue
+
+    const reasons: string[] = [`nome parecido (${Math.round(nameSimilarity * 100)}%)`]
+    let score = nameSimilarity
+    let strongEvidenceCount = 0
+    const hasVeryStrongNameSimilarity = nameSimilarity >= 0.86
+
+    if (inputBirthday && existingBirthday && inputBirthday === existingBirthday) {
+      reasons.push('mesma data de aniversario')
+      score += 0.45
+      strongEvidenceCount += 1
+    }
+
+    const addressSimilarity =
+      inputAddress && existingAddress ? calculateTokenSimilarity(inputAddress, existingAddress) : 0
+
+    if (inputAddress && existingAddress && inputAddress === existingAddress) {
+      reasons.push('mesmo endereco')
+      score += 0.35
+      strongEvidenceCount += 1
+    } else if (addressSimilarity >= 0.74) {
+      reasons.push(`endereco muito parecido (${Math.round(addressSimilarity * 100)}%)`)
+      score += 0.28
+      strongEvidenceCount += 1
+    }
+
+    if (
+      inputPhone &&
+      existingPhone &&
+      inputPhone.length >= 8 &&
+      existingPhone.length >= 8 &&
+      inputPhone.slice(-8) === existingPhone.slice(-8)
+    ) {
+      reasons.push('telefone muito parecido')
+      score += 0.25
+      strongEvidenceCount += 1
+    }
+
+    if (inputEmail && existingEmail) {
+      const [inputLocal] = inputEmail.split('@')
+      const [existingLocal] = existingEmail.split('@')
+      if (inputLocal && existingLocal && inputLocal === existingLocal) {
+        reasons.push('e-mail muito parecido')
+        score += 0.2
+        strongEvidenceCount += 1
+      }
+    }
+
+    const hasEnoughSignals = strongEvidenceCount >= 2 && nameSimilarity >= 0.5
+    const hasOneSignalAndGoodName =
+      strongEvidenceCount >= 1 && nameSimilarity >= 0.62 && score >= 0.95
+
+    if (!hasVeryStrongNameSimilarity && !hasEnoughSignals && !hasOneSignalAndGoodName) continue
+
+    possible.push({
+      id: existing.id,
+      name: existing.name,
+      phone: existing.phone,
+      email: existing.email,
+      address: existing.address,
+      birthday: existingBirthday,
+      reasons,
+      score,
+    })
+  }
+
+  strict.sort((a, b) => b.score - a.score)
+  possible.sort((a, b) => b.score - a.score)
+
+  return { strict, possible }
 }
 
 async function assertCSRFValid() {
@@ -67,7 +399,30 @@ export async function createCustomer(
 
   try {
     const db = await createClient()
+    const forceDuplicate = formData.get('forceDuplicate') === '1'
     const workspaceSlug = user.tenant?.slug
+    const duplicateResult = await findCustomerDuplicates({
+      db,
+      tenantId: user.tenantId,
+      input: validatedFields.data,
+    })
+
+    if (duplicateResult.strict.length > 0) {
+      return actionError<DuplicatePayload>(
+        'Já existe cliente com o mesmo telefone ou e-mail.',
+        buildStrictDuplicateFieldErrors(duplicateResult.strict),
+        buildDuplicatePayload('strict', false, duplicateResult.strict.slice(0, 3))
+      )
+    }
+
+    if (!forceDuplicate && duplicateResult.possible.length > 0) {
+      return actionError<DuplicatePayload>(
+        'Encontramos possível cliente duplicado. Revise os dados e confirme para continuar.',
+        undefined,
+        buildDuplicatePayload('possible', true, duplicateResult.possible.slice(0, 3))
+      )
+    }
+
     const customerPayload: CustomerInsert = {
       ...validatedFields.data,
       birthday: toNullableIsoDate(validatedFields.data.birthday),
@@ -95,6 +450,12 @@ export async function createCustomer(
     }
     return actionSuccess('Cliente cadastrado!', createdCustomer)
   } catch (error) {
+    const uniqueViolation = parseUniqueViolation(error)
+    if (uniqueViolation) {
+      return actionError(uniqueViolation.message, {
+        [uniqueViolation.field]: [uniqueViolation.message],
+      })
+    }
     console.error('Failed to create customer:', error)
     return actionError('Erro ao cadastrar cliente.')
   }
@@ -151,7 +512,31 @@ export async function updateCustomer(
 
   try {
     const db = await createClient()
+    const forceDuplicate = formData.get('forceDuplicate') === '1'
     const workspaceSlug = user.tenant?.slug
+    const duplicateResult = await findCustomerDuplicates({
+      db,
+      tenantId: user.tenantId,
+      input: validatedFields.data,
+      excludeId: id,
+    })
+
+    if (duplicateResult.strict.length > 0) {
+      return actionError<DuplicatePayload>(
+        'Já existe outro cliente com o mesmo telefone ou e-mail.',
+        buildStrictDuplicateFieldErrors(duplicateResult.strict),
+        buildDuplicatePayload('strict', false, duplicateResult.strict.slice(0, 3))
+      )
+    }
+
+    if (!forceDuplicate && duplicateResult.possible.length > 0) {
+      return actionError<DuplicatePayload>(
+        'Encontramos possível cliente duplicado. Revise os dados e confirme para continuar.',
+        undefined,
+        buildDuplicatePayload('possible', true, duplicateResult.possible.slice(0, 3))
+      )
+    }
+
     const customerPayload: CustomerUpdate = {
       ...validatedFields.data,
       birthday: toNullableIsoDate(validatedFields.data.birthday),
@@ -172,6 +557,14 @@ export async function updateCustomer(
     }
     return actionSuccess('Cliente atualizado!')
   } catch (error) {
+    const uniqueViolation = parseUniqueViolation(error)
+    if (uniqueViolation) {
+      const message =
+        uniqueViolation.field === 'phone'
+          ? 'Já existe outro cliente com este telefone.'
+          : 'Já existe outro cliente com este e-mail.'
+      return actionError(message, { [uniqueViolation.field]: [message] })
+    }
     console.error('Failed to update customer:', error)
     return actionError('Erro ao atualizar cliente.')
   }
