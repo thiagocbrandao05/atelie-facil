@@ -1,4 +1,5 @@
 import { getSettings } from '@/features/settings/actions'
+import { getCurrentTenantSubscription } from '@/features/subscription/actions'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -19,7 +20,10 @@ const SettingsForm = dynamic(
 )
 
 export default async function SettingsPage() {
-  const settings = await getSettings()
+  const [settings, subscription] = await Promise.all([
+    getSettings(),
+    getCurrentTenantSubscription(),
+  ])
   const { getWhatsAppUsage } = await import('@/features/whatsapp/actions')
   const whatsappUsage = await getWhatsAppUsage()
 
@@ -36,7 +40,11 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      <SettingsForm settings={settings} whatsappUsage={whatsappUsage} />
+      <SettingsForm
+        settings={settings}
+        whatsappUsage={whatsappUsage}
+        currentSubscription={subscription}
+      />
     </div>
   )
 }

@@ -3,15 +3,25 @@
 import { getCurrentUser } from '@/lib/auth'
 import { getStripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
-import { PlanType } from './types'
+import { CurrentSubscription, PlanType, SubscriptionStatus, TenantProfile } from './types'
 
 type BillingSubscriptionRow = {
   stripeCustomerId?: string | null
 }
 
+type BillingSubscriptionStatusRow = {
+  plan?: PlanType | null
+  status?: SubscriptionStatus | null
+  currentPeriodEnd?: string | null
+}
+
 type TenantPlanRow = {
   plan?: PlanType | null
   profile?: string | null
+}
+
+type WorkspacePlanRow = {
+  plan?: PlanType | null
 }
 
 const PRICE_IDS: Record<PlanType, string> = {
@@ -129,5 +139,39 @@ export async function getCurrentTenantPlan() {
   return {
     plan: tenant?.plan || 'free_creative',
     profile: tenant?.profile || 'CREATIVE',
+  }
+}
+
+export async function getCurrentTenantSubscription(): Promise<CurrentSubscription> {
+  const user = await getCurrentUser()
+  if (!user?.tenantId) {
+    return {
+      plan: 'free_creative',
+      profile: 'CREATIVE',
+      status: null,
+      currentPeriodEnd: null,
+    }
+  }
+
+  const supabase = await createClient()
+  const [tenantResult, workspacePlanResult, billingResult] = await Promise.all([
+    supabase.from('Tenant').select('plan, profile').eq('id', user.tenantId).single(),
+    supabase.from('WorkspacePlans').select('plan').eq('workspaceId', user.tenantId).maybeSingle(),
+    supabase
+      .from('BillingSubscriptions')
+      .select('plan, status, currentPeriodEnd')
+      .eq('workspaceId', user.tenantId)
+      .maybeSingle(),
+  ])
+
+  const tenant = tenantResult.data as TenantPlanRow | null
+  const workspacePlan = (workspacePlanResult.data as WorkspacePlanRow | null)?.plan || null
+  const billing = billingResult.data as BillingSubscriptionStatusRow | null
+
+  return {
+    plan: billing?.plan || workspacePlan || tenant?.plan || 'free_creative',
+    profile: (tenant?.profile as TenantProfile) || 'CREATIVE',
+    status: billing?.status || null,
+    currentPeriodEnd: billing?.currentPeriodEnd || null,
   }
 }

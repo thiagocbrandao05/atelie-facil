@@ -59,3 +59,10 @@ export interface UsageSummary {
   }
   limits: WhatsAppLimits
 }
+
+export interface CurrentSubscription {
+  plan: PlanType
+  profile: TenantProfile
+  status: SubscriptionStatus | null
+  currentPeriodEnd: string | null
+}
