@@ -3,14 +3,166 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limiter'
-import { getClientIP } from '@/lib/security'
+import { getClientIP, validateCSRF } from '@/lib/security'
 import { logError, logWarning, logInfo } from '@/lib/logger'
+import { actionError, actionSuccess } from '@/lib/action-response'
+import { sendEmailWithResend } from '@/lib/resend'
+import { isValidEmail, sanitizeEmail } from '@/lib/validators'
+import type { ActionResponse } from '@/lib/types'
 
 const MIN_PASSWORD_LENGTH = 8
+const PASSWORD_RESET_GENERIC_MESSAGE =
+  'Se o e-mail estiver cadastrado, voce recebera um link para redefinir a senha.'
+const PASSWORD_RESET_FAILURE_MESSAGE =
+  'Nao foi possivel enviar o e-mail de recuperacao agora. Tente novamente em alguns minutos.'
+const PASSWORD_RESET_RATE_LIMIT = { maxRequests: 3, windowMs: 15 * 60 * 1000 }
 
 function isNextRedirectError(error: unknown): error is Error {
   return error instanceof Error && error.message === 'NEXT_REDIRECT'
+}
+
+function normalizeBaseUrl(rawUrl: string | null | undefined): string | null {
+  if (!rawUrl) return null
+
+  try {
+    return new URL(rawUrl.trim()).origin
+  } catch {
+    return null
+  }
+}
+
+async function getAppBaseUrl() {
+  const envUrl = normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL)
+  if (envUrl) return envUrl
+
+  const requestHeaders = await headers()
+  const originFromHeader = normalizeBaseUrl(requestHeaders.get('origin'))
+  if (originFromHeader) return originFromHeader
+
+  const host = requestHeaders.get('host')
+  if (host) {
+    const protocol = /localhost|127\.0\.0\.1/.test(host) ? 'http' : 'https'
+    const hostUrl = normalizeBaseUrl(`${protocol}://${host}`)
+    if (hostUrl) return hostUrl
+  }
+
+  return 'http://localhost:3000'
+}
+
+function buildPasswordResetEmail(resetLink: string) {
+  const safeResetLink = resetLink.replace(/"/g, '&quot;')
+  const subject = 'Redefina sua senha no Atelie Facil'
+  const text = [
+    'Recebemos uma solicitacao para redefinir sua senha no Atelie Facil.',
+    `Use este link para continuar: ${resetLink}`,
+    'Se voce nao solicitou esta alteracao, pode ignorar este e-mail.',
+  ].join('\n')
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #0f172a;">
+      <h1 style="font-size: 20px; margin-bottom: 16px;">Redefinicao de senha</h1>
+      <p style="margin-bottom: 16px;">Recebemos uma solicitacao para redefinir sua senha no Atelie Facil.</p>
+      <p style="margin-bottom: 24px;">Clique no botao abaixo para continuar:</p>
+      <a
+        href="${safeResetLink}"
+        style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 10px; font-weight: 600;"
+      >
+        Redefinir senha
+      </a>
+      <p style="margin-top: 24px; font-size: 14px; color: #475569;">
+        Se voce nao solicitou esta alteracao, ignore este e-mail.
+      </p>
+    </div>
+  `.trim()
+
+  return { subject, text, html }
+}
+
+export async function requestPasswordReset(
+  _prevState: ActionResponse,
+  formData: FormData
+): Promise<ActionResponse> {
+  try {
+    const csrf = await validateCSRF()
+    if (!csrf.valid) {
+      await logWarning('Password reset blocked by CSRF validation', {
+        reason: csrf.error || 'unknown',
+      })
+      return actionError(PASSWORD_RESET_FAILURE_MESSAGE)
+    }
+
+    const emailValue = formData.get('email')
+    const email = typeof emailValue === 'string' ? sanitizeEmail(emailValue) : ''
+
+    if (!email || !isValidEmail(email)) {
+      return actionError('Informe um e-mail valido.')
+    }
+
+    const clientIP = await getClientIP()
+    const limiter = await rateLimit(
+      `password-reset:${clientIP}:${email}`,
+      PASSWORD_RESET_RATE_LIMIT
+    )
+    if (!limiter.success) {
+      return actionError('Muitas tentativas. Tente novamente em alguns minutos.')
+    }
+
+    const supabaseAdmin = createAdminClient()
+    const appBaseUrl = await getAppBaseUrl()
+    const redirectTo = `${appBaseUrl}/login`
+
+    const { data: recoveryData, error: recoveryError } =
+      await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email,
+        options: {
+          redirectTo,
+        },
+      })
+
+    if (recoveryError) {
+      const errorMessage = recoveryError.message.toLowerCase()
+      if (errorMessage.includes('user not found')) {
+        return actionSuccess(PASSWORD_RESET_GENERIC_MESSAGE)
+      }
+
+      await logWarning('Password reset link generation failed', {
+        email,
+        error: recoveryError.message,
+      })
+      return actionError(PASSWORD_RESET_FAILURE_MESSAGE)
+    }
+
+    const resetLink = recoveryData.properties?.action_link
+    if (!resetLink) {
+      await logWarning('Password reset link was not returned by Supabase', { email })
+      return actionError(PASSWORD_RESET_FAILURE_MESSAGE)
+    }
+
+    const emailContent = buildPasswordResetEmail(resetLink)
+    const sendResult = await sendEmailWithResend({
+      to: email,
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text,
+    })
+
+    if (!sendResult.success) {
+      await logError(new Error(sendResult.error), {
+        action: 'requestPasswordReset.sendEmailWithResend',
+        data: { email },
+      })
+      return actionError(PASSWORD_RESET_FAILURE_MESSAGE)
+    }
+
+    await logInfo('Password reset email sent', { email, ip: clientIP })
+    return actionSuccess(PASSWORD_RESET_GENERIC_MESSAGE)
+  } catch (error) {
+    const parsedError = error instanceof Error ? error : new Error('Unknown password reset error')
+    await logError(parsedError, { action: 'requestPasswordReset' })
+    return actionError(PASSWORD_RESET_FAILURE_MESSAGE)
+  }
 }
 
 export async function authenticate(prevState: string | undefined, formData: FormData) {
