@@ -30,6 +30,9 @@ import { revalidateWorkspaceAppPaths } from '@/lib/revalidate-workspace-path'
 type CreateOrderRpcResult = { id: string }
 type DeleteOrderRpcResult = { success?: boolean; message?: string; status?: string }
 type NotificationResult = { success?: boolean; message?: string; error?: string }
+type RpcClient = {
+  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+}
 
 const ORDER_STATUSES: OrderStatus[] = [
   'QUOTATION',
@@ -220,11 +223,11 @@ export async function createOrder(data: OrderInput): Promise<ActionResponse> {
   const totalValue = calculateOrderTotal(items, discount)
   const supabase = await createClient()
   const db = supabase
+  const rpcClient = db as unknown as RpcClient
   const workspaceSlug = user.tenant?.slug
 
   try {
-    // @ts-expect-error legacy schema not fully represented in generated DB types
-    const { data: rpcData, error } = await db.rpc('create_order', {
+    const { data: rpcData, error } = await rpcClient.rpc('create_order', {
       p_tenant_id: user.tenantId,
       p_customer_id: customerId,
       p_status: requestedStatus,
@@ -376,11 +379,11 @@ export async function deleteOrder(id: string): Promise<ActionResponse> {
   if (!user) return unauthorizedAction()
   const supabase = await createClient()
   const db = supabase
+  const rpcClient = db as unknown as RpcClient
   const workspaceSlug = user.tenant?.slug
 
   try {
-    // @ts-expect-error legacy schema not fully represented in generated DB types
-    const { data, error } = await db.rpc('delete_order', {
+    const { data, error } = await rpcClient.rpc('delete_order', {
       p_order_id: id,
       p_tenant_id: user.tenantId,
     })

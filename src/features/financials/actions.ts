@@ -25,6 +25,22 @@ type FinancialRecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
 const MonthSchema = z.number().int().min(1).max(12)
 const YearSchema = z.number().int().min(2000).max(2100)
 const TransactionUpdateSchema = TransactionSchema.partial()
+type DbClient = Awaited<ReturnType<typeof createClient>>
+
+type RecurrenceQueryResult = { data: unknown; error: unknown }
+
+interface RecurrenceDbQuery extends PromiseLike<RecurrenceQueryResult> {
+  select(columns: string): RecurrenceDbQuery
+  eq(column: string, value: unknown): RecurrenceDbQuery
+  lte(column: string, value: string): RecurrenceDbQuery
+  maybeSingle(): Promise<RecurrenceQueryResult>
+  insert(values: Record<string, unknown>): Promise<{ error: unknown }>
+  update(values: Record<string, unknown>): RecurrenceDbQuery
+}
+
+interface RecurrenceDb {
+  from(relation: string): RecurrenceDbQuery
+}
 
 type FinancialRecurrenceTemplateRow = {
   id: string
@@ -85,7 +101,7 @@ function addRecurrenceDate(
 }
 
 async function processTemplateUntilToday(
-  db: any,
+  db: RecurrenceDb,
   template: FinancialRecurrenceTemplateRow,
   todayKey: string
 ) {
@@ -97,12 +113,13 @@ async function processTemplateUntilToday(
   while (nextDueDate <= todayKey && guard < 400) {
     guard += 1
 
-    const { data: existing, error: existingError } = await db
+    const { data: existingRaw, error: existingError } = await db
       .from('financial_transactions')
       .select('id')
       .eq('recurrence_id', template.id)
       .eq('date', nextDueDate)
       .maybeSingle()
+    const existing = existingRaw as { id?: string } | null
 
     if (existingError) {
       throw existingError
@@ -154,7 +171,8 @@ export async function processRecurringFinancialTransactions(options?: {
   referenceDate?: string
 }): Promise<RecurrenceRunResult> {
   const useAdmin = options?.useAdmin === true
-  const db: any = useAdmin ? createAdminClient() : await getDb()
+  const dbClient: DbClient = useAdmin ? (createAdminClient() as unknown as DbClient) : await getDb()
+  const db = dbClient as unknown as RecurrenceDb
   const user = useAdmin ? null : await getCurrentUser()
   const tenantId = useAdmin ? null : await getTenantId()
   const workspaceSlug = user?.tenant?.slug
@@ -262,11 +280,10 @@ export async function createTransaction(input: TransactionInput) {
 
   const { data, error } = await db
     .from('financial_transactions')
-    // @ts-expect-error legacy table typing missing in generated Database type
     .insert({
       ...validated.data,
       tenant_id: tenantId,
-    })
+    } as never)
     .select()
     .single()
 
@@ -301,8 +318,7 @@ export async function updateTransaction(id: string, input: Partial<TransactionIn
 
   const { data, error } = await db
     .from('financial_transactions')
-    // @ts-expect-error legacy table typing missing in generated Database type
-    .update(validated.data)
+    .update(validated.data as never)
     .eq('id', id)
     .eq('tenant_id', tenantId)
     .select()

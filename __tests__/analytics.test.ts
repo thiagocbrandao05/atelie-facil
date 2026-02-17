@@ -6,11 +6,12 @@ import {
   getDateRangePreset,
   calculateDashboardMetrics,
 } from '@/lib/analytics'
-import { OrderWithDetails } from '@/lib/types'
+
+type AnalyticsOrder = Parameters<typeof getOrdersByStatus>[0][number]
 
 const mockDate = new Date('2024-01-01T12:00:00Z')
 
-const mockOrders: any[] = [
+const mockOrders = [
   {
     id: '1',
     status: 'PENDING',
@@ -35,7 +36,7 @@ const mockOrders: any[] = [
     createdAt: new Date('2023-12-01T12:00:00Z').toISOString(),
     items: [{ product: { name: 'Product C', materials: [] }, quantity: 5, price: 10 }],
   },
-]
+] as unknown as AnalyticsOrder[]
 
 describe('Analytics Utils', () => {
   describe('getOrdersByStatus', () => {

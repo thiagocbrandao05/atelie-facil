@@ -19,6 +19,10 @@ type ProductMaterialInput = {
   color?: string | null
 }
 
+type RpcClient = {
+  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+}
+
 function normalizeProducts(rawData: ProductQueryResponse[]): ProductWithMaterials[] {
   return rawData.map(product => ({
     ...product,
@@ -194,10 +198,10 @@ export async function createProduct(
 
     const supabase = await createClient()
     const db = supabase
+    const rpcClient = db as unknown as RpcClient
     const workspaceSlug = user.tenant?.slug
 
-    // @ts-expect-error legacy schema not fully represented in generated DB types
-    const { error } = await db.rpc('create_product_with_materials', {
+    const { error } = await rpcClient.rpc('create_product_with_materials', {
       p_tenant_id: user.tenantId,
       p_name: validatedFields.data.name,
       p_image_url: validatedFields.data.imageUrl || '',
@@ -247,10 +251,10 @@ export async function updateProduct(
 
     const supabase = await createClient()
     const db = supabase
+    const rpcClient = db as unknown as RpcClient
     const workspaceSlug = user.tenant?.slug
 
-    // @ts-expect-error legacy schema not fully represented in generated DB types
-    const { error } = await db.rpc('update_product_with_materials', {
+    const { error } = await rpcClient.rpc('update_product_with_materials', {
       p_product_id: id,
       p_tenant_id: user.tenantId,
       p_name: validatedFields.data.name,
@@ -282,10 +286,10 @@ export async function deleteProduct(id: string): Promise<ActionResponse> {
   try {
     const supabase = await createClient()
     const db = supabase
+    const rpcClient = db as unknown as RpcClient
     const workspaceSlug = user.tenant?.slug
 
-    // @ts-expect-error legacy schema not fully represented in generated DB types
-    const { error } = await db.rpc('delete_product', {
+    const { error } = await rpcClient.rpc('delete_product', {
       p_product_id: id,
       p_tenant_id: user.tenantId,
     })

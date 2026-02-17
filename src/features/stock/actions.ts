@@ -81,6 +81,10 @@ type InventoryMovementRow = {
   color: string | null
 }
 
+type RpcClient = {
+  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message
   return 'Erro desconhecido'
@@ -128,10 +132,10 @@ export async function createStockEntry(
     items.reduce((acc, item) => acc + item.quantity * item.unitCost, 0) + freightCost
 
   const supabase = await createClient()
+  const rpcClient = supabase as unknown as RpcClient
 
   try {
-    // @ts-expect-error legacy schema not fully represented in generated DB types
-    const { error } = await supabase.rpc('create_stock_entry_transaction', {
+    const { error } = await rpcClient.rpc('create_stock_entry_transaction', {
       p_tenant_id: user.tenantId,
       p_supplier_name: supplierName,
       p_freight_cost: freightCost,
@@ -185,7 +189,6 @@ export async function addManualStockMovement(
 
   const supabase = await createClient()
 
-  // @ts-expect-error legacy schema not fully represented in generated DB types
   const { error } = await supabase.from('stock_movements').insert({
     tenant_id: user.tenantId,
     material_id: materialId,
@@ -194,7 +197,7 @@ export async function addManualStockMovement(
     color: color || null,
     note: note || '',
     source: 'MANUAL',
-  })
+  } as never)
 
   if (error) {
     console.error('Manual Movement Error:', error)
