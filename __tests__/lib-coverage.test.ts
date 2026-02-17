@@ -18,6 +18,8 @@ import {
   DEFAULT_TENANT,
 } from '@/lib/tenant'
 
+type WhatsAppOrder = Parameters<typeof generateQuotationMessage>[0]
+
 describe('Lib Coverage', () => {
   describe('utils', () => {
     it('cn should merge classes correctly', () => {
@@ -28,7 +30,7 @@ describe('Lib Coverage', () => {
   })
 
   describe('whatsapp', () => {
-    const mockOrder: any = {
+    const mockOrder = {
       id: '12345678-abcd-efgh',
       customer: { name: 'João' },
       items: [
@@ -37,7 +39,7 @@ describe('Lib Coverage', () => {
       ],
       totalValue: 40,
       dueDate: new Date('2023-12-31T12:00:00'),
-    }
+    } as unknown as WhatsAppOrder
 
     it('generateQuotationMessage should format correctly', () => {
       const msg = generateQuotationMessage(mockOrder).replace(/\u00A0/g, ' ')

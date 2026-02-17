@@ -110,8 +110,7 @@ export async function createSupplier(input: unknown): Promise<ActionResponse> {
 
     const { data: createdSupplier, error } = await db
       .from('Supplier')
-      // @ts-expect-error legacy table typing missing in generated Database type
-      .insert(supplierPayload)
+      .insert(supplierPayload as never)
       .select('id, name')
       .single()
 
@@ -162,8 +161,7 @@ export async function updateSupplier(id: string, input: unknown): Promise<Action
 
     const { data: updatedSupplier, error } = await db
       .from('Supplier')
-      // @ts-expect-error legacy table typing missing in generated Database type
-      .update(supplierPayload)
+      .update(supplierPayload as never)
       .eq('id', id)
       .select('id, name')
       .single()

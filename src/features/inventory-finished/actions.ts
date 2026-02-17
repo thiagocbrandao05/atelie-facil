@@ -31,6 +31,10 @@ type ProductStockEntryItem = {
   unitCost: number
 }
 
+type RpcClient = {
+  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+}
+
 const MAX_ENTRY_ITEMS = 200
 const MAX_NOTE_LENGTH = 500
 const MAX_MONEY_VALUE = 1_000_000
@@ -153,23 +157,20 @@ export async function adjustProductStock(
     if (currentInv) {
       const { error: updError } = await supabase
         .from('ProductInventory')
-        // @ts-expect-error legacy schema not fully represented in generated DB types
-        .update({ quantity: newTotal, updatedAt: new Date().toISOString() })
+        .update({ quantity: newTotal, updatedAt: new Date().toISOString() } as never)
         .eq('productId', productId)
         .eq('tenantId', user.tenantId)
       if (updError) throw updError
     } else {
-      // @ts-expect-error legacy schema not fully represented in generated DB types
       const { error: insError } = await supabase.from('ProductInventory').insert({
         tenantId: user.tenantId,
         productId,
         quantity: newTotal,
         minQuantity: 0,
-      })
+      } as never)
       if (insError) throw insError
     }
 
-    // @ts-expect-error legacy schema not fully represented in generated DB types
     const { error: moveError } = await supabase.from('ProductInventoryMovement').insert({
       tenantId: user.tenantId,
       productId,
@@ -178,7 +179,7 @@ export async function adjustProductStock(
       reason,
       reference,
       createdBy: user.id,
-    })
+    } as never)
     if (moveError) throw moveError
 
     const slug = user.tenant?.slug
@@ -298,10 +299,10 @@ export async function createProductStockEntry(
     items.reduce((acc, item) => acc + item.quantity * item.unitCost, 0) + freightCost
 
   const supabase = await createClient()
+  const rpcClient = supabase as unknown as RpcClient
 
   try {
-    // @ts-expect-error legacy schema not fully represented in generated DB types
-    const { error } = await supabase.rpc('create_product_stock_entry_transaction', {
+    const { error } = await rpcClient.rpc('create_product_stock_entry_transaction', {
       p_tenant_id: user.tenantId,
       p_supplier_name: supplierName,
       p_freight_cost: freightCost,

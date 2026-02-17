@@ -431,8 +431,7 @@ export async function createCustomer(
 
     const { data: customer, error } = await db
       .from('Customer')
-      // @ts-expect-error legacy table typing missing in generated Database type
-      .insert(customerPayload)
+      .insert(customerPayload as never)
       .select()
       .single()
     const createdCustomer = customer as { id: string } | null
@@ -544,8 +543,7 @@ export async function updateCustomer(
 
     const { error } = await db
       .from('Customer')
-      // @ts-expect-error legacy table typing missing in generated Database type
-      .update(customerPayload)
+      .update(customerPayload as never)
       .eq('id', id)
 
     if (error) throw error

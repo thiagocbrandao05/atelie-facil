@@ -11,14 +11,21 @@ import {
   calculateDashboardMetrics,
 } from '@/lib/analytics'
 import { formatCurrency, formatDate } from '@/lib/formatters'
-import { vi } from 'vitest'
+import { vi, type MockInstance } from 'vitest'
+
+type CsvOrder = Parameters<typeof exportOrdersToCSV>[0][number]
+type CsvProduct = Parameters<typeof exportProductsToCSV>[0][number]
+type CsvMaterial = Parameters<typeof exportMaterialsToCSV>[0][number]
+type CsvCustomer = Parameters<typeof exportCustomersToCSV>[0][number]
+type FinancialOrder = Parameters<typeof exportFinancialReportToCSV>[0][number]
+type FilterOrder = Parameters<typeof filterOrdersByDateRange>[0][number]
 
 // Mock DOM
 global.URL.createObjectURL = vi.fn(() => 'blob:mock')
 global.Blob = class Blob {
-  content: any[]
-  options: any
-  constructor(content: any[], options: any) {
+  content: BlobPart[]
+  options?: BlobPropertyBag
+  constructor(content: BlobPart[], options?: BlobPropertyBag) {
     this.content = content
     this.options = options
   }
@@ -26,10 +33,10 @@ global.Blob = class Blob {
 
 describe('Lib Advanced Coverage', () => {
   describe('export', () => {
-    let createElementSpy: any
-    let appendChildSpy: any
-    let removeChildSpy: any
-    let clickMock: any
+    let createElementSpy: MockInstance
+    let appendChildSpy: MockInstance
+    let removeChildSpy: MockInstance
+    let clickMock: ReturnType<typeof vi.fn>
 
     beforeEach(() => {
       clickMock = vi.fn()
@@ -51,7 +58,7 @@ describe('Lib Advanced Coverage', () => {
     })
 
     it('exportOrdersToCSV should download CSV', () => {
-      const orders: any[] = [
+      const orders = [
         {
           id: '1',
           customer: { name: 'C1' },
@@ -61,14 +68,14 @@ describe('Lib Advanced Coverage', () => {
           totalValue: 100,
           items: [],
         },
-      ]
+      ] as unknown as CsvOrder[]
       exportOrdersToCSV(orders)
       expect(createElementSpy).toHaveBeenCalledWith('a')
       expect(clickMock).toHaveBeenCalled()
     })
 
     it('exportProductsToCSV should download CSV', () => {
-      const products: any[] = [
+      const products = [
         {
           id: '1',
           name: 'P1',
@@ -76,13 +83,13 @@ describe('Lib Advanced Coverage', () => {
           profitMargin: 50,
           materials: [],
         },
-      ]
+      ] as unknown as CsvProduct[]
       exportProductsToCSV(products)
       expect(clickMock).toHaveBeenCalled()
     })
 
     it('exportMaterialsToCSV should download CSV', () => {
-      const materials: any[] = [
+      const materials = [
         {
           id: '1',
           name: 'M1',
@@ -91,13 +98,13 @@ describe('Lib Advanced Coverage', () => {
           quantity: 100,
           minQuantity: 10,
         },
-      ]
+      ] as unknown as CsvMaterial[]
       exportMaterialsToCSV(materials)
       expect(clickMock).toHaveBeenCalled()
     })
 
     it('exportCustomersToCSV should download CSV', () => {
-      const customers: any[] = [
+      const customers = [
         {
           id: '1',
           name: 'Cust1',
@@ -105,13 +112,13 @@ describe('Lib Advanced Coverage', () => {
           email: 'e@e.com',
           address: 'Addr',
         },
-      ]
+      ] as unknown as CsvCustomer[]
       exportCustomersToCSV(customers)
       expect(clickMock).toHaveBeenCalled()
     })
 
     it('exportFinancialReportToCSV should download CSV with correct calculations', () => {
-      const orders: any[] = [
+      const orders = [
         {
           id: '1',
           customer: { name: 'C1' },
@@ -129,7 +136,7 @@ describe('Lib Advanced Coverage', () => {
             },
           ],
         },
-      ]
+      ] as unknown as FinancialOrder[]
       // Total cost = 10 + 20 = 30. Profit = 70.
       exportFinancialReportToCSV(orders, new Date(), new Date())
 
@@ -144,11 +151,11 @@ describe('Lib Advanced Coverage', () => {
       const d1 = new Date('2023-01-01')
       const d2 = new Date('2023-01-02')
       const d3 = new Date('2023-01-03')
-      const orders: any[] = [
+      const orders = [
         { id: '1', createdAt: d1 },
         { id: '2', createdAt: d2 },
         { id: '3', createdAt: d3 },
-      ]
+      ] as unknown as FilterOrder[]
 
       const filtered = filterOrdersByDateRange(orders, d1, d2)
       expect(filtered).toHaveLength(2)
